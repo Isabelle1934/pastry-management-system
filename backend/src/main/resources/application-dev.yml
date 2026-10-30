@@ -1,0 +1,13 @@
+# Valores padrão apenas para o PostgreSQL local do docker-compose.dev.yml (não são segredos de produção).
+spring:
+  config:
+    # Lê o .env da raiz do projeto quando o backend é executado a partir de backend/.
+    import: optional:file:../.env[.properties]
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/confeitaria}
+    username: ${DB_USERNAME:confeitaria}
+    password: ${DB_PASSWORD:confeitaria_dev}
+
+app:
+  cors:
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:5173}

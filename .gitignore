@@ -1,0 +1,18 @@
+# Segredos e configuração local
+.env
+.env.*
+!.env.example
+
+# Uploads e backups locais
+data/
+backups/
+
+# IDEs / SO
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Claude Code (configuração local)
+.claude/settings.local.json

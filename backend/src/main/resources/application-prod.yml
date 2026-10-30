@@ -1,0 +1,7 @@
+# Produção: todas as credenciais vêm obrigatoriamente de variáveis de ambiente (sem valores padrão).
+server:
+  forward-headers-strategy: framework
+
+logging:
+  level:
+    root: INFO
