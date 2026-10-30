@@ -103,7 +103,10 @@ Regra: nenhuma dependência é adicionada sem necessidade clara; versões experi
 - **Service:** regras de negócio, transações (`@Transactional`), transições de estado, registro de histórico.
 - **Repository:** Spring Data JPA; consultas específicas com JPQL/SQL nativo quando necessário (ex.: reserva de capacidade).
 - **Entity:** mapeamento JPA; transições de estado encapsuladas em métodos da entidade quando simples.
-- **Tratamento de erros:** `@RestControllerAdvice` devolvendo `application/problem+json` (RFC 9457) com código de erro estável (`SLOT_FULL`, `QUOTE_EXPIRED`, …) e mensagem em português, sem stack trace.
+- **Tratamento de erros:** `GlobalExceptionHandler` (`common/exception`) devolve `application/problem+json` (RFC 9457) com código estável, mensagem em português e `requestId`, sem stack trace. Serviços lançam `NotFoundException` (404), `ConflictException` (409) ou `BusinessRuleException` (422, com código da regra, ex.: `SLOT_FULL`).
+- **Rastreio:** `RequestIdFilter` gera/propaga `X-Request-Id` e o coloca no MDC; toda linha de log mostra o ID.
+- **Tempo:** um bean `Clock` (UTC) é injetado nos serviços — nada chama `Instant.now()` diretamente, para que prazos e vencimentos sejam testáveis.
+- **Auditoria:** `AuditService.record(...)` (`common/audit`) exige transação ativa e grava junto com a operação principal (se ela falhar, o registro também é desfeito).
 
 ## 5. Autenticação e autorização
 

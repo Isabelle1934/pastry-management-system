@@ -25,6 +25,11 @@ server:
     include-stacktrace: never
     include-message: never
 
+logging:
+  pattern:
+    # requestId (RequestIdFilter) em todas as linhas para relacionar erro exibido e log.
+    level: "%5p [%X{requestId:-}]"
+
 management:
   endpoints:
     web:

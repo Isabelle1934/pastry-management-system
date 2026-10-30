@@ -58,6 +58,18 @@ O Actuator foi mapeado para `/api/public` expondo **apenas** `health`, sem detal
 **Status:** Aceita
 O backend não ativa `dev` automaticamente: sem perfil e sem `DB_URL` ele não sobe (falha rápida, evita produção com padrões de desenvolvimento). O perfil `dev` importa `../.env` se existir e tem padrões que batem com o `docker-compose.dev.yml`. Porta do PostgreSQL local publicada só em `127.0.0.1`.
 
+## ADR-015 — Histórico imutável garantido pelo banco
+**Status:** Aceita · 30/10/2026
+Além de a aplicação não oferecer update/delete (repositório só com `save` e consultas, entidade `@Immutable`), um trigger no PostgreSQL rejeita UPDATE/DELETE em `audit_log`. Mesmo um acesso direto ao banco não apaga histórico por engano. A mesma função será aplicada a `order_history`.
+
+## ADR-016 — Erros padronizados e sem vazamento de detalhes
+**Status:** Aceita
+Todas as exceções (de domínio, validação e do próprio Spring MVC) viram ProblemDetail com `code` estável e texto em português. Erros inesperados retornam mensagem genérica e são registrados no log com `requestId`. Violações de integridade não repassam a mensagem do banco (pode conter dados informados pelo usuário). `X-Request-Id` vindo do proxy só é aceito se for alfanumérico (evita injeção de linhas no log).
+
+## ADR-017 — Testes de integração com contexto compartilhado
+**Status:** Aceita
+A anotação `@IntegrationTest` (`@SpringBootTest` + Testcontainers) faz todas as classes de integração reutilizarem o mesmo contexto e o mesmo container PostgreSQL 18, mantendo a suíte rápida. Os testes não usam `@Transactional` automático para exercitar commits reais (bloqueio otimista, triggers, rollback).
+
 ---
 
 ## Pendências — decisões que dependem da proprietária

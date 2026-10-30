@@ -2,7 +2,18 @@
 
 - Base: `/api`. JSON em UTF-8. Datas `YYYY-MM-DD`, horários `HH:mm`, instantes ISO-8601 com fuso.
 - Valores monetários como **string decimal** (`"165.00"`) para evitar erros de ponto flutuante no JavaScript.
-- Erros: `application/problem+json` com `code` estável, `title`, `detail` em português e `errors[]` por campo em falhas de validação.
+- Erros: `application/problem+json` (RFC 9457). Exemplo:
+  ```json
+  {
+    "type": "about:blank", "title": "Bad Request", "status": 400,
+    "detail": "Alguns campos não estão corretos. Verifique e tente novamente.",
+    "code": "VALIDATION_ERROR",
+    "errors": [{ "field": "name", "message": "Informe o nome." }],
+    "requestId": "3f0c…"
+  }
+  ```
+  Códigos genéricos: `VALIDATION_ERROR` (400), `MALFORMED_REQUEST` (400), `NOT_FOUND` (404), `METHOD_NOT_ALLOWED` (405), `CONFLICT` / `CONCURRENT_MODIFICATION` (409), `PAYLOAD_TOO_LARGE` (413), `UNSUPPORTED_MEDIA_TYPE` (415), `BUSINESS_RULE` ou código específico da regra (422), `INTERNAL_ERROR` (500). Erros 500 nunca expõem mensagem interna.
+- Toda resposta traz o header `X-Request-Id` (também no corpo dos erros) para localizar o registro no log.
 - Requisições que alteram estado exigem header `X-XSRF-TOKEN`.
 - Paginação: `?page=0&size=20&sort=pickupDate,asc`.
 

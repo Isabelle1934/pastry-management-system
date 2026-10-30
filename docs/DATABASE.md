@@ -7,7 +7,8 @@ PostgreSQL 18. Esquema gerenciado exclusivamente por migrations Flyway. Convenç
 - Instantes em `TIMESTAMPTZ`; data/horário de retirada em `DATE` + `TIME` (hora local de `America/Sao_Paulo`).
 - Dinheiro em `NUMERIC(12,2)`; no Java, `BigDecimal`. Nunca `double`.
 - Estados em `VARCHAR` com `CHECK` (legíveis e fáceis de evoluir por migration).
-- `created_at`, `updated_at` em tabelas mutáveis; `version` (bloqueio otimista) em `cake_order` e entidades editáveis.
+- `created_at`, `updated_at` e `version` (bloqueio otimista) em tabelas mutáveis, via `BaseEntity`. Edição concorrente → HTTP 409 `CONCURRENT_MODIFICATION`.
+- Hibernate roda com `ddl-auto=validate`: qualquer divergência entre entidade e migration impede a aplicação de subir (e os testes falham).
 - Registros financeiros e históricos **nunca são apagados** fisicamente.
 
 ## 1. Diagrama de relacionamentos
@@ -39,7 +40,7 @@ audit_log, shedlock, spring_session*
 ### Autenticação
 **admin_user** — `id`, `email` (único, minúsculas), `name`, `password_hash`, `enabled`, `must_change_password`, `password_changed_at`, `created_at`, `updated_at`.
 
-**password_reset_token** — `id`, `admin_user_id` FK, `token_hash` (SHA-256, único), `expires_at`, `used_at`, `created_at`. Tokens anteriores invalidados ao gerar um novo.
+**password_reset_token** — `id`, `admin_user_id` FK (`ON DELETE CASCADE`), `token_hash` (SHA-256 em hex minúsculo, `VARCHAR(64)` com `CHECK` de formato, único), `expires_at`, `used_at`, `created_at`. Tokens anteriores invalidados ao gerar um novo.
 
 **spring_session / spring_session_attributes** — tabelas padrão do Spring Session JDBC.
 
@@ -102,7 +103,7 @@ Uma despesa é um único registro: o vínculo com pedido é apenas um atributo �
 ### Avisos e auditoria
 **notification** — `id`, `type` (`QUOTE_EXPIRING`, `QUOTE_EXPIRED`, `QUOTE_ACCEPTED`, `PROOF_SUBMITTED`, `NEW_ORDER`, …), `order_id`, `quote_id`, `message`, `dedup_key` (**único** — garante idempotência), `created_at`, `read_at`, `email_status`, `email_sent_at`, `email_attempts`.
 
-**audit_log** — `id`, `actor`, `action`, `entity_type`, `entity_id`, `details JSONB`, `created_at`.
+**audit_log** — `id`, `actor_type` (`OWNER`/`CLIENT`/`SYSTEM`), `actor_id`, `action`, `entity_type`, `entity_id` (texto), `details JSONB`, `created_at`. **Imutável:** trigger `trg_audit_log_immutable` rejeita UPDATE e DELETE (função reutilizável `prevent_history_modification()`, que também protegerá `order_history`).
 
 **shedlock** — tabela padrão do ShedLock.
 
@@ -117,7 +118,7 @@ Uma despesa é um único registro: o vínculo com pedido é apenas um atributo �
 
 | Versão | Conteúdo |
 |---|---|
-| V1 | admin_user, password_reset_token, spring_session, audit_log, shedlock |
+| V1 ✅ | admin_user, password_reset_token, spring_session, audit_log, shedlock, função `prevent_history_modification()` |
 | V2 | bakery_settings (linha inicial vazia de dados de negócio), catálogo |
 | V3 | agenda: weekly_slot, schedule_block, slot_occupancy, slot_reservation |
 | V4 | pedidos: cake_order, order_flavor, order_filling, cake_topper, order_history, stored_file |

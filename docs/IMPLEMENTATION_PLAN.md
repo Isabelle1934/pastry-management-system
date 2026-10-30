@@ -27,7 +27,7 @@ Documentos em `docs/`, diagnóstico, pendências.
 - `infra/docker-compose.dev.yml` com PostgreSQL 18.
 - **Aceite:** backend sobe conectado ao banco; frontend exibe resposta do health; `mvnw test` e `npm run build` passam.
 
-### Fase 2 — Banco de dados
+### Fase 2 — Banco de dados ✅ (30/10/2026)
 - Flyway V1 (base), tratamento global de erros, estrutura de histórico/auditoria, Testcontainers.
 - **Aceite:** migrations aplicam do zero; teste de integração de persistência passa.
 
