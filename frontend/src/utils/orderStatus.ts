@@ -62,3 +62,16 @@ export function formatDateTime(iso: string | null): string {
   const get = (type: string) => parts.find((p) => p.type === type)?.value ?? ''
   return `${get('day')}/${get('month')}/${get('year')} às ${get('hour')}:${get('minute')}`
 }
+
+/** Próximo passo da produção e o texto do botão que o executa. */
+export const PRODUCTION_NEXT: Partial<Record<ProductionStatus, { status: ProductionStatus; action: string }>> = {
+  NOT_STARTED: { status: 'IN_PRODUCTION', action: 'Iniciar produção' },
+  IN_PRODUCTION: { status: 'READY', action: 'Marcar como pronto' },
+  READY: { status: 'DELIVERED', action: 'Marcar como entregue' },
+}
+
+/** Passo anterior, para corrigir um engano. */
+export const PRODUCTION_PREVIOUS: Partial<Record<ProductionStatus, ProductionStatus>> = {
+  IN_PRODUCTION: 'NOT_STARTED',
+  READY: 'IN_PRODUCTION',
+}

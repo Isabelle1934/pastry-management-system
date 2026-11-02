@@ -130,6 +130,10 @@ Além das regras na entidade, triggers no PostgreSQL impedem alterar itens/valor
 **Status:** Aceita · 02/11/2026
 Pagamentos (sinal, saldo, reembolso) nunca são apagados nem alterados após análise (triggers). Confirmar o sinal confirma o pedido e ocupa a vaga na mesma transação (SLOT_FULL desfaz tudo). Processo agendado a cada 5 min com ShedLock 7.10.1: aviso e vencimento de orçamentos, prazo do sinal (P4: padrão 48 h; com comprovante em análise ou valor recebido, só avisa), reenvio de e-mails. Avisos idempotentes por `dedup_key`. P7: reembolso registrado manualmente. Jackson 3 recusa `boolean` ausente no JSON — campos opcionais usam `Boolean`.
 
+## ADR-033 — Produção e lista de retiradas (Fase 9)
+**Status:** Aceita · 02/11/2026
+Transições de produção centralizadas em `CakeOrder.changeProduction` (um passo à frente ou um atrás; só com pedido `CONFIRMED`), com o pedido travado (`FOR UPDATE`) e `version`. Entregar conclui o pedido e mantém a vaga ocupada. Sem migração: `production_status` já existia (V4); datas de cada passo ficam no histórico imutável. A lista de retiradas calcula o saldo por pedido (uma consulta por pedido, aceitável no volume de uma confeitaria; período limitado a 60 dias).
+
 ---
 
 ## Pendências — decisões que dependem da proprietária
@@ -143,7 +147,7 @@ Pagamentos (sinal, saldo, reembolso) nunca são apagados nem alterados após an�
 | P5 | **Edição da cliente com orçamento já enviado** | ✅ Orçamento invalidado e pedido volta para análise (proposta padrão) | — |
 | P6 | **Limite de massas/recheios** | ✅ Implementado por tamanho (proposta padrão) — pode ser revisto | — |
 | P7 | **Cancelamento com sinal já pago** | ✅ Vaga liberada; reembolso registrado manualmente | — |
-| P8 | **Entregar com saldo em aberto** | Permitido, com aviso visível | Fase 9 |
+| P8 | **Entregar com saldo em aberto** | ✅ Permitido, com aviso visível e confirmação explícita (proposta padrão) | — |
 | P9 | **Lucro estimado** | Previsto − despesas, mostrando também recebido − despesas | Fase 10 |
 | P10 | **Decoração** | ✅ Texto livre + foto (proposta padrão) | — |
 | P11 | **Somente retirada** (sem entrega) | ✅ Sim (proposta padrão) | — |

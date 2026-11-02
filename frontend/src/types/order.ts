@@ -216,3 +216,29 @@ export interface TrackingView {
   quote: TrackingQuote | null
   payment: ClientPayment | null
 }
+
+export interface PickupItem {
+  id: number
+  trackingCode: string
+  version: number
+  customerName: string
+  customerWhatsapp: string
+  whatsappLink: string
+  pickupDate: string
+  pickupTime: string
+  sizeName: string
+  cakeText: string | null
+  topperRequested: boolean
+  productionStatus: ProductionStatus
+  paymentStatus: PaymentStatus
+  total: Money | null
+  balanceDue: Money | null
+  /** A data de retirada já passou e o bolo não foi entregue. */
+  overdue: boolean
+}
+
+export interface PickupBoard {
+  today: string
+  until: string
+  orders: PickupItem[]
+}

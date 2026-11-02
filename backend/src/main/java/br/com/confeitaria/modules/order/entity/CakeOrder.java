@@ -203,6 +203,31 @@ public class CakeOrder extends BaseEntity {
         }
     }
 
+    /**
+     * Andamento da produção (BUSINESS_RULES.md §2): avança um passo por vez e permite voltar um passo para
+     * corrigir engano. Só com pedido confirmado; entregar encerra o pedido ({@code COMPLETED}).
+     */
+    private static final Map<ProductionStatus, Set<ProductionStatus>> PRODUCTION_TRANSITIONS = Map.of(
+            ProductionStatus.NOT_STARTED, Set.of(ProductionStatus.IN_PRODUCTION),
+            ProductionStatus.IN_PRODUCTION, Set.of(ProductionStatus.NOT_STARTED, ProductionStatus.READY),
+            ProductionStatus.READY, Set.of(ProductionStatus.IN_PRODUCTION, ProductionStatus.DELIVERED),
+            ProductionStatus.DELIVERED, Set.of());
+
+    public void changeProduction(ProductionStatus target) {
+        if (commercialStatus != CommercialStatus.CONFIRMED) {
+            throw new ConflictException("ORDER_NOT_CONFIRMED",
+                    "A produção só pode ser atualizada em pedidos confirmados (sinal pago).");
+        }
+        if (!PRODUCTION_TRANSITIONS.get(productionStatus).contains(Objects.requireNonNull(target))) {
+            throw new ConflictException("INVALID_PRODUCTION_TRANSITION",
+                    "Esta mudança de andamento não é possível agora.");
+        }
+        if (target == ProductionStatus.DELIVERED) {
+            transitionTo(CommercialStatus.COMPLETED);
+        }
+        this.productionStatus = target;
+    }
+
     /** Situação consolidada dos pagamentos — calculada pelo PaymentService a cada mudança. */
     public void updatePaymentStatus(PaymentStatus status) {
         this.paymentStatus = Objects.requireNonNull(status);

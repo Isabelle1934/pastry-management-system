@@ -31,7 +31,12 @@ function statusMessage(view: TrackingView): { title: string; text: string; tone:
           : `Para garantir a data, pague o sinal de ${deposit} e envie o comprovante abaixo.`,
       tone: 'info',
     },
-    CONFIRMED: { title: 'Pedido confirmado', text: 'Sua data está garantida. Até a retirada!', tone: 'success' },
+    CONFIRMED:
+      view.productionStatus === 'READY'
+        ? { title: 'Bolo pronto', text: 'Seu bolo está pronto e esperando por você na data combinada.', tone: 'success' }
+        : view.productionStatus === 'IN_PRODUCTION'
+          ? { title: 'Em produção', text: 'Seu bolo já está sendo preparado. Até a retirada!', tone: 'success' }
+          : { title: 'Pedido confirmado', text: 'Sua data está garantida. Até a retirada!', tone: 'success' },
     COMPLETED: { title: 'Pedido entregue', text: 'Obrigada pela preferência!', tone: 'success' },
     REJECTED: {
       title: 'Não foi possível atender',

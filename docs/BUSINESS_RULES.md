@@ -44,7 +44,7 @@ Transições permitidas são validadas no serviço; qualquer outra retorna erro 
 Cada pagamento individual tem seu próprio status: `PENDING_REVIEW`, `CONFIRMED`, `REJECTED`.
 
 ### Situação da produção (`cake_order.production_status`)
-`NOT_STARTED → IN_PRODUCTION → READY → DELIVERED`. Só pode sair de `NOT_STARTED` com pedido `CONFIRMED`. `DELIVERED` exige `READY`. **[PENDENTE]** entregar sem saldo quitado: padrão = permitido com aviso visível de saldo em aberto.
+`NOT_STARTED → IN_PRODUCTION → READY → DELIVERED`. Só pode sair de `NOT_STARTED` com pedido `CONFIRMED`. `DELIVERED` exige `READY`. Pode voltar um passo para corrigir engano (exceto depois de entregue). `DELIVERED` conclui o pedido (`COMPLETED`). Entregar com saldo em aberto (P8): permitido, com aviso visível e confirmação explícita, registrada no histórico; o saldo pode ser registrado depois.
 
 ## 3. Agenda e disponibilidade (✅ implementada na Fase 5)
 

@@ -82,7 +82,7 @@ Regras do catálogo: nome único por lista sem diferenciar maiúsculas (409 `DUP
 | PUT | `/orders/{id}` | ✅ Edição pela proprietária (corpo do formulário + `version`); horário precisa existir na agenda; se o pedido ocupa vaga, ela é remarcada (409 `SLOT_FULL` se lotado). 409 `ORDER_CLOSED` em pedidos encerrados |
 | POST | `/orders/{id}/reject` | ✅ `{reason, version}` — só antes do aceite; orçamento pendente vira `SUPERSEDED` |
 | POST | `/orders/{id}/cancel` | ✅ `{reason, version}` — libera a vaga; pagamentos não são apagados |
-| POST | `/orders/{id}/production` | Fase 9 |
+| POST | `/orders/{id}/production` | ✅ `{status, version, note?, confirmBalanceDue?}` — um passo por vez (`NOT_STARTED → IN_PRODUCTION → READY → DELIVERED`), podendo voltar um passo; só com pedido `CONFIRMED` (409 `ORDER_NOT_CONFIRMED`); salto de passo = 409 `INVALID_PRODUCTION_TRANSITION`. `DELIVERED` conclui o pedido (`COMPLETED`); com saldo em aberto exige `confirmBalanceDue: true` (409 `BALANCE_DUE`). Devolve o detalhe do pedido |
 | GET | `/orders/{id}/files/{fileId}` | ✅ Download com tipo detectado, `no-store`, imagem `inline` e PDF `attachment`; 404 se o arquivo não for do pedido |
 
 ### Orçamentos
@@ -100,6 +100,11 @@ Regras do catálogo: nome único por lista sem diferenciar maiúsculas (409 `DUP
 | POST | `/orders/{id}/payments` | ✅ `{kind: DEPOSIT\|BALANCE\|REFUND, method: PIX\|CASH, amount, notes?, acceptAsDeposit?}` — registrado já `CONFIRMED`. Se o recebido atingir o sinal (ou `acceptAsDeposit`), o pedido em `AWAITING_DEPOSIT` vai a `CONFIRMED` e reserva a vaga (409 `SLOT_FULL` se lotado). Reembolso não pode passar do recebido |
 | POST | `/payments/{paymentId}/confirm` | ✅ `{note?, acceptAsDeposit?}` — confirma comprovante em análise; mesma regra de confirmação do pedido |
 | POST | `/payments/{paymentId}/reject` | ✅ `{reason}` — rejeita comprovante; a cliente pode enviar outro |
+
+### Produção
+| Método | Rota | Descrição |
+|---|---|---|
+| GET | `/production?days=` | ✅ Pedidos `CONFIRMED` com retirada até hoje + `days` (padrão 14, máx. 60), incluindo atrasados (`overdue`), ordenados por data/horário, com `total` e `balanceDue` |
 
 ### Financeiro, dashboard e avisos
 | Método | Rota | Descrição |

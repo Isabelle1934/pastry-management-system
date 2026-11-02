@@ -8,6 +8,7 @@ import { OrderDetailPage } from '../pages/admin/orders/OrderDetailPage'
 import { OrdersPage } from '../pages/admin/orders/OrdersPage'
 import { LoginPage } from '../pages/admin/LoginPage'
 import { NotificationsPage } from '../pages/admin/NotificationsPage'
+import { ProductionPage } from '../pages/admin/ProductionPage'
 import { ResetPasswordPage } from '../pages/admin/ResetPasswordPage'
 import { SchedulePage } from '../pages/admin/schedule/SchedulePage'
 import { SettingsPage } from '../pages/admin/SettingsPage'
@@ -52,6 +53,7 @@ export const router = createBrowserRouter([
       { index: true, element: <AdminHomePage /> },
       { path: 'pedidos', element: <OrdersPage /> },
       { path: 'pedidos/:id', element: <OrderDetailPage /> },
+      { path: 'producao', element: <ProductionPage /> },
       { path: 'agenda', element: <SchedulePage /> },
       { path: 'produtos', element: <CatalogPage /> },
       { path: 'configuracoes', element: <SettingsPage /> },

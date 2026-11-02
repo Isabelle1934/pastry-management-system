@@ -69,6 +69,9 @@ export function AdminLayout() {
               <NavLink to="/admin/pedidos" className={linkClass}>
                 Pedidos
               </NavLink>
+              <NavLink to="/admin/producao" className={linkClass}>
+                Produção
+              </NavLink>
               <NavLink to="/admin/agenda" className={linkClass}>
                 Agenda
               </NavLink>

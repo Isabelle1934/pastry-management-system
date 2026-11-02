@@ -305,3 +305,53 @@
   width: 20px;
   height: 20px;
 }
+
+/* Andamento da produção */
+.steps {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+}
+
+.steps li {
+  counter-increment: step;
+  padding: var(--space-2);
+  border-top: 4px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.steps li::before {
+  content: counter(step) '. ';
+}
+
+.steps li.done {
+  border-top-color: var(--color-success);
+  color: var(--color-text);
+}
+
+.steps li.current {
+  border-top-color: var(--color-primary);
+  color: var(--color-text);
+  font-weight: 700;
+}
+
+@media (max-width: 480px) {
+  .steps {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Lista de retiradas */
+.dayTitle {
+  margin: var(--space-2) 0 0;
+  font-size: 1rem;
+}
+
+.overdue {
+  color: var(--color-danger);
+}

@@ -55,8 +55,10 @@ Documentos em `docs/`, diagnóstico, pendências.
 - Comprovante do sinal, confirmação/rejeição, registro manual, resumo financeiro do pedido, página de acompanhamento completa, processo agendado de vencimento e avisos por e-mail.
 - **Testes:** confirmação reserva capacidade, horário lotado, pagamentos preservados ao revisar orçamento, job idempotente (executar duas vezes = mesmo resultado).
 
-### Fase 9 — Produção
+### Fase 9 — Produção ✅ (02/11/2026 — telas do painel ainda sem verificação manual no navegador)
 - Atualização de andamento, histórico, lista de próximas retiradas.
+- Andamento passo a passo (com volta de um passo), entrega conclui o pedido, entrega com saldo em aberto só com confirmação (P8), página "Produção e retiradas" com atrasados, mensagens de andamento no acompanhamento da cliente.
+- **Testes:** fluxo completo até concluir, saldo em aberto, saltos e pedidos não confirmados recusados, versão desatualizada, lista com atrasados e período, acesso restrito.
 
 ### Fase 10 — Financeiro
 - Despesas e categorias, indicadores por período.

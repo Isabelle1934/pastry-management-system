@@ -1,5 +1,6 @@
 package br.com.confeitaria.modules.order.repository;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -31,4 +32,8 @@ public interface CakeOrderRepository extends JpaRepository<CakeOrder, Long>, Jpa
     }
 
     boolean existsByTrackingCode(String trackingCode);
+
+    /** Lista de retiradas: pedidos na situação informada com data até {@code until} (inclui atrasados). */
+    List<CakeOrder> findByCommercialStatusAndPickupDateLessThanEqualOrderByPickupDateAscPickupTimeAscIdAsc(
+            CommercialStatus status, LocalDate until);
 }
