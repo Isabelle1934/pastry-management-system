@@ -247,6 +247,17 @@ class ProductionIntegrationTests {
     }
 
     @Test
+    void todayFollowsTheBakeryTimezoneNotUtc() throws Exception {
+        CreatedOrder confirmed = confirmedOrder();
+        // 03/11 01:00 UTC = 02/11 22:00 em São Paulo: a retirada de 03/11 ainda não é "hoje".
+        clock.set(java.time.Instant.parse("2026-11-03T01:00:00Z"));
+        String body = mockMvc.perform(get("/api/admin/production?days=0").cookie(admin))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        assertThat(json.readTree(body).get("today").asText()).isEqualTo("2026-11-02");
+        assertThat(boardEntry("?days=0", confirmed.id())).isNull();
+    }
+
+    @Test
     void productionRequiresAdminAndIsVisibleToTheClient() throws Exception {
         CreatedOrder order = confirmedOrder();
         mockMvc.perform(get("/api/admin/production")).andExpect(status().isUnauthorized());

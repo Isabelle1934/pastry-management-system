@@ -1,0 +1,70 @@
+.monthNav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.monthTitle {
+  margin: 0;
+  min-width: 12ch;
+  font-size: 1.1rem;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.stat dt {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.stat dd {
+  margin: 0;
+}
+
+.value {
+  display: block;
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.negative {
+  color: var(--color-danger);
+}
+
+.detail {
+  display: block;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+.categories {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: var(--space-1);
+}
+
+.categories li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-1) 0;
+  border-bottom: 1px solid var(--color-border);
+}

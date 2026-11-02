@@ -60,8 +60,9 @@ Documentos em `docs/`, diagnóstico, pendências.
 - Andamento passo a passo (com volta de um passo), entrega conclui o pedido, entrega com saldo em aberto só com confirmação (P8), página "Produção e retiradas" com atrasados, mensagens de andamento no acompanhamento da cliente.
 - **Testes:** fluxo completo até concluir, saldo em aberto, saltos e pedidos não confirmados recusados, versão desatualizada, lista com atrasados e período, acesso restrito.
 
-### Fase 10 — Financeiro
+### Fase 10 — Financeiro ✅ (02/11/2026 — telas do painel ainda sem verificação manual no navegador)
 - Despesas e categorias, indicadores por período.
+- Página "Financeiro" (resumo do mês, despesas, categorias), atalho "Registrar despesa deste pedido" no detalhe do pedido.
 - **Testes:** previsto × recebido, despesa vinculada contada uma vez.
 
 ### Fase 11 — Dashboard e acabamento

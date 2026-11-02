@@ -107,11 +107,17 @@ Regras do catálogo: nome único por lista sem diferenciar maiúsculas (409 `DUP
 | GET | `/production?days=` | ✅ Pedidos `CONFIRMED` com retirada até hoje + `days` (padrão 14, máx. 60), incluindo atrasados (`overdue`), ordenados por data/horário, com `total` e `balanceDue` |
 
 ### Financeiro, dashboard e avisos
+
+Datas `from`/`to` no formato `AAAA-MM-DD`, no fuso da confeitaria (America/Sao_Paulo).
 | Método | Rota | Descrição |
 |---|---|---|
-| GET | `/finance/summary?from=&to=` | Faturamento previsto, recebido, pendente, despesas, lucro estimado |
-| GET/POST | `/finance/expenses` · PUT/DELETE `/finance/expenses/{id}` | Despesas (exclusão lógica) |
-| GET/POST | `/finance/categories` · PUT `/finance/categories/{id}` | Categorias |
+| GET | `/finance/summary?from=&to=` | ✅ Padrão: mês atual; até 366 dias (400 fora disso). `forecastRevenue`/`forecastOrders` (orçamentos aceitos de pedidos `CONFIRMED`/`COMPLETED`, por data de retirada), `awaitingDepositRevenue`/`awaitingDepositOrders` (à parte), `received` = `receivedDeposits` + `receivedBalances` − `refunds` (pagamentos confirmados, por data de confirmação), `pending` (total − recebido dos confirmados/entregues do período), `expenses`, `orderExpenses`, `expensesByCategory[]`, `estimatedProfit` (previsto − despesas), `cashResult` (recebido − despesas) |
+| GET | `/finance/expenses?from=&to=&categoryId=&orderId=&page=&size=` | ✅ Paginada, mais recentes primeiro; cada item traz `order {id, trackingCode, customerName}` quando vinculada |
+| POST | `/finance/expenses` | ✅ `{description, amount, expenseDate, categoryId, orderCode?, notes?}` → 201. `orderCode` = código de acompanhamento (aceita minúsculas/espaços); categoria desativada recusada (400 `categoryId`) |
+| PUT | `/finance/expenses/{id}` | ✅ Mesmo corpo + `version`; pode manter a categoria já desativada |
+| DELETE | `/finance/expenses/{id}?version=` | ✅ 204 — exclusão lógica, auditada; some dos totais e da lista |
+| GET/POST | `/finance/categories` · PUT `/finance/categories/{id}` | ✅ `{name, version?}`; nome único sem diferenciar maiúsculas (409 `DUPLICATE_NAME`) |
+| PATCH | `/finance/categories/{id}/active` | ✅ `{active, version}` — desativar tira a categoria só das despesas novas |
 | GET | `/dashboard` | Indicadores gerais |
 | GET | `/notifications?unread=&limit=` | ✅ Avisos mais recentes (padrão 30, máx. 100) |
 | GET | `/notifications/unread-count` | ✅ `{count}` |

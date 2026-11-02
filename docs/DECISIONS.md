@@ -134,6 +134,10 @@ Pagamentos (sinal, saldo, reembolso) nunca são apagados nem alterados após an�
 **Status:** Aceita · 02/11/2026
 Transições de produção centralizadas em `CakeOrder.changeProduction` (um passo à frente ou um atrás; só com pedido `CONFIRMED`), com o pedido travado (`FOR UPDATE`) e `version`. Entregar conclui o pedido e mantém a vaga ocupada. Sem migração: `production_status` já existia (V4); datas de cada passo ficam no histórico imutável. A lista de retiradas calcula o saldo por pedido (uma consulta por pedido, aceitável no volume de uma confeitaria; período limitado a 60 dias).
 
+## ADR-034 — Financeiro (Fase 10)
+**Status:** Aceita · 02/11/2026
+Resumo calculado em SQL (`JdbcTemplate`) a cada consulta, sem tabelas de totais — evita divergência com pagamentos e orçamentos. Previsto e pendente por data de retirada; recebido por `reviewed_at` convertido para o fuso da confeitaria; despesas por `expense_date`. Despesa vinculada é a mesma linha (`order_id` opcional), nunca somada duas vezes. Exclusão de despesa lógica (`deleted_at`, trigger bloqueia DELETE) e auditada. V7 cria 4 categorias genéricas editáveis (Ingredientes, Embalagens, Equipamentos e utensílios, Outros) para o formulário já funcionar no primeiro uso. Correção: "hoje" passa a usar o fuso configurado (`AppProperties.timezone`) também na lista de retiradas — o `Clock` é UTC.
+
 ---
 
 ## Pendências — decisões que dependem da proprietária
@@ -148,7 +152,7 @@ Transições de produção centralizadas em `CakeOrder.changeProduction` (um pas
 | P6 | **Limite de massas/recheios** | ✅ Implementado por tamanho (proposta padrão) — pode ser revisto | — |
 | P7 | **Cancelamento com sinal já pago** | ✅ Vaga liberada; reembolso registrado manualmente | — |
 | P8 | **Entregar com saldo em aberto** | ✅ Permitido, com aviso visível e confirmação explícita (proposta padrão) | — |
-| P9 | **Lucro estimado** | Previsto − despesas, mostrando também recebido − despesas | Fase 10 |
+| P9 | **Lucro estimado** | ✅ Previsto − despesas, mostrando também recebido − despesas (proposta padrão) | — |
 | P10 | **Decoração** | ✅ Texto livre + foto (proposta padrão) | — |
 | P11 | **Somente retirada** (sem entrega) | ✅ Sim (proposta padrão) | — |
 | P12 | **Exibir preço-base** dos tamanhos na área pública | Exibir como "a partir de" | Fase 6 |

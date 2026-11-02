@@ -15,6 +15,7 @@ import br.com.confeitaria.common.exception.ConflictException;
 import br.com.confeitaria.common.exception.NotFoundException;
 import br.com.confeitaria.common.persistence.Versions;
 import br.com.confeitaria.common.validation.WhatsAppNumber;
+import br.com.confeitaria.config.AppProperties;
 import br.com.confeitaria.modules.order.dto.OrderAdminDtos.OrderDetail;
 import br.com.confeitaria.modules.order.entity.CakeOrder;
 import br.com.confeitaria.modules.order.entity.CommercialStatus;
@@ -47,20 +48,22 @@ public class ProductionService {
     private final PaymentService payments;
     private final OrderHistoryService history;
     private final Clock clock;
+    private final AppProperties properties;
 
     public ProductionService(CakeOrderRepository orders, OrderAdminService orderAdmin, PaymentService payments,
-            OrderHistoryService history, Clock clock) {
+            OrderHistoryService history, Clock clock, AppProperties properties) {
         this.orders = orders;
         this.orderAdmin = orderAdmin;
         this.payments = payments;
         this.history = history;
         this.clock = clock;
+        this.properties = properties;
     }
 
     /** Pedidos confirmados com retirada até {@code days} dias à frente, incluindo os atrasados. */
     @Transactional(readOnly = true)
     public PickupBoard board(int days) {
-        LocalDate today = LocalDate.now(clock);
+        LocalDate today = LocalDate.ofInstant(clock.instant(), properties.timezone());
         LocalDate until = today.plusDays(Math.clamp(days, 0, MAX_DAYS));
         List<PickupItem> items = orders
                 .findByCommercialStatusAndPickupDateLessThanEqualOrderByPickupDateAscPickupTimeAscIdAsc(

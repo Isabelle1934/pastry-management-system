@@ -125,6 +125,12 @@ export function OrderDetailPage() {
           {canReject && !pending && (
             <Button variant="secondary" onClick={() => setPending({ kind: 'reject', reason: '' })}>Recusar</Button>
           )}
+          {order.commercialStatus !== 'REJECTED' && (
+            <Link className={styles.filter} style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}
+              to={`/admin/financeiro?aba=despesas&pedido=${encodeURIComponent(order.trackingCode)}`}>
+              Registrar despesa deste pedido
+            </Link>
+          )}
           {canCancel && !pending && (
             <Button variant="secondary" onClick={() => setPending({ kind: 'cancel', reason: '' })}>Cancelar pedido</Button>
           )}

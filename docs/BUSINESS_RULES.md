@@ -131,7 +131,9 @@ Cancelamento, remarcação ou expiração de pedido com reserva ativa: decrement
 - **Recebimentos efetivos:** soma dos pagamentos `CONFIRMED`, pela data de confirmação.
 - **Valores pendentes:** total − recebido dos pedidos ativos.
 - **Despesas:** gerais e vinculadas a pedidos; cada despesa é um registro único e entra uma única vez nos totais.
-- **Lucro estimado:** **[PENDENTE]** padrão = faturamento previsto − despesas do período; exibido também o resultado de caixa (recebido − despesas). Rotulado sempre como "estimado".
+- **Lucro estimado (P9, proposta padrão):** faturamento previsto − despesas do período; exibido também o resultado de caixa (recebido − despesas). Rotulado sempre como "estimado".
+- Pedido cancelado sai do previsto; o sinal já recebido continua em "recebido" até que um reembolso seja registrado.
+- Categorias não são apagadas, só desativadas; despesas são excluídas apenas logicamente, com auditoria.
 - Sem contabilidade fiscal.
 
 ## 10. Catálogo (Fase 4)
