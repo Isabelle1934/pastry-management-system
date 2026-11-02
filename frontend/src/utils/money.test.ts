@@ -1,5 +1,20 @@
 import { describe, expect, it } from 'vitest'
-import { formatBRL, parseMoneyInput, toMoneyInput } from './money'
+import { depositOf, formatBRL, lineTotal, parseMoneyInput, toMoneyInput } from './money'
+
+describe('quote math (same rules as the server)', () => {
+  it('multiplies quantity by unit price rounding half up to cents', () => {
+    expect(lineTotal('1.00', '120.00')).toBe('120.00')
+    expect(lineTotal('3.00', '55.19')).toBe('165.57')
+    expect(lineTotal('0.50', '0.03')).toBe('0.02')
+    expect(lineTotal('2.50', '10.01')).toBe('25.03')
+  })
+
+  it('splits the deposit as half rounded up and the balance as the rest', () => {
+    expect(depositOf('165.00')).toEqual({ deposit: '82.50', balance: '82.50' })
+    expect(depositOf('165.59')).toEqual({ deposit: '82.80', balance: '82.79' })
+    expect(depositOf('0.01')).toEqual({ deposit: '0.01', balance: '0.00' })
+  })
+})
 
 describe('formatBRL', () => {
   it.each([

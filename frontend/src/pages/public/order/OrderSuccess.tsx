@@ -34,7 +34,7 @@ export function OrderSuccess({ trackingCode }: { trackingCode: string }) {
         garantida depois da confirmação do sinal de 50%.
       </p>
       <p>
-        <Link to="/">Voltar ao início</Link>
+        <Link to="/acompanhar">Acompanhar pedido</Link> · <Link to="/">Voltar ao início</Link>
       </p>
     </section>
   )

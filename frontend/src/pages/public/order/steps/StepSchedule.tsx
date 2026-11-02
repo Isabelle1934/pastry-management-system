@@ -1,16 +1,18 @@
+import { useId } from 'react'
 import { useBakeryInfo } from '../../../../hooks/useBakeryInfo'
 import { formatLongDay, formatShortDay } from '../../../../utils/date'
 import type { StepProps } from './stepProps'
 import styles from '../order.module.css'
 
 export function StepSchedule({ form, errors, update, availability }: StepProps) {
+  const titleId = useId()
   const { data: bakery } = useBakeryInfo()
   const selectedDay = availability.days.find((day) => day.date === form.pickupDate)
 
   if (availability.days.length === 0) {
     return (
-      <section className={styles.card} aria-labelledby="step-title">
-        <h2 id="step-title">Data e horário de retirada</h2>
+      <section className={styles.card} aria-labelledby={titleId}>
+        <h2 id={titleId}>Data e horário de retirada</h2>
         <p>No momento não há horários disponíveis para encomenda.</p>
         {bakery?.whatsappLink && (
           <p>
@@ -26,8 +28,8 @@ export function StepSchedule({ form, errors, update, availability }: StepProps) 
   }
 
   return (
-    <section className={styles.card} aria-labelledby="step-title">
-      <h2 id="step-title">Data e horário de retirada</h2>
+    <section className={styles.card} aria-labelledby={titleId}>
+      <h2 id={titleId}>Data e horário de retirada</h2>
       <p className={styles.hint}>
         Mostramos somente datas com horário livre. A data só fica garantida depois da confirmação do sinal.
       </p>

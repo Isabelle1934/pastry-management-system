@@ -8,8 +8,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 import br.com.confeitaria.common.audit.ActorType;
+import br.com.confeitaria.common.exception.ConflictException;
 import br.com.confeitaria.common.persistence.BaseEntity;
 import br.com.confeitaria.modules.catalog.entity.CakeSize;
 import jakarta.persistence.CollectionTable;
@@ -151,6 +153,80 @@ public class CakeOrder extends BaseEntity {
         this.topperTheme = null;
         this.topperName = null;
         this.topperAge = null;
+    }
+
+    public void updateCustomer(String customerName, String customerWhatsapp) {
+        this.customerName = Objects.requireNonNull(customerName);
+        this.customerWhatsapp = Objects.requireNonNull(customerWhatsapp);
+    }
+
+    /** Transições permitidas da situação comercial (BUSINESS_RULES.md §2). */
+    private static final Map<CommercialStatus, Set<CommercialStatus>> TRANSITIONS = Map.of(
+            CommercialStatus.PENDING_REVIEW, Set.of(CommercialStatus.QUOTE_SENT, CommercialStatus.REJECTED,
+                    CommercialStatus.CANCELLED),
+            CommercialStatus.QUOTE_SENT, Set.of(CommercialStatus.PENDING_REVIEW, CommercialStatus.QUOTE_SENT,
+                    CommercialStatus.AWAITING_DEPOSIT, CommercialStatus.DECLINED_BY_CLIENT, CommercialStatus.REJECTED,
+                    CommercialStatus.CANCELLED),
+            CommercialStatus.AWAITING_DEPOSIT, Set.of(CommercialStatus.QUOTE_SENT, CommercialStatus.CONFIRMED,
+                    CommercialStatus.CANCELLED),
+            CommercialStatus.DECLINED_BY_CLIENT, Set.of(CommercialStatus.QUOTE_SENT, CommercialStatus.CANCELLED),
+            CommercialStatus.CONFIRMED, Set.of(CommercialStatus.COMPLETED, CommercialStatus.CANCELLED),
+            CommercialStatus.COMPLETED, Set.of(),
+            CommercialStatus.REJECTED, Set.of(),
+            CommercialStatus.CANCELLED, Set.of());
+
+    public boolean canTransitionTo(CommercialStatus target) {
+        return TRANSITIONS.get(commercialStatus).contains(target);
+    }
+
+    /** Muda a situação comercial; transições não previstas são recusadas (409). Cancelamento usa {@link #cancel}. */
+    public void transitionTo(CommercialStatus target) {
+        if (target == CommercialStatus.CANCELLED) {
+            throw new IllegalArgumentException("Use cancel() para cancelar o pedido");
+        }
+        requireTransition(target);
+        this.commercialStatus = target;
+    }
+
+    public void cancel(ActorType by, String reason, Instant now) {
+        requireTransition(CommercialStatus.CANCELLED);
+        this.commercialStatus = CommercialStatus.CANCELLED;
+        this.cancelledBy = Objects.requireNonNull(by);
+        this.cancellationReason = reason;
+        this.cancelledAt = Objects.requireNonNull(now);
+    }
+
+    private void requireTransition(CommercialStatus target) {
+        if (!canTransitionTo(target)) {
+            throw new ConflictException("INVALID_STATUS_TRANSITION",
+                    "Esta ação não é possível na situação atual do pedido.");
+        }
+    }
+
+    /** Situações finais: nada mais pode ser alterado. */
+    public boolean isClosed() {
+        return TRANSITIONS.get(commercialStatus).isEmpty();
+    }
+
+    /** A cliente só edita antes de aceitar o orçamento (BUSINESS_RULES.md §4). */
+    public boolean isEditableByClient() {
+        return commercialStatus == CommercialStatus.PENDING_REVIEW || commercialStatus == CommercialStatus.QUOTE_SENT;
+    }
+
+    public Map<Long, String> getFlavorChoices() {
+        return choiceMap(flavors);
+    }
+
+    public Map<Long, String> getFillingChoices() {
+        return choiceMap(fillings);
+    }
+
+    private static Map<Long, String> choiceMap(Map<Long, OptionChoice> choices) {
+        Map<Long, String> result = new LinkedHashMap<>();
+        choices.entrySet().stream()
+                .sorted(Comparator.comparingInt(e -> e.getValue().getPosition()))
+                .forEach(e -> result.put(e.getKey(), e.getValue().getNameSnapshot()));
+        return result;
     }
 
     private static void replace(Map<Long, OptionChoice> target, Map<Long, String> choices) {

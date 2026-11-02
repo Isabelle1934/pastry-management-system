@@ -19,6 +19,7 @@ export function HomePage() {
         <Link to="/encomendar" className={styles.cta}>
           Fazer encomenda
         </Link>
+        <Link to="/acompanhar">Já fez uma encomenda? Acompanhe aqui</Link>
       </section>
 
       {error && <Alert tone="error">{error}</Alert>}

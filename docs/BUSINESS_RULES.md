@@ -80,13 +80,14 @@ Cancelamento, remarcação ou expiração de pedido com reserva ativa: decrement
 - Limite de 5 solicitações por hora por IP.
 - A solicitação **não** ocupa vaga; o horário só é garantido na confirmação do sinal.
 
-## 4. Edição pela cliente
+## 4. Edição pela cliente (✅ Fase 7)
 
 - Permitida em `PENDING_REVIEW` e `QUOTE_SENT` (antes do aceite).
-- **[PENDENTE]** Padrão proposto: se houver orçamento `SENT` e a cliente editar, o orçamento passa a `SUPERSEDED` e o pedido volta a `PENDING_REVIEW` (a proprietária precisa reavaliar).
+- Se houver orçamento `SENT` e a cliente editar, o orçamento passa a `SUPERSEDED` e o pedido volta a `PENDING_REVIEW` (P5, proposta padrão aplicada).
+- A cliente não altera nome, WhatsApp nem fotos pelo acompanhamento; escolhas já feitas continuam válidas mesmo que o item tenha sido desativado.
 - Após o aceite, somente a proprietária edita; toda edição gera `order_history` com antes/depois.
 
-## 5. Orçamentos
+## 5. Orçamentos (✅ Fase 7)
 
 - Itens: nome, descrição, quantidade (padrão 1), valor unitário; `subtotal = quantidade × unitário`; `total = Σ subtotais`. Cálculos sempre no backend, arredondamento `HALF_UP` em centavos.
 - `sinal = total × 50%` arredondado para centavos; `saldo = total − sinal` (a soma fecha exatamente o total).
@@ -94,7 +95,8 @@ Cancelamento, remarcação ou expiração de pedido com reserva ativa: decrement
 - Orçamento enviado é imutável. Nova proposta = nova versão; a anterior vira `SUPERSEDED`. Nada é apagado.
 - Só existe um orçamento `SENT`/`ACCEPTED` por pedido por vez (garantido por índice único parcial).
 - Aceite exige orçamento `SENT` e `now() < valid_until` (verificado no backend no momento do aceite).
-- **[PENDENTE]** Alteração de valores após aceite (ex.: cliente pediu mudança): padrão = proprietária cria nova versão que a cliente precisa aceitar novamente; pagamentos já registrados permanecem vinculados ao pedido e são abatidos do novo total.
+- Orçamento pode ser montado/enviado com o pedido em `PENDING_REVIEW`, `QUOTE_SENT`, `AWAITING_DEPOSIT` ou `DECLINED_BY_CLIENT`. Nova versão após o aceite exige novo aceite (pedido volta a `QUOTE_SENT`); pagamentos registrados pertencem ao pedido e não são afetados. Mudança de valor em pedido já `CONFIRMED` será tratada junto com pagamentos (Fase 8).
+- Uma versão enviada nunca é alterada (garantia também no banco). Recusar ou cancelar o pedido invalida o orçamento ainda sem resposta.
 
 ## 6. Pagamentos
 

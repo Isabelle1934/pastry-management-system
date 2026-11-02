@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useId, type ReactNode } from 'react'
 import { formatLongDay } from '../../../../utils/date'
 import type { StepIndex } from '../orderForm'
 import type { StepProps } from './stepProps'
@@ -33,14 +33,15 @@ function Item({ label, value }: { label: string; value: ReactNode }) {
 }
 
 export function StepReview({ form, catalog, goTo }: ReviewProps) {
+  const titleId = useId()
   const size = catalog.sizes.find((s) => s.id === form.sizeId)
   const names = (ids: number[], options: { id: number; name: string }[]) =>
     ids.map((id) => options.find((o) => o.id === id)?.name).filter(Boolean).join(', ')
   const photoCount = form.referencePhotos.length
 
   return (
-    <section className={styles.card} aria-labelledby="step-title">
-      <h2 id="step-title">Revise sua encomenda</h2>
+    <section className={styles.card} aria-labelledby={titleId}>
+      <h2 id={titleId}>Revise sua encomenda</h2>
       <p className={styles.hint}>Confira tudo antes de enviar. Você pode corrigir qualquer etapa.</p>
       <div className={styles.review}>
         <Section title="Seus dados" step={0} goTo={goTo}>

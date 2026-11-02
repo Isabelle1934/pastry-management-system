@@ -7,4 +7,6 @@ export interface StepProps {
   update: (patch: Partial<OrderFormState>) => void
   catalog: PublicCatalog
   availability: Availability
+  /** Na edição pelo acompanhamento não há envio de fotos. */
+  allowPhotos?: boolean
 }

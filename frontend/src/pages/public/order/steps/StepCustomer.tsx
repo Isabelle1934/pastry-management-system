@@ -1,11 +1,13 @@
+import { useId } from 'react'
 import { TextField } from '../../../../components/TextField'
 import type { StepProps } from './stepProps'
 import styles from '../order.module.css'
 
 export function StepCustomer({ form, errors, update }: StepProps) {
+  const titleId = useId()
   return (
-    <section className={styles.card} aria-labelledby="step-title">
-      <h2 id="step-title">Seus dados</h2>
+    <section className={styles.card} aria-labelledby={titleId}>
+      <h2 id={titleId}>Seus dados</h2>
       <p className={styles.hint}>Usaremos seu WhatsApp para falar sobre a encomenda.</p>
       <TextField
         label="Nome completo"

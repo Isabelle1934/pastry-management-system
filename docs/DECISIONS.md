@@ -27,7 +27,7 @@ Vencimentos e avisos rodam no backend a cada 5 min. ShedLock evita execução du
 Disco local (volume) fora da área pública, nomes UUID, detecção do tipo real pela assinatura binária dos 4 formatos aceitos (JPEG, PNG, WEBP, PDF) — o Tika seria uma dependência grande para um conjunto tão pequeno, download apenas pelo backend com autorização. Interface `FileStorage` permite trocar por armazenamento de objetos no futuro.
 
 ## ADR-007 — Código de acompanhamento + 4 últimos dígitos do WhatsApp
-**Status:** Proposta
+**Status:** Aceita (Fase 7: acesso por sessão restrita ao pedido por 2 h; limites por IP e por código)
 Código aleatório de ~80 bits (Crockford Base32) e segunda verificação pelos 4 últimos dígitos do WhatsApp, com limite de tentativas. Protege os dados caso o código seja compartilhado ou vazado em um print.
 
 ## ADR-008 — Dinheiro em NUMERIC/BigDecimal e strings na API
@@ -114,6 +114,18 @@ O topo é 0..1 por pedido e só tem tema, nome e idade (a foto vai para `stored_
 **Status:** Aceita, com ressalva
 Fotos de celular podem conter localização (EXIF/GPS). Remover exigiria recodificar a imagem, e o Java não lê WEBP nativamente. Como as fotos só podem ser vistas pela proprietária (download autenticado, Fase 7), o risco é baixo. Reavaliar na revisão de segurança (Fase 12).
 
+## ADR-029 — Regras de pedido em um único componente
+**Status:** Aceita · 02/11/2026
+`OrderDetailsApplier` valida e aplica agendamento, personalização e topo na criação pela cliente, na edição pela cliente e na edição pela proprietária. Diferença intencional: a cliente só escolhe horários disponíveis; a proprietária pode usar qualquer horário ativo da agenda (a capacidade é conferida na confirmação do sinal).
+
+## ADR-030 — Transições de situação centralizadas na entidade
+**Status:** Aceita
+`CakeOrder` declara o mapa de transições permitidas da situação comercial e recusa as demais (409 `INVALID_STATUS_TRANSITION`). Mudanças de situação travam a linha do pedido (`SELECT … FOR UPDATE`) para que aceite, recusa e cancelamento simultâneos não se sobreponham.
+
+## ADR-031 — Orçamento enviado imutável no banco
+**Status:** Aceita
+Além das regras na entidade, triggers no PostgreSQL impedem alterar itens/valores ou excluir um orçamento depois de enviado. Índices únicos parciais garantem no máximo um orçamento vigente e um rascunho por pedido.
+
 ---
 
 ## Pendências — decisões que dependem da proprietária
@@ -124,7 +136,7 @@ Fotos de celular podem conter localização (EXIF/GPS). Remover exigiria recodif
 | P2 | **Hospedagem** | VPS de baixo custo com Docker Compose | Fase 12 |
 | P3 | **E-mail** (recuperação de senha e avisos): provedor SMTP e domínio/remetente | Provedor SMTP com plano gratuito; Mailpit no desenvolvimento (✅ configurado) | Fase 12 (produção) |
 | P4 | **Prazo para pagamento do sinal** após o aceite do orçamento | Configurável, com aviso e cancelamento automático (exceto com comprovante em análise) | Fase 8 |
-| P5 | **Edição da cliente com orçamento já enviado** | Orçamento é invalidado e o pedido volta para análise | Fase 7 |
+| P5 | **Edição da cliente com orçamento já enviado** | ✅ Orçamento invalidado e pedido volta para análise (proposta padrão) | — |
 | P6 | **Limite de massas/recheios** | ✅ Implementado por tamanho (proposta padrão) — pode ser revisto | — |
 | P7 | **Cancelamento com sinal já pago** (reembolso, retenção) | Registrar manualmente; capacidade liberada; sem regra automática de reembolso | Fase 8 |
 | P8 | **Entregar com saldo em aberto** | Permitido, com aviso visível | Fase 9 |

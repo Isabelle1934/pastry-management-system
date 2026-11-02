@@ -47,7 +47,7 @@ Documentos em `docs/`, diagnóstico, pendências.
 - Página inicial (com identidade visual oficial), formulário em 5 etapas, uploads seguros, geração de código, tela de sucesso.
 - **Testes:** validações backend, upload com extensão falsa rejeitado, arquivo grande rejeitado, código único.
 
-### Fase 7 — Pedidos e orçamentos
+### Fase 7 — Pedidos e orçamentos ✅ (02/11/2026)
 - Lista/detalhe/edição/recusa/cancelamento, histórico, orçamentos com itens, versões, envio, aceite/recusa pela cliente, verificação do acompanhamento.
 - **Testes:** cálculo de totais e sinal, imutabilidade após envio, versões, transições inválidas.
 

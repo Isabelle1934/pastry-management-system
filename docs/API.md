@@ -32,14 +32,14 @@
 
 | Método | Rota | Descrição |
 |---|---|---|
-| POST | `/verify` | `{ trackingCode, whatsappLast4 }` → abre sessão de acompanhamento restrita ao pedido |
-| GET | `/order` | Dados do pedido da sessão verificada |
-| PUT | `/order` | Edição pela cliente (somente antes do aceite do orçamento) |
-| POST | `/order/quote/{version}/accept` | Aceita o orçamento vigente |
-| POST | `/order/quote/{version}/decline` | Recusa o orçamento (motivo opcional) |
-| POST | `/order/payments/deposit-proof` | Envia comprovante do sinal (multipart) |
-| GET | `/order/files/{fileId}` | Baixa arquivo do próprio pedido |
-| POST | `/logout` | Encerra a sessão de acompanhamento |
+| POST | `/verify` | ✅ `{trackingCode, whatsappLast4}` → visão do pedido e sessão autorizada só para ele por 2 h. Código aceita minúsculas, espaços/hífens e O/I/L. 401 `TRACKING_NOT_FOUND` (mesma resposta para código inexistente ou dígitos errados); 429 após 5 falhas por código ou 20 tentativas por IP em 15 min |
+| GET | `/order` | ✅ Visão da cliente (WhatsApp mascarado, orçamento vigente, situações). 401 `TRACKING_REQUIRED` sem verificação ou após 2 h |
+| PUT | `/order` | ✅ Edição (agendamento, personalização, topo; sem fotos) com `version`. Só em `PENDING_REVIEW`/`QUOTE_SENT` (409 `ORDER_NOT_EDITABLE`); se havia orçamento enviado, ele vira `SUPERSEDED` e o pedido volta a `PENDING_REVIEW` |
+| POST | `/order/quotes/{quoteId}/accept` | ✅ Aceita a versão vigente → pedido `AWAITING_DEPOSIT` (não ocupa vaga). 409 `QUOTE_EXPIRED` após a validade |
+| POST | `/order/quotes/{quoteId}/decline` | ✅ `{reason?}` → pedido `DECLINED_BY_CLIENT` |
+| POST | `/order/payments/deposit-proof` | Fase 8 — envia comprovante do sinal (multipart) |
+| GET | `/order/files/{fileId}` | Fase 8 |
+| POST | `/logout` | ✅ Encerra o acesso ao pedido |
 
 ## Administrativos — `/api/admin` (autenticação obrigatória)
 
@@ -76,22 +76,22 @@ Regras do catálogo: nome único por lista sem diferenciar maiúsculas (409 `DUP
 ### Pedidos
 | Método | Rota | Descrição |
 |---|---|---|
-| GET | `/orders?status=&from=&to=&q=` | Lista com filtros |
-| GET | `/orders/{id}` | Detalhe completo (personalização, fotos, orçamentos, pagamentos, estados) |
-| PUT | `/orders/{id}` | Edição pela proprietária |
-| POST | `/orders/{id}/reject` | Recusa a solicitação (motivo) |
-| POST | `/orders/{id}/cancel` | Cancela (motivo) |
-| POST | `/orders/{id}/production` | `{ status }` — em produção / pronto / entregue |
-| GET | `/orders/{id}/history` | Histórico |
-| GET | `/orders/{id}/files/{fileId}` | Arquivo do pedido |
+| GET | `/orders?status=&q=&from=&to=&page=&size=` | ✅ Paginada (`{content, page, size, totalElements, totalPages}`); busca por nome, código (com/sem hífens) ou dígitos do WhatsApp |
+| GET | `/orders/counts` | ✅ Quantidade por situação comercial |
+| GET | `/orders/{id}` | ✅ Detalhe: dados, escolhas, topo, situações, `slotReserved`, arquivos, todas as versões de orçamento e histórico |
+| PUT | `/orders/{id}` | ✅ Edição pela proprietária (corpo do formulário + `version`); horário precisa existir na agenda; se o pedido ocupa vaga, ela é remarcada (409 `SLOT_FULL` se lotado). 409 `ORDER_CLOSED` em pedidos encerrados |
+| POST | `/orders/{id}/reject` | ✅ `{reason, version}` — só antes do aceite; orçamento pendente vira `SUPERSEDED` |
+| POST | `/orders/{id}/cancel` | ✅ `{reason, version}` — libera a vaga; pagamentos não são apagados |
+| POST | `/orders/{id}/production` | Fase 9 |
+| GET | `/orders/{id}/files/{fileId}` | ✅ Download com tipo detectado, `no-store`, imagem `inline` e PDF `attachment`; 404 se o arquivo não for do pedido |
 
 ### Orçamentos
 | Método | Rota | Descrição |
 |---|---|---|
-| POST | `/orders/{id}/quotes` | Cria rascunho (itens, validade, observações) |
-| PUT | `/orders/{id}/quotes/{quoteId}` | Edita rascunho |
-| POST | `/orders/{id}/quotes/{quoteId}/send` | Envia à cliente (torna imutável; anterior vira SUPERSEDED) |
-| GET | `/orders/{id}/quotes` | Todas as versões |
+| PUT | `/orders/{id}/quotes/draft` | ✅ Cria/atualiza o rascunho `{items:[{name, description, quantity, unitPrice}], notes, validityHours?}`; subtotais, total, sinal (50%, HALF_UP) e saldo calculados no servidor |
+| DELETE | `/orders/{id}/quotes/draft` | ✅ Descarta o rascunho |
+| POST | `/orders/{id}/quotes/send` | ✅ Envia: nova versão `SENT` com `validUntil`; a vigente anterior vira `SUPERSEDED`; pedido → `QUOTE_SENT`. 409 `QUOTE_EMPTY` sem itens/valor |
+| GET | `/orders/{id}/quotes` | ✅ Todas as versões (mais recente primeiro) |
 
 ### Pagamentos
 | Método | Rota | Descrição |

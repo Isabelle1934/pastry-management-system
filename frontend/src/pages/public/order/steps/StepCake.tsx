@@ -1,3 +1,4 @@
+import { useId } from 'react'
 import { TextAreaField } from '../../../../components/TextAreaField'
 import { TextField } from '../../../../components/TextField'
 import type { PublicOption } from '../../../../types/public'
@@ -52,12 +53,13 @@ function OptionGroup({ legend, name, options, selected, max, error, onChange }: 
   )
 }
 
-export function StepCake({ form, errors, update, catalog }: StepProps) {
+export function StepCake({ form, errors, update, catalog, allowPhotos = true }: StepProps) {
+  const titleId = useId()
   const size = catalog.sizes.find((s) => s.id === form.sizeId)
 
   return (
-    <section className={styles.card} aria-labelledby="step-title">
-      <h2 id="step-title">Seu bolo</h2>
+    <section className={styles.card} aria-labelledby={titleId}>
+      <h2 id={titleId}>Seu bolo</h2>
 
       <fieldset className={styles.fieldset}>
         <legend className={styles.legend}>Tamanho</legend>
@@ -132,14 +134,14 @@ export function StepCake({ form, errors, update, catalog }: StepProps) {
         error={errors.notes}
         maxLength={1000}
       />
-      <PhotoPicker
+      {allowPhotos && <PhotoPicker
         label="Fotos de referência (opcional)"
         hint={`Até ${MAX_REFERENCE_PHOTOS} fotos em JPG, PNG ou WEBP, com até 5 MB cada.`}
         photos={form.referencePhotos}
         max={MAX_REFERENCE_PHOTOS}
         error={errors.referencePhotos}
         onChange={(referencePhotos) => update({ referencePhotos })}
-      />
+      />}
     </section>
   )
 }

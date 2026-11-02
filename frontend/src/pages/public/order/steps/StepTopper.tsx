@@ -1,12 +1,14 @@
+import { useId } from 'react'
 import { TextField } from '../../../../components/TextField'
 import { PhotoPicker } from '../PhotoPicker'
 import type { StepProps } from './stepProps'
 import styles from '../order.module.css'
 
-export function StepTopper({ form, errors, update }: StepProps) {
+export function StepTopper({ form, errors, update, allowPhotos = true }: StepProps) {
+  const titleId = useId()
   return (
-    <section className={styles.card} aria-labelledby="step-title">
-      <h2 id="step-title">Topo de bolo</h2>
+    <section className={styles.card} aria-labelledby={titleId}>
+      <h2 id={titleId}>Topo de bolo</h2>
       <p className={styles.hint}>O topo é opcional e tem valor à parte, informado no orçamento.</p>
 
       <fieldset className={styles.fieldset}>
@@ -58,14 +60,14 @@ export function StepTopper({ form, errors, update }: StepProps) {
             error={errors.topperAge}
             maxLength={3}
           />
-          <PhotoPicker
+          {allowPhotos && <PhotoPicker
             label="Foto de referência do topo (opcional)"
             hint="1 foto em JPG, PNG ou WEBP, com até 5 MB."
             photos={form.topperPhoto ? [form.topperPhoto] : []}
             max={1}
             error={errors.topperPhoto}
             onChange={(photos) => update({ topperPhoto: photos[0] ?? null })}
-          />
+          />}
         </>
       )}
     </section>

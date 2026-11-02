@@ -26,6 +26,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import br.com.confeitaria.common.audit.ActorType;
 import br.com.confeitaria.common.exception.FieldValidationException;
+import br.com.confeitaria.common.exception.NotFoundException;
 import br.com.confeitaria.modules.file.StorageProperties;
 import br.com.confeitaria.modules.file.entity.FilePurpose;
 import br.com.confeitaria.modules.file.entity.FileType;
@@ -120,6 +121,22 @@ public class FileStorageService {
         StoredFile stored = new StoredFile(key, orderId, purpose, file.originalName(), file.type(), size, sha256,
                 uploadedBy, clock.instant());
         return repository.save(stored);
+    }
+
+    /** Arquivo de um pedido, para download autorizado. Nunca devolve arquivo de outro pedido. */
+    @Transactional(readOnly = true)
+    public StoredFile findForOrder(Long orderId, Long fileId) {
+        return repository.findById(fileId)
+                .filter(f -> f.getOrderId().equals(orderId) && f.getDeletedAt() == null)
+                .orElseThrow(() -> new NotFoundException("Arquivo não encontrado."));
+    }
+
+    public InputStream open(StoredFile file) {
+        try {
+            return Files.newInputStream(resolve(file.getStorageKey()));
+        } catch (IOException e) {
+            throw new NotFoundException("Arquivo não encontrado.");
+        }
     }
 
     private Path resolve(String key) {
