@@ -5,8 +5,8 @@ import { useLoader } from '../../../hooks/useLoader'
 import { listSizes, setSizeActive } from '../../../services/catalog'
 import type { CakeSize } from '../../../types/catalog'
 import { formatBRL } from '../../../utils/money'
-import styles from './catalog.module.css'
-import { describeSaveError } from './errors'
+import styles from '../panel.module.css'
+import { describeSaveError } from '../saveErrors'
 import { SizeForm } from './SizeForm'
 
 function sortSizes(sizes: CakeSize[]): CakeSize[] {

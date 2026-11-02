@@ -15,7 +15,7 @@ Uma única usuária administrativa e baixo volume não justificam microsserviço
 JWT exigiria guardar token no navegador (localStorage é vulnerável a XSS) ou montar refresh/revogação manualmente. Sessão com Spring Session JDBC permite logout real, revogação de todas as sessões após troca de senha e não expõe token ao JavaScript. Consequência: CSRF obrigatório (`CookieCsrfTokenRepository`), e frontend e API no mesmo domínio.
 
 ## ADR-004 — Capacidade da agenda por contador com UPDATE condicional
-**Status:** Proposta
+**Status:** Aceita (implementada na Fase 5; teste com 20 confirmações simultâneas para 3 vagas → exatamente 3)
 Alternativas: `SERIALIZABLE` (exige retentativas), *advisory locks* (mais opaco), contar reservas com `SELECT FOR UPDATE` (não trava linhas inexistentes). Escolha: tabela `slot_occupancy` com `UPDATE ... WHERE reserved_count < capacidade`, mais `slot_reservation` única por pedido. Atômico, simples de testar.
 
 ## ADR-005 — Processo agendado com @Scheduled + ShedLock
@@ -97,6 +97,14 @@ Tamanhos, massas e recheios serão referenciados por pedidos (Fase 6). Excluir q
 ## ADR-024 — Auditoria das configurações sem valores sensíveis
 **Status:** Aceita
 Mudanças de chave Pix, titular e e-mail de avisos são registradas como "alterado", sem o valor. Os demais campos guardam antes/depois.
+
+## ADR-025 — Datas e horários locais sem conversão de fuso
+**Status:** Aceita · 02/11/2026
+Retirada é `DATE` + `TIME` no fuso da confeitaria. A opção `hibernate.jdbc.time_zone=UTC` foi **removida**: ela fazia o Hibernate deslocar `LocalTime` em 3 horas (o teste de concorrência revelou o problema — "14:00" não era encontrado). Instantes (`TIMESTAMPTZ`/`Instant`) continuam absolutos. "Hoje" é sempre `LocalDate.ofInstant(clock.instant(), America/Sao_Paulo)`, no backend e no frontend (`utils/date.ts`), evitando a troca de dia perto da meia-noite.
+
+## ADR-026 — Reserva de vaga como serviço transacional reutilizável
+**Status:** Aceita
+`ReservationService.reserve/release` exigem a transação de quem chama (`MANDATORY`): a confirmação do sinal (Fase 8), o cancelamento e a remarcação ocupam/liberam a vaga atomicamente com a mudança do pedido. Remarcar libera a vaga antiga e ocupa a nova na mesma transação; se a nova estiver lotada, nada muda.
 
 ---
 

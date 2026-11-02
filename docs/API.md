@@ -25,7 +25,7 @@
 | GET | `/csrf` | ✅ Fase 3 — 204; emite o cookie `XSRF-TOKEN` (o frontend o envia de volta no header `X-XSRF-TOKEN`) |
 | GET | `/bakery` | ✅ Fase 4 — `{name, aboutText, whatsappContact, whatsappLink, instagram, address, pickupInstructions}`. Não expõe chave Pix, e-mail de avisos nem regras de orçamento |
 | GET | `/catalog` | ✅ Fase 4 — somente itens ativos: `sizes[{id, name, description, servings, basePrice, maxFlavors, maxFillings}]`, `flavors[{id, name, description}]`, `fillings[...]` |
-| GET | `/availability?from=&to=` | Datas e horários disponíveis (considera funcionamento, bloqueios, antecedência e ocupação) |
+| GET | `/availability?from=&to=` | ✅ Fase 5 — `{from, to, days:[{date, times:["14:00"]}]}`: só horários que podem ser escolhidos agora (sem contagens). Sem parâmetros: de hoje até 62 dias ou o limite configurado |
 | POST | `/orders` | Cria solicitação (multipart: JSON `order` + `referencePhotos[]` + `topperPhoto`). Retorna `trackingCode` |
 
 ## Acompanhamento — `/api/tracking`
@@ -68,9 +68,10 @@ Regras do catálogo: nome único por lista sem diferenciar maiúsculas (409 `DUP
 ### Agenda
 | Método | Rota | Descrição |
 |---|---|---|
-| GET/PUT | `/schedule/weekly` | Modelo semanal (dias, horários, capacidades) |
-| GET/POST | `/schedule/blocks` · DELETE `/schedule/blocks/{id}` | Bloqueios de data ou horário |
-| GET | `/schedule/calendar?from=&to=` | Visão de ocupação: capacidade, confirmados, solicitações por horário |
+| GET/PUT | `/schedule/rules` | ✅ `{minLeadTimeHours, maxBookingDaysAhead, version}` |
+| GET/POST | `/schedule/slots` · PUT/DELETE `/schedule/slots/{id}` | ✅ Modelo semanal `{dayOfWeek (1=seg…7=dom), startTime "HH:mm", capacity}`; PUT `{capacity, active, version}`. 409 `DUPLICATE_SLOT` |
+| GET/POST | `/schedule/blocks` · DELETE `/schedule/blocks/{id}` | ✅ `{date, startTime \| null (dia inteiro), reason}`. Resposta traz `confirmedOrders` (pedidos confirmados no período, que não são cancelados). 409 `DUPLICATE_BLOCK` |
+| GET | `/schedule/calendar?from=&to=` | ✅ Até 62 dias: por dia, `blockedAllDay` e `slots[{time, capacity, reserved, blocked, tooSoon, beyondLimit, bookable}]`. A contagem de solicitações sem sinal entra na Fase 6 |
 
 ### Pedidos
 | Método | Rota | Descrição |

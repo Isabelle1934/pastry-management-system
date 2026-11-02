@@ -10,10 +10,11 @@ export function AdminHomePage() {
     <section className={styles.panel}>
       <h1>Olá, {user?.name}!</h1>
       <p>
-        Você está no painel administrativo. Em <Link to="/admin/produtos">Produtos</Link> você cadastra tamanhos, massas e
-        recheios; em <Link to="/admin/configuracoes">Configurações</Link>, os dados da confeitaria.
+        Você está no painel administrativo. Em <Link to="/admin/agenda">Agenda</Link> você define os horários de
+        retirada; em <Link to="/admin/produtos">Produtos</Link>, tamanhos, massas e recheios; em{' '}
+        <Link to="/admin/configuracoes">Configurações</Link>, os dados da confeitaria.
       </p>
-      <p>Os módulos de agenda, pedidos, orçamentos e financeiro serão adicionados nas próximas etapas.</p>
+      <p>Os módulos de pedidos, orçamentos e financeiro serão adicionados nas próximas etapas.</p>
     </section>
   )
 }

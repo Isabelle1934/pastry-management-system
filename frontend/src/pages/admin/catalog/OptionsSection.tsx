@@ -6,8 +6,8 @@ import { TextField } from '../../../components/TextField'
 import { useLoader } from '../../../hooks/useLoader'
 import { listOptions, saveOption, setOptionActive } from '../../../services/catalog'
 import type { CatalogOption, OptionKind } from '../../../types/catalog'
-import styles from './catalog.module.css'
-import { describeSaveError } from './errors'
+import styles from '../panel.module.css'
+import { describeSaveError } from '../saveErrors'
 
 export interface OptionLabels {
   title: string

@@ -6,6 +6,7 @@ import { ChangePasswordPage } from '../pages/admin/ChangePasswordPage'
 import { ForgotPasswordPage } from '../pages/admin/ForgotPasswordPage'
 import { LoginPage } from '../pages/admin/LoginPage'
 import { ResetPasswordPage } from '../pages/admin/ResetPasswordPage'
+import { SchedulePage } from '../pages/admin/schedule/SchedulePage'
 import { SettingsPage } from '../pages/admin/SettingsPage'
 import { NotFoundPage } from '../pages/NotFoundPage'
 import { SystemStatusPage } from '../pages/SystemStatusPage'
@@ -41,6 +42,7 @@ export const router = createBrowserRouter([
     ),
     children: [
       { index: true, element: <AdminHomePage /> },
+      { path: 'agenda', element: <SchedulePage /> },
       { path: 'produtos', element: <CatalogPage /> },
       { path: 'configuracoes', element: <SettingsPage /> },
       { path: 'trocar-senha', element: <ChangePasswordPage /> },

@@ -6,8 +6,8 @@ import { TextField } from '../../../components/TextField'
 import { saveSize } from '../../../services/catalog'
 import type { CakeSize } from '../../../types/catalog'
 import { parseMoneyInput, toMoneyInput } from '../../../utils/money'
-import styles from './catalog.module.css'
-import { describeSaveError } from './errors'
+import styles from '../panel.module.css'
+import { describeSaveError } from '../saveErrors'
 
 interface SizeFormProps {
   size?: CakeSize

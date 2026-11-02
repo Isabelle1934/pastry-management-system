@@ -2,7 +2,7 @@
 
 Plataforma web para centralizar encomendas personalizadas de bolos: a cliente faz a solicitação por um formulário público e acompanha o pedido por um código; a proprietária gerencia agenda, orçamentos, pagamentos, produção e financeiro em um painel administrativo.
 
-> **Status atual:** Fase 4 concluída — painel com autenticação, cadastro de produtos (tamanhos, massas, recheios) e configurações da confeitaria. Próxima: agenda. Veja [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md).
+> **Status atual:** Fase 5 concluída — painel com autenticação, produtos, configurações e agenda (horários, bloqueios, regras e controle de vagas). Próxima: encomendas públicas. Veja [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md).
 
 ## Documentação
 

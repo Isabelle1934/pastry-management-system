@@ -53,6 +53,12 @@ public class BakerySettings {
     @Column(name = "owner_notification_email", length = 254)
     private String ownerNotificationEmail;
 
+    @Column(name = "min_lead_time_hours", nullable = false)
+    private int minLeadTimeHours;
+
+    @Column(name = "max_booking_days_ahead", nullable = false)
+    private int maxBookingDaysAhead;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -89,6 +95,11 @@ public class BakerySettings {
 
     public void updateNotifications(String ownerNotificationEmail) {
         this.ownerNotificationEmail = ownerNotificationEmail;
+    }
+
+    public void updateScheduling(int minLeadTimeHours, int maxBookingDaysAhead) {
+        this.minLeadTimeHours = minLeadTimeHours;
+        this.maxBookingDaysAhead = maxBookingDaysAhead;
     }
 
     public String getName() {
@@ -133,6 +144,14 @@ public class BakerySettings {
 
     public String getOwnerNotificationEmail() {
         return ownerNotificationEmail;
+    }
+
+    public int getMinLeadTimeHours() {
+        return minLeadTimeHours;
+    }
+
+    public int getMaxBookingDaysAhead() {
+        return maxBookingDaysAhead;
     }
 
     public Instant getUpdatedAt() {

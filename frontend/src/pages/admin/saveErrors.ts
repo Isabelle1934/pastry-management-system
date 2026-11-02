@@ -1,4 +1,4 @@
-import { ApiError } from '../../../services/api'
+import { ApiError } from '../../services/api'
 
 export interface SaveFailure {
   /** Mensagem geral para exibir no topo do formulário. */

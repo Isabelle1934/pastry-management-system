@@ -8,8 +8,8 @@ import { useLoader } from '../../hooks/useLoader'
 import { getSettings, saveSettings } from '../../services/settings'
 import type { BakerySettings } from '../../types/settings'
 import { validateEmail } from '../../utils/validation'
-import styles from './catalog/catalog.module.css'
-import { describeSaveError } from './catalog/errors'
+import styles from './panel.module.css'
+import { describeSaveError } from './saveErrors'
 
 type Field =
   | 'name'

@@ -39,7 +39,7 @@ Documentos em `docs/`, diagnóstico, pendências.
 - CRUD de tamanhos/massas/recheios (desativação), configurações da confeitaria, telas administrativas.
 - **Testes:** validações, limites de seleção, desativação preserva pedidos.
 
-### Fase 5 — Agenda
+### Fase 5 — Agenda ✅ (02/11/2026)
 - Modelo semanal, bloqueios, antecedência, cálculo de disponibilidade, `slot_occupancy`/`slot_reservation`, serviço de reserva/liberação.
 - **Testes:** geração de horários (incluindo fuso e virada de dia), bloqueios, **teste de concorrência** com N threads confirmando no mesmo horário com capacidade K → exatamente K sucessos.
 

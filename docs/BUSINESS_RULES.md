@@ -46,14 +46,16 @@ Cada pagamento individual tem seu próprio status: `PENDING_REVIEW`, `CONFIRMED`
 ### Situação da produção (`cake_order.production_status`)
 `NOT_STARTED → IN_PRODUCTION → READY → DELIVERED`. Só pode sair de `NOT_STARTED` com pedido `CONFIRMED`. `DELIVERED` exige `READY`. **[PENDENTE]** entregar sem saldo quitado: padrão = permitido com aviso visível de saldo em aberto.
 
-## 3. Agenda e disponibilidade
+## 3. Agenda e disponibilidade (✅ implementada na Fase 5)
 
 - Horários oferecidos = modelo semanal ativo do dia − bloqueios (dia inteiro ou horário) − horários antes da antecedência mínima − horários além do limite máximo de dias (se configurado) − horários com `reserved_count >= capacity`.
 - **Uma solicitação não reserva capacidade.** Vários pedidos podem solicitar o mesmo horário; o painel mostra quantas solicitações existem por horário.
 - A capacidade só é ocupada na **confirmação do sinal**.
 - Bloquear data/horário não cancela pedidos já confirmados; o painel avisa sobre conflitos.
 - Reduzir a capacidade abaixo do já reservado é permitido, mas não remove reservas existentes (o horário apenas deixa de aceitar novas confirmações).
-- O horário escolhido é validado no backend no envio da solicitação e novamente na confirmação.
+- O horário escolhido é validado no backend no envio da solicitação (`AvailabilityService.isBookable`) e novamente na confirmação (`ReservationService.reserve`).
+- Na confirmação **não** se aplica a antecedência mínima (ela vale para a cliente escolher o horário); aplicam-se horário existente/ativo, bloqueios e limite.
+- Valores padrão editáveis: antecedência mínima de 24 h e agendamento até 90 dias à frente.
 
 ### Controle de concorrência na confirmação do sinal
 Em uma única transação:

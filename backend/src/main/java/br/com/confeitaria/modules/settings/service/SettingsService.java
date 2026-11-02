@@ -33,6 +33,11 @@ public class SettingsService {
                 .orElseThrow(() -> new IllegalStateException("Linha de configurações ausente (migration V2)."));
     }
 
+    /** Grava alterações feitas na entidade por outros módulos (ex.: regras da agenda). */
+    public void flush() {
+        repository.flush();
+    }
+
     @Transactional(readOnly = true)
     public SettingsResponse get() {
         return SettingsResponse.from(current());

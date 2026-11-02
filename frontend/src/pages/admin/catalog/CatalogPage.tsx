@@ -1,5 +1,5 @@
 import { useSearchParams } from 'react-router'
-import styles from './catalog.module.css'
+import styles from '../panel.module.css'
 import { OptionsSection, type OptionLabels } from './OptionsSection'
 import { SizesSection } from './SizesSection'
 

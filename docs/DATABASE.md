@@ -120,7 +120,7 @@ Uma despesa é um único registro: o vínculo com pedido é apenas um atributo �
 |---|---|
 | V1 ✅ | admin_user, password_reset_token, spring_session, audit_log, shedlock, função `prevent_history_modification()` |
 | V2 ✅ | bakery_settings (linha única id=1, textos vazios; validade 48 h e aviso 12 h como padrão editável), cake_size, cake_flavor, cake_filling (nomes únicos por `lower(name)`) |
-| V3 | agenda: weekly_slot, schedule_block, slot_occupancy, slot_reservation |
+| V3 ✅ | agenda: weekly_slot, schedule_block (`UNIQUE NULLS NOT DISTINCT`), slot_occupancy, slot_reservation (FK para cake_order criada na V4); `min_lead_time_hours` (24) e `max_booking_days_ahead` (90) em bakery_settings |
 | V4 | pedidos: cake_order, order_flavor, order_filling, cake_topper, order_history, stored_file |
 | V5 | quote, quote_item |
 | V6 | payment |
