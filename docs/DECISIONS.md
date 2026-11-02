@@ -126,6 +126,10 @@ Fotos de celular podem conter localização (EXIF/GPS). Remover exigiria recodif
 **Status:** Aceita
 Além das regras na entidade, triggers no PostgreSQL impedem alterar itens/valores ou excluir um orçamento depois de enviado. Índices únicos parciais garantem no máximo um orçamento vigente e um rascunho por pedido.
 
+## ADR-032 — Pagamentos, prazos e avisos (Fase 8)
+**Status:** Aceita · 02/11/2026
+Pagamentos (sinal, saldo, reembolso) nunca são apagados nem alterados após análise (triggers). Confirmar o sinal confirma o pedido e ocupa a vaga na mesma transação (SLOT_FULL desfaz tudo). Processo agendado a cada 5 min com ShedLock 7.10.1: aviso e vencimento de orçamentos, prazo do sinal (P4: padrão 48 h; com comprovante em análise ou valor recebido, só avisa), reenvio de e-mails. Avisos idempotentes por `dedup_key`. P7: reembolso registrado manualmente. Jackson 3 recusa `boolean` ausente no JSON — campos opcionais usam `Boolean`.
+
 ---
 
 ## Pendências — decisões que dependem da proprietária
@@ -135,10 +139,10 @@ Além das regras na entidade, triggers no PostgreSQL impedem alterar itens/valor
 | P1 | **Identidade visual:** logo (SVG/PNG), fontes oficiais, códigos exatos das cores, fotos dos produtos | — (não será inventada). Área pública pronta com visual neutro provisório; nome e apresentação já vêm de Configurações | Antes da implantação (Fase 11) |
 | P2 | **Hospedagem** | VPS de baixo custo com Docker Compose | Fase 12 |
 | P3 | **E-mail** (recuperação de senha e avisos): provedor SMTP e domínio/remetente | Provedor SMTP com plano gratuito; Mailpit no desenvolvimento (✅ configurado) | Fase 12 (produção) |
-| P4 | **Prazo para pagamento do sinal** após o aceite do orçamento | Configurável, com aviso e cancelamento automático (exceto com comprovante em análise) | Fase 8 |
+| P4 | **Prazo para pagamento do sinal** | ✅ Configurável (padrão 48 h; em branco = sem prazo) | — |
 | P5 | **Edição da cliente com orçamento já enviado** | ✅ Orçamento invalidado e pedido volta para análise (proposta padrão) | — |
 | P6 | **Limite de massas/recheios** | ✅ Implementado por tamanho (proposta padrão) — pode ser revisto | — |
-| P7 | **Cancelamento com sinal já pago** (reembolso, retenção) | Registrar manualmente; capacidade liberada; sem regra automática de reembolso | Fase 8 |
+| P7 | **Cancelamento com sinal já pago** | ✅ Vaga liberada; reembolso registrado manualmente | — |
 | P8 | **Entregar com saldo em aberto** | Permitido, com aviso visível | Fase 9 |
 | P9 | **Lucro estimado** | Previsto − despesas, mostrando também recebido − despesas | Fase 10 |
 | P10 | **Decoração** | ✅ Texto livre + foto (proposta padrão) | — |

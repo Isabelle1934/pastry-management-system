@@ -37,8 +37,8 @@
 | PUT | `/order` | ✅ Edição (agendamento, personalização, topo; sem fotos) com `version`. Só em `PENDING_REVIEW`/`QUOTE_SENT` (409 `ORDER_NOT_EDITABLE`); se havia orçamento enviado, ele vira `SUPERSEDED` e o pedido volta a `PENDING_REVIEW` |
 | POST | `/order/quotes/{quoteId}/accept` | ✅ Aceita a versão vigente → pedido `AWAITING_DEPOSIT` (não ocupa vaga). 409 `QUOTE_EXPIRED` após a validade |
 | POST | `/order/quotes/{quoteId}/decline` | ✅ `{reason?}` → pedido `DECLINED_BY_CLIENT` |
-| POST | `/order/payments/deposit-proof` | Fase 8 — envia comprovante do sinal (multipart) |
-| GET | `/order/files/{fileId}` | Fase 8 |
+| POST | `/order/payments/deposit-proof` | ✅ Multipart `proof` (JPG/PNG/PDF, conteúdo real validado, até 5 MB) e `amount?` (padrão: valor do sinal). Só em `AWAITING_DEPOSIT` e sem outro comprovante em análise (409 `PROOF_ALREADY_SUBMITTED`); cria pagamento `PENDING_REVIEW` e aviso à proprietária |
+| GET | `/order/files/{fileId}` | ✅ Download de comprovantes do próprio pedido (`no-store`); 404 para arquivos de outro pedido ou fotos internas |
 | POST | `/logout` | ✅ Encerra o acesso ao pedido |
 
 ## Administrativos — `/api/admin` (autenticação obrigatória)
@@ -96,10 +96,10 @@ Regras do catálogo: nome único por lista sem diferenciar maiúsculas (409 `DUP
 ### Pagamentos
 | Método | Rota | Descrição |
 |---|---|---|
-| GET | `/orders/{id}/payments` | Histórico e resumo (total, sinal, recebido, saldo) |
-| POST | `/orders/{id}/payments` | Registra pagamento pela proprietária (ex.: dinheiro, saldo na retirada) |
-| POST | `/payments/{paymentId}/confirm` | Confirma — no caso do sinal, confirma o pedido e reserva a capacidade |
-| POST | `/payments/{paymentId}/reject` | Rejeita comprovante (motivo) |
+| GET | `/orders/{id}/payments` | ✅ `{total, depositAmount, received, balanceDue, status, proofUnderReview, payments[]}` (o mesmo resumo vem em `GET /orders/{id}` → `payments`). Valores em string decimal |
+| POST | `/orders/{id}/payments` | ✅ `{kind: DEPOSIT\|BALANCE\|REFUND, method: PIX\|CASH, amount, notes?, acceptAsDeposit?}` — registrado já `CONFIRMED`. Se o recebido atingir o sinal (ou `acceptAsDeposit`), o pedido em `AWAITING_DEPOSIT` vai a `CONFIRMED` e reserva a vaga (409 `SLOT_FULL` se lotado). Reembolso não pode passar do recebido |
+| POST | `/payments/{paymentId}/confirm` | ✅ `{note?, acceptAsDeposit?}` — confirma comprovante em análise; mesma regra de confirmação do pedido |
+| POST | `/payments/{paymentId}/reject` | ✅ `{reason}` — rejeita comprovante; a cliente pode enviar outro |
 
 ### Financeiro, dashboard e avisos
 | Método | Rota | Descrição |
@@ -108,6 +108,8 @@ Regras do catálogo: nome único por lista sem diferenciar maiúsculas (409 `DUP
 | GET/POST | `/finance/expenses` · PUT/DELETE `/finance/expenses/{id}` | Despesas (exclusão lógica) |
 | GET/POST | `/finance/categories` · PUT `/finance/categories/{id}` | Categorias |
 | GET | `/dashboard` | Indicadores gerais |
-| GET | `/notifications?unread=true` · POST `/notifications/{id}/read` | Avisos |
+| GET | `/notifications?unread=&limit=` | ✅ Avisos mais recentes (padrão 30, máx. 100) |
+| GET | `/notifications/unread-count` | ✅ `{count}` |
+| POST | `/notifications/{id}/read` · `/notifications/read-all` | ✅ Marca como lido |
 
 Este documento será atualizado com os contratos exatos (DTOs) conforme cada fase for implementada.

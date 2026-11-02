@@ -13,6 +13,8 @@ import br.com.confeitaria.common.validation.WhatsAppNumber;
 import br.com.confeitaria.modules.file.entity.FilePurpose;
 import br.com.confeitaria.modules.file.service.FileStorageService;
 import br.com.confeitaria.modules.file.service.FileStorageService.ValidatedFile;
+import br.com.confeitaria.modules.notification.entity.NotificationType;
+import br.com.confeitaria.modules.notification.service.NotificationService;
 import br.com.confeitaria.modules.order.dto.PublicOrderDtos.OrderCreatedResponse;
 import br.com.confeitaria.modules.order.dto.PublicOrderDtos.OrderRequest;
 import br.com.confeitaria.modules.order.entity.CakeOrder;
@@ -33,14 +35,17 @@ public class OrderCreationService {
     private final FileStorageService files;
     private final OrderHistoryService history;
     private final OrderRateLimiter rateLimiter;
+    private final NotificationService notifications;
 
     public OrderCreationService(CakeOrderRepository orders, OrderDetailsApplier detailsApplier,
-            FileStorageService files, OrderHistoryService history, OrderRateLimiter rateLimiter) {
+            FileStorageService files, OrderHistoryService history, OrderRateLimiter rateLimiter,
+            NotificationService notifications) {
         this.orders = orders;
         this.detailsApplier = detailsApplier;
         this.files = files;
         this.history = history;
         this.rateLimiter = rateLimiter;
+        this.notifications = notifications;
     }
 
     @Transactional
@@ -77,6 +82,10 @@ public class OrderCreationService {
         history.record(order.getId(), "CREATED", ActorType.CLIENT, "Solicitação enviada pela cliente.",
                 Map.of("photos", validPhotos.size() + (validTopperPhoto == null ? 0 : 1)));
 
+        notifications.notify(NotificationType.NEW_ORDER, order.getId(),
+                "Nova encomenda de " + name.split(" ")[0] + " para " + order.getPickupDate() + " às "
+                        + order.getPickupTime() + ".",
+                "NEW_ORDER:" + order.getId());
         return new OrderCreatedResponse(TrackingCodes.format(order.getTrackingCode()));
     }
 

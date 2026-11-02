@@ -29,18 +29,21 @@ public final class SettingsDtos {
             @NotNull(message = "Informe a antecedência do aviso.")
             @Min(value = 1, message = "Mínimo de 1 hora.") @Max(value = 719, message = "Máximo de 719 horas.")
             Integer quoteExpiryWarningHours,
+            @Min(value = 1, message = "Mínimo de 1 hora.") @Max(value = 720, message = "Máximo de 720 horas (30 dias).")
+            Integer depositDeadlineHours,
             @Email(message = "E-mail inválido.") @Size(max = 254) String ownerNotificationEmail,
             @NotNull(message = "Versão obrigatória.") Long version) {
     }
 
     public record SettingsResponse(String name, String aboutText, String whatsappContact, String instagram,
             String address, String pickupInstructions, String pixKey, String pixHolderName, int quoteValidityHours,
-            int quoteExpiryWarningHours, String ownerNotificationEmail, long version) {
+            int quoteExpiryWarningHours, Integer depositDeadlineHours, String ownerNotificationEmail, long version) {
 
         public static SettingsResponse from(BakerySettings s) {
             return new SettingsResponse(s.getName(), s.getAboutText(), WhatsAppNumber.format(s.getWhatsappContact()),
                     s.getInstagram(), s.getAddress(), s.getPickupInstructions(), s.getPixKey(), s.getPixHolderName(),
-                    s.getQuoteValidityHours(), s.getQuoteExpiryWarningHours(), s.getOwnerNotificationEmail(),
+                    s.getQuoteValidityHours(), s.getQuoteExpiryWarningHours(), s.getDepositDeadlineHours(),
+                    s.getOwnerNotificationEmail(),
                     s.getVersion());
         }
     }

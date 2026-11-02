@@ -16,6 +16,7 @@ import {
 import panel from '../panel.module.css'
 import { describeSaveError } from '../saveErrors'
 import { OrderEditForm } from './OrderEditForm'
+import { PaymentsPanel } from './PaymentsPanel'
 import styles from './orders.module.css'
 import { QuotePanel } from './QuotePanel'
 import { StatusChip } from './StatusChip'
@@ -201,6 +202,7 @@ export function OrderDetailPage() {
         </section>
 
         <QuotePanel order={order} onChanged={refresh} />
+        <PaymentsPanel order={order} onChanged={refresh} />
 
         <section className={`${styles.section} ${styles.wide}`}>
           <h2>Histórico</h2>

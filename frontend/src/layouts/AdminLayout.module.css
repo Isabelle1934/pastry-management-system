@@ -89,3 +89,16 @@
   margin: 0 auto;
   padding: var(--space-4) var(--space-3);
 }
+
+.badge {
+  margin-left: var(--space-1);
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--color-danger);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 20px;
+  text-align: center;
+}

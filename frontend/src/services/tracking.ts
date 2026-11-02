@@ -27,6 +27,17 @@ export function declineQuote(quoteId: number, reason: string): Promise<TrackingV
   return apiFetch<TrackingView>(`/tracking/order/quotes/${quoteId}/decline`, { json: { reason } })
 }
 
+export function submitDepositProof(file: File): Promise<TrackingView> {
+  const form = new FormData()
+  form.append('proof', file)
+  return apiFetch<TrackingView>('/tracking/order/payments/deposit-proof', { method: 'POST', body: form })
+}
+
+/** Arquivo do próprio pedido (ex.: comprovante enviado). */
+export function trackingFileUrl(fileId: number): string {
+  return `/api/tracking/order/files/${fileId}`
+}
+
 export function leaveTracking(): Promise<void> {
   return apiFetch<void>('/tracking/logout', { method: 'POST' })
 }

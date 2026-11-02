@@ -1,17 +1,21 @@
 package br.com.confeitaria.support;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
 
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.boot.test.context.TestComponent;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import br.com.confeitaria.modules.order.dto.PublicOrderDtos.OrderRequest;
 import br.com.confeitaria.modules.order.service.OrderCreationService;
 import br.com.confeitaria.modules.order.service.OrderRateLimiter;
+import br.com.confeitaria.modules.quote.dto.QuoteDtos.DraftRequest;
+import br.com.confeitaria.modules.quote.dto.QuoteDtos.ItemRequest;
+import br.com.confeitaria.modules.quote.service.QuoteService;
 import br.com.confeitaria.modules.schedule.ScheduleTestSupport;
 
 /**
@@ -37,19 +41,22 @@ public class OrderFixtures {
     private final MutableClock clock;
     private final OrderCreationService creation;
     private final OrderRateLimiter rateLimiter;
+    private final QuoteService quotes;
 
     public OrderFixtures(JdbcTemplate jdbc, MutableClock clock, OrderCreationService creation,
-            OrderRateLimiter rateLimiter) {
+            OrderRateLimiter rateLimiter, QuoteService quotes) {
         this.jdbc = jdbc;
         this.clock = clock;
         this.creation = creation;
         this.rateLimiter = rateLimiter;
+        this.quotes = quotes;
     }
 
     /** Reinicia relógio e agenda e cria um catálogo novo (nomes únicos). */
     public Catalog prepare() {
         clock.set(NOW);
         rateLimiter.clear();
+        jdbc.update("update bakery_settings set deposit_deadline_hours = 48, quote_expiry_warning_hours = 12");
         ScheduleTestSupport schedule = new ScheduleTestSupport(jdbc);
         schedule.reset(24, 90);
         schedule.slot(2, "14:00", 3, true);
@@ -77,6 +84,23 @@ public class OrderFixtures {
         Long orderId = jdbc.queryForObject("select id from cake_order where tracking_code = ?", Long.class,
                 code.replace("-", ""));
         return new CreatedOrder(orderId, code);
+    }
+
+    /** Pedido com orçamento de R$ 165,00 (sinal R$ 82,50) enviado e aceito → aguardando o sinal. */
+    public CreatedOrder acceptedOrder(Catalog catalog) {
+        CreatedOrder order = create(catalog);
+        long quoteId = sendQuote(order.id());
+        quotes.accept(order.id(), quoteId);
+        return order;
+    }
+
+    /** Envia um orçamento de R$ 120 + R$ 25 + R$ 20 = R$ 165,00 e devolve o id. */
+    public long sendQuote(long orderId) {
+        quotes.saveDraft(orderId, new DraftRequest(List.of(
+                new ItemRequest("Bolo personalizado", null, BigDecimal.ONE, new BigDecimal("120.00")),
+                new ItemRequest("Decoração especial", null, BigDecimal.ONE, new BigDecimal("25.00")),
+                new ItemRequest("Topo personalizado", null, BigDecimal.ONE, new BigDecimal("20.00"))), null, 48));
+        return quotes.send(orderId, 1L).id();
     }
 
     private long id(String sql, String name) {

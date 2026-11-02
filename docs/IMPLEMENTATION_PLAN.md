@@ -51,7 +51,7 @@ Documentos em `docs/`, diagnóstico, pendências.
 - Lista/detalhe/edição/recusa/cancelamento, histórico, orçamentos com itens, versões, envio, aceite/recusa pela cliente, verificação do acompanhamento.
 - **Testes:** cálculo de totais e sinal, imutabilidade após envio, versões, transições inválidas.
 
-### Fase 8 — Pagamentos e acompanhamento
+### Fase 8 — Pagamentos e acompanhamento ✅ (02/11/2026 — área da cliente verificada no navegador; telas do painel ainda sem verificação manual)
 - Comprovante do sinal, confirmação/rejeição, registro manual, resumo financeiro do pedido, página de acompanhamento completa, processo agendado de vencimento e avisos por e-mail.
 - **Testes:** confirmação reserva capacidade, horário lotado, pagamentos preservados ao revisar orçamento, job idempotente (executar duas vezes = mesmo resultado).
 

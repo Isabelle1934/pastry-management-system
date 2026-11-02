@@ -59,6 +59,10 @@ public class BakerySettings {
     @Column(name = "max_booking_days_ahead", nullable = false)
     private int maxBookingDaysAhead;
 
+    /** Horas após o aceite para pagar o sinal; {@code null} = sem prazo. */
+    @Column(name = "deposit_deadline_hours")
+    private Integer depositDeadlineHours;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -88,9 +92,10 @@ public class BakerySettings {
         this.pixHolderName = pixHolderName;
     }
 
-    public void updateQuotes(int quoteValidityHours, int quoteExpiryWarningHours) {
+    public void updateQuotes(int quoteValidityHours, int quoteExpiryWarningHours, Integer depositDeadlineHours) {
         this.quoteValidityHours = quoteValidityHours;
         this.quoteExpiryWarningHours = quoteExpiryWarningHours;
+        this.depositDeadlineHours = depositDeadlineHours;
     }
 
     public void updateNotifications(String ownerNotificationEmail) {
@@ -144,6 +149,10 @@ public class BakerySettings {
 
     public String getOwnerNotificationEmail() {
         return ownerNotificationEmail;
+    }
+
+    public Integer getDepositDeadlineHours() {
+        return depositDeadlineHours;
     }
 
     public int getMinLeadTimeHours() {

@@ -9,6 +9,7 @@ import br.com.confeitaria.modules.order.dto.OrderAdminDtos.Choice;
 import br.com.confeitaria.modules.order.entity.CommercialStatus;
 import br.com.confeitaria.modules.order.entity.PaymentStatus;
 import br.com.confeitaria.modules.order.entity.ProductionStatus;
+import br.com.confeitaria.modules.payment.entity.Payment;
 import br.com.confeitaria.modules.quote.dto.QuoteDtos.ItemView;
 import br.com.confeitaria.modules.quote.entity.QuoteStatus;
 import jakarta.validation.constraints.NotBlank;
@@ -31,6 +32,16 @@ public final class TrackingDtos {
             BigDecimal depositAmount, BigDecimal balanceAmount, String notes, Instant validUntil) {
     }
 
+    public record ClientPaymentEntry(Payment.Kind kind, BigDecimal amount, Payment.Status status, String reviewNote,
+            Instant createdAt, Long proofFileId) {
+    }
+
+    /** {@code pixKey} só é preenchida quando há algo a pagar. */
+    public record ClientPayment(BigDecimal total, BigDecimal depositAmount, BigDecimal received, BigDecimal balanceDue,
+            PaymentStatus status, String pixKey, String pixHolderName, boolean canSubmitProof,
+            List<ClientPaymentEntry> payments) {
+    }
+
     /**
      * Visão da cliente: sem dados internos (ids do banco, histórico, observações da proprietária).
      * O WhatsApp aparece mascarado.
@@ -40,6 +51,6 @@ public final class TrackingDtos {
             String decoration, String cakeText, String notes, boolean topperRequested, String topperTheme,
             String topperName, Short topperAge, int photoCount, CommercialStatus commercialStatus,
             PaymentStatus paymentStatus, ProductionStatus productionStatus, boolean editable, long version,
-            ClientQuote quote) {
+            ClientQuote quote, ClientPayment payment) {
     }
 }

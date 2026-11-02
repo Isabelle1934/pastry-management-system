@@ -203,6 +203,11 @@ public class CakeOrder extends BaseEntity {
         }
     }
 
+    /** Situação consolidada dos pagamentos — calculada pelo PaymentService a cada mudança. */
+    public void updatePaymentStatus(PaymentStatus status) {
+        this.paymentStatus = Objects.requireNonNull(status);
+    }
+
     /** Situações finais: nada mais pode ser alterado. */
     public boolean isClosed() {
         return TRANSITIONS.get(commercialStatus).isEmpty();

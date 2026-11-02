@@ -16,6 +16,7 @@ import br.com.confeitaria.modules.order.entity.OrderHistory;
 import br.com.confeitaria.modules.order.entity.PaymentStatus;
 import br.com.confeitaria.modules.order.entity.ProductionStatus;
 import br.com.confeitaria.modules.order.service.TrackingCodes;
+import br.com.confeitaria.modules.payment.dto.PaymentDtos.PaymentSummary;
 import br.com.confeitaria.modules.quote.dto.QuoteDtos.QuoteView;
 import br.com.confeitaria.modules.quote.entity.Quote;
 import jakarta.validation.constraints.NotBlank;
@@ -72,8 +73,8 @@ public final class OrderAdminDtos {
             boolean topperRequested, String topperTheme, String topperName, Short topperAge,
             CommercialStatus commercialStatus, PaymentStatus paymentStatus, ProductionStatus productionStatus,
             Instant cancelledAt, String cancellationReason, ActorType cancelledBy, boolean slotReserved,
-            List<FileInfo> files, List<QuoteView> quotes, List<HistoryEntry> history, Instant createdAt,
-            Instant updatedAt) {
+            List<FileInfo> files, List<QuoteView> quotes, PaymentSummary payments, List<HistoryEntry> history,
+            Instant createdAt, Instant updatedAt) {
     }
 
     public record ReasonRequest(

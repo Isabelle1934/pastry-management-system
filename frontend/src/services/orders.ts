@@ -3,6 +3,9 @@ import type {
   OrderDetail,
   OrderSummary,
   Page,
+  PaymentKind,
+  PaymentMethod,
+  PaymentSummary,
   Quote,
   QuoteItemInput,
 } from '../types/order'
@@ -64,4 +67,19 @@ export function deleteQuoteDraft(orderId: number): Promise<void> {
 
 export function sendQuote(orderId: number): Promise<Quote> {
   return apiFetch<Quote>(`${BASE}/${orderId}/quotes/send`, { method: 'POST' })
+}
+
+export function registerPayment(
+  orderId: number,
+  payment: { kind: PaymentKind; method: PaymentMethod; amount: string; notes: string; acceptAsDeposit: boolean },
+): Promise<PaymentSummary> {
+  return apiFetch<PaymentSummary>(`${BASE}/${orderId}/payments`, { json: payment })
+}
+
+export function confirmPayment(paymentId: number, acceptAsDeposit: boolean): Promise<PaymentSummary> {
+  return apiFetch<PaymentSummary>(`/admin/payments/${paymentId}/confirm`, { json: { acceptAsDeposit } })
+}
+
+export function rejectPayment(paymentId: number, reason: string): Promise<PaymentSummary> {
+  return apiFetch<PaymentSummary>(`/admin/payments/${paymentId}/reject`, { json: { reason } })
 }

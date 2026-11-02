@@ -13,6 +13,8 @@ import org.springframework.transaction.annotation.Transactional;
 import br.com.confeitaria.common.audit.ActorType;
 import br.com.confeitaria.common.exception.ConflictException;
 import br.com.confeitaria.common.exception.NotFoundException;
+import br.com.confeitaria.modules.notification.entity.NotificationType;
+import br.com.confeitaria.modules.notification.service.NotificationService;
 import br.com.confeitaria.modules.order.entity.CakeOrder;
 import br.com.confeitaria.modules.order.entity.CommercialStatus;
 import br.com.confeitaria.modules.order.repository.CakeOrderRepository;
@@ -41,14 +43,16 @@ public class QuoteService {
     private final CakeOrderRepository orders;
     private final OrderHistoryService history;
     private final SettingsService settings;
+    private final NotificationService notifications;
     private final Clock clock;
 
     public QuoteService(QuoteRepository quotes, CakeOrderRepository orders, OrderHistoryService history,
-            SettingsService settings, Clock clock) {
+            SettingsService settings, NotificationService notifications, Clock clock) {
         this.quotes = quotes;
         this.orders = orders;
         this.history = history;
         this.settings = settings;
+        this.notifications = notifications;
         this.clock = clock;
     }
 
@@ -119,6 +123,10 @@ public class QuoteService {
         history.record(orderId, "QUOTE_ACCEPTED", ActorType.CLIENT,
                 "Orçamento versão " + quote.getVersionNumber() + " aceito pela cliente.",
                 Map.of("version", quote.getVersionNumber(), "total", quote.getTotal().toPlainString()));
+        notifications.notify(NotificationType.QUOTE_ACCEPTED, orderId,
+                order.getCustomerName().split(" ")[0] + " aceitou o orçamento de R$ " + quote.getTotal().toPlainString()
+                        + ". Aguardando o sinal de R$ " + quote.getDepositAmount().toPlainString() + ".",
+                "QUOTE_ACCEPTED:" + quote.getId());
         return QuoteView.from(quote);
     }
 
@@ -133,6 +141,10 @@ public class QuoteService {
         history.record(orderId, "QUOTE_DECLINED", ActorType.CLIENT,
                 "Orçamento versão " + quote.getVersionNumber() + " recusado pela cliente.",
                 reason == null || reason.isBlank() ? null : Map.of("reason", reason.strip()));
+        notifications.notify(NotificationType.QUOTE_DECLINED, orderId,
+                order.getCustomerName().split(" ")[0] + " recusou o orçamento"
+                        + (reason == null || reason.isBlank() ? "." : ": " + reason.strip()),
+                "QUOTE_DECLINED:" + quote.getId());
         return QuoteView.from(quote);
     }
 

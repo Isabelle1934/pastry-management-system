@@ -87,6 +87,34 @@ export interface HistoryEntry {
   createdAt: string
 }
 
+export type PaymentKind = 'DEPOSIT' | 'BALANCE' | 'REFUND'
+export type PaymentMethod = 'PIX' | 'CASH'
+export type PaymentRecordStatus = 'PENDING_REVIEW' | 'CONFIRMED' | 'REJECTED'
+
+export interface PaymentRecord {
+  id: number
+  kind: PaymentKind
+  method: PaymentMethod
+  amount: Money
+  status: PaymentRecordStatus
+  proofFileId: number | null
+  submittedBy: Actor
+  notes: string | null
+  reviewNote: string | null
+  reviewedAt: string | null
+  createdAt: string
+}
+
+export interface PaymentSummary {
+  total: Money | null
+  depositAmount: Money | null
+  received: Money
+  balanceDue: Money | null
+  status: PaymentStatus
+  proofUnderReview: boolean
+  payments: PaymentRecord[]
+}
+
 export interface OrderDetail {
   id: number
   trackingCode: string
@@ -116,6 +144,7 @@ export interface OrderDetail {
   slotReserved: boolean
   files: FileInfo[]
   quotes: Quote[]
+  payments: PaymentSummary
   history: HistoryEntry[]
   createdAt: string
   updatedAt: string
@@ -138,6 +167,27 @@ export interface TrackingQuote {
   balanceAmount: Money
   notes: string | null
   validUntil: string | null
+}
+
+export interface ClientPaymentEntry {
+  kind: PaymentKind
+  amount: Money
+  status: PaymentRecordStatus
+  reviewNote: string | null
+  createdAt: string
+  proofFileId: number | null
+}
+
+export interface ClientPayment {
+  total: Money
+  depositAmount: Money
+  received: Money
+  balanceDue: Money
+  status: PaymentStatus
+  pixKey: string | null
+  pixHolderName: string | null
+  canSubmitProof: boolean
+  payments: ClientPaymentEntry[]
 }
 
 export interface TrackingView {
@@ -164,4 +214,5 @@ export interface TrackingView {
   editable: boolean
   version: number
   quote: TrackingQuote | null
+  payment: ClientPayment | null
 }

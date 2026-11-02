@@ -22,6 +22,7 @@ type Field =
   | 'pixHolderName'
   | 'quoteValidityHours'
   | 'quoteExpiryWarningHours'
+  | 'depositDeadlineHours'
   | 'ownerNotificationEmail'
 
 type FormValues = Record<Field, string>
@@ -38,6 +39,7 @@ function toForm(settings: BakerySettings): FormValues {
     pixHolderName: settings.pixHolderName ?? '',
     quoteValidityHours: String(settings.quoteValidityHours),
     quoteExpiryWarningHours: String(settings.quoteExpiryWarningHours),
+    depositDeadlineHours: settings.depositDeadlineHours == null ? '' : String(settings.depositDeadlineHours),
     ownerNotificationEmail: settings.ownerNotificationEmail ?? '',
   }
 }
@@ -84,6 +86,12 @@ function SettingsForm({ initial, onSaved }: { initial: BakerySettings; onSaved: 
           : Number.isInteger(validity) && warning >= validity
             ? 'O aviso precisa acontecer antes do vencimento.'
             : undefined,
+      depositDeadlineHours:
+        values.depositDeadlineHours.trim() === '' ||
+        (/^\d+$/.test(values.depositDeadlineHours.trim()) && Number(values.depositDeadlineHours) >= 1 &&
+          Number(values.depositDeadlineHours) <= 720)
+          ? undefined
+          : 'Use um número de 1 a 720 horas, ou deixe em branco para não ter prazo.',
       ownerNotificationEmail: values.ownerNotificationEmail.trim()
         ? validateEmail(values.ownerNotificationEmail)
         : undefined,
@@ -105,6 +113,7 @@ function SettingsForm({ initial, onSaved }: { initial: BakerySettings; onSaved: 
         pixHolderName: values.pixHolderName,
         quoteValidityHours: validity,
         quoteExpiryWarningHours: warning,
+        depositDeadlineHours: values.depositDeadlineHours.trim() ? Number(values.depositDeadlineHours) : null,
         ownerNotificationEmail: values.ownerNotificationEmail,
         version,
       })
@@ -199,6 +208,18 @@ function SettingsForm({ initial, onSaved }: { initial: BakerySettings; onSaved: 
             hint={hoursHint(values.quoteExpiryWarningHours)}
           />
         </div>
+        <TextField
+          label="Prazo para pagar o sinal depois do aceite (horas)"
+          inputMode="numeric"
+          value={values.depositDeadlineHours}
+          onChange={set('depositDeadlineHours')}
+          error={errors.depositDeadlineHours}
+          hint={
+            (hoursHint(values.depositDeadlineHours) ?? '') +
+            ' Sem sinal nesse prazo, o pedido é cancelado automaticamente (exceto se houver comprovante em análise). ' +
+            'Em branco = sem prazo.'
+          }
+        />
       </Fieldset>
 
       <Fieldset title="Avisos por e-mail" description="Para onde enviar avisos como orçamentos perto de vencer.">

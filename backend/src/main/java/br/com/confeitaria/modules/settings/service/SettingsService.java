@@ -71,13 +71,15 @@ public class SettingsService {
                 .trackWithoutValues("pixHolderName", settings.getPixHolderName(), blankToNull(request.pixHolderName()))
                 .track("quoteValidityHours", settings.getQuoteValidityHours(), request.quoteValidityHours())
                 .track("quoteExpiryWarningHours", settings.getQuoteExpiryWarningHours(), request.quoteExpiryWarningHours())
+                .track("depositDeadlineHours", settings.getDepositDeadlineHours(), request.depositDeadlineHours())
                 .trackWithoutValues("ownerNotificationEmail", settings.getOwnerNotificationEmail(),
                         blankToNull(request.ownerNotificationEmail()));
 
         settings.updateProfile(blankToNull(request.name()), blankToNull(request.aboutText()), whatsapp, instagram,
                 blankToNull(request.address()), blankToNull(request.pickupInstructions()));
         settings.updatePayment(blankToNull(request.pixKey()), blankToNull(request.pixHolderName()));
-        settings.updateQuotes(request.quoteValidityHours(), request.quoteExpiryWarningHours());
+        settings.updateQuotes(request.quoteValidityHours(), request.quoteExpiryWarningHours(),
+                request.depositDeadlineHours());
         settings.updateNotifications(blankToNull(request.ownerNotificationEmail()) == null
                 ? null : request.ownerNotificationEmail().trim().toLowerCase());
         repository.flush();

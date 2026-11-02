@@ -1,12 +1,42 @@
-import { useState } from 'react'
-import { NavLink, Outlet, useNavigate } from 'react-router'
+import { useEffect, useState } from 'react'
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router'
 import { useAuth } from '../hooks/useAuth'
+import { unreadNotificationCount } from '../services/notifications'
 import styles from './AdminLayout.module.css'
+
+const POLL_MS = 60_000
+
+/** Quantidade de avisos não lidos, atualizada a cada navegação e a cada minuto. */
+function useUnreadCount(enabled: boolean): number {
+  const location = useLocation()
+  const [count, setCount] = useState(0)
+
+  useEffect(() => {
+    if (!enabled) return
+    let active = true
+    const refresh = () =>
+      unreadNotificationCount().then(
+        (result) => active && setCount(result.count),
+        () => undefined,
+      )
+    void refresh()
+    const timer = window.setInterval(() => void refresh(), POLL_MS)
+    window.addEventListener('notifications:changed', refresh)
+    return () => {
+      active = false
+      window.clearInterval(timer)
+      window.removeEventListener('notifications:changed', refresh)
+    }
+  }, [enabled, location.pathname])
+
+  return count
+}
 
 export function AdminLayout() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const [leaving, setLeaving] = useState(false)
+  const unread = useUnreadCount(!!user && !user.mustChangePassword)
 
   async function handleLogout() {
     setLeaving(true)
@@ -47,6 +77,11 @@ export function AdminLayout() {
               </NavLink>
               <NavLink to="/admin/configuracoes" className={linkClass}>
                 Configurações
+              </NavLink>
+              <NavLink to="/admin/avisos" className={linkClass}
+                aria-label={unread > 0 ? `Avisos (${unread} não lidos)` : 'Avisos'}>
+                Avisos
+                {unread > 0 && <span className={styles.badge}>{unread > 99 ? '99+' : unread}</span>}
               </NavLink>
             </>
           )}

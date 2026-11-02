@@ -2,7 +2,7 @@
 
 Plataforma web para centralizar encomendas personalizadas de bolos: a cliente faz a solicitação por um formulário público e acompanha o pedido por um código; a proprietária gerencia agenda, orçamentos, pagamentos, produção e financeiro em um painel administrativo.
 
-> **Status atual:** Fase 7 concluída — encomenda pública, acompanhamento pela cliente (orçamento, aceite/recusa, edição) e painel com pedidos, orçamentos versionados, agenda, produtos e configurações. Próxima: pagamentos e vencimento de orçamentos. Veja [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md).
+> **Status atual:** Fase 8 concluída — pagamentos (comprovante do sinal, confirmação, registro manual), prazos automáticos de orçamento e sinal, e avisos no painel e por e-mail. Telas do painel da Fase 8 ainda sem verificação manual no navegador. Próxima: Fase 9 (produção). Veja [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md).
 
 ## Documentação
 

@@ -9,6 +9,7 @@ export interface BakerySettings {
   pixHolderName: string | null
   quoteValidityHours: number
   quoteExpiryWarningHours: number
+  depositDeadlineHours: number | null
   ownerNotificationEmail: string | null
   version: number
 }

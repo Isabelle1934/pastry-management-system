@@ -12,6 +12,8 @@ import br.com.confeitaria.common.exception.ConflictException;
 import br.com.confeitaria.common.exception.NotFoundException;
 import br.com.confeitaria.common.persistence.Versions;
 import br.com.confeitaria.modules.file.repository.StoredFileRepository;
+import br.com.confeitaria.modules.notification.entity.NotificationType;
+import br.com.confeitaria.modules.notification.service.NotificationService;
 import br.com.confeitaria.modules.order.dto.OrderAdminDtos.Choice;
 import br.com.confeitaria.modules.order.dto.PublicOrderDtos.ClientEditRequest;
 import br.com.confeitaria.modules.order.entity.CakeOrder;
@@ -23,6 +25,12 @@ import br.com.confeitaria.modules.order.service.TrackingCodes;
 import br.com.confeitaria.modules.quote.dto.QuoteDtos.QuoteView;
 import br.com.confeitaria.modules.quote.repository.QuoteRepository;
 import br.com.confeitaria.modules.quote.service.QuoteService;
+import br.com.confeitaria.modules.payment.dto.PaymentDtos.PaymentSummary;
+import br.com.confeitaria.modules.payment.entity.Payment;
+import br.com.confeitaria.modules.payment.service.PaymentService;
+import br.com.confeitaria.modules.settings.service.SettingsService;
+import br.com.confeitaria.modules.tracking.TrackingDtos.ClientPayment;
+import br.com.confeitaria.modules.tracking.TrackingDtos.ClientPaymentEntry;
 import br.com.confeitaria.modules.tracking.TrackingDtos.ClientQuote;
 import br.com.confeitaria.modules.tracking.TrackingDtos.TrackingView;
 
@@ -36,15 +44,22 @@ public class TrackingService {
     private final StoredFileRepository files;
     private final OrderDetailsApplier detailsApplier;
     private final OrderHistoryService history;
+    private final NotificationService notifications;
+    private final PaymentService payments;
+    private final SettingsService settings;
 
     public TrackingService(CakeOrderRepository orders, QuoteRepository quotes, QuoteService quoteService,
-            StoredFileRepository files, OrderDetailsApplier detailsApplier, OrderHistoryService history) {
+            StoredFileRepository files, OrderDetailsApplier detailsApplier, OrderHistoryService history,
+            NotificationService notifications, PaymentService payments, SettingsService settings) {
         this.orders = orders;
         this.quotes = quotes;
         this.quoteService = quoteService;
         this.files = files;
         this.detailsApplier = detailsApplier;
         this.history = history;
+        this.notifications = notifications;
+        this.payments = payments;
+        this.settings = settings;
     }
 
     @Transactional(readOnly = true)
@@ -61,7 +76,28 @@ public class TrackingService {
                 order.isTopperRequested(), order.getTopperTheme(), order.getTopperName(), order.getTopperAge(),
                 files.findByOrderIdAndDeletedAtIsNullOrderByIdAsc(orderId).size(), order.getCommercialStatus(),
                 order.getPaymentStatus(), order.getProductionStatus(), order.isEditableByClient(), order.getVersion(),
-                quote);
+                quote, payment(order));
+    }
+
+    /** Dados de pagamento para a cliente: valores, situação, chave Pix (quando há algo a pagar) e comprovantes. */
+    private ClientPayment payment(CakeOrder order) {
+        PaymentSummary summary = payments.summary(order.getId());
+        if (summary.total() == null) {
+            return null;
+        }
+        boolean awaitingDeposit = order.getCommercialStatus() == CommercialStatus.AWAITING_DEPOSIT;
+        boolean somethingToPay = awaitingDeposit
+                || (order.getCommercialStatus() == CommercialStatus.CONFIRMED && summary.balanceDue().signum() > 0);
+        var bakery = settings.current();
+        return new ClientPayment(summary.total(), summary.depositAmount(), summary.received(), summary.balanceDue(),
+                summary.status(), somethingToPay ? bakery.getPixKey() : null,
+                somethingToPay ? bakery.getPixHolderName() : null,
+                awaitingDeposit && !summary.proofUnderReview(),
+                summary.payments().stream()
+                        .filter(p -> p.kind() != Payment.Kind.REFUND || p.status() == Payment.Status.CONFIRMED)
+                        .map(p -> new ClientPaymentEntry(p.kind(), p.amount(), p.status(), p.reviewNote(), p.createdAt(),
+                                p.proofFileId()))
+                        .toList());
     }
 
     /**
@@ -92,6 +128,10 @@ public class TrackingService {
                 quoteInvalidated ? "Pedido alterado pela cliente; o orçamento enviado deixou de valer."
                         : "Pedido alterado pela cliente.",
                 changes);
+        notifications.notify(NotificationType.ORDER_EDITED_BY_CLIENT, orderId,
+                order.getCustomerName().split(" ")[0] + " alterou o pedido"
+                        + (quoteInvalidated ? "; o orçamento enviado deixou de valer e precisa ser refeito." : "."),
+                "ORDER_EDITED_BY_CLIENT:" + orderId + ":" + order.getVersion());
         return view(orderId);
     }
 

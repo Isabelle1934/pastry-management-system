@@ -35,6 +35,7 @@ import br.com.confeitaria.modules.order.entity.CakeOrder;
 import br.com.confeitaria.modules.order.entity.CommercialStatus;
 import br.com.confeitaria.modules.order.repository.CakeOrderRepository;
 import br.com.confeitaria.modules.quote.entity.Quote;
+import br.com.confeitaria.modules.payment.service.PaymentService;
 import br.com.confeitaria.modules.quote.dto.QuoteDtos.QuoteView;
 import br.com.confeitaria.modules.quote.repository.QuoteRepository;
 import br.com.confeitaria.modules.quote.service.QuoteService;
@@ -55,11 +56,12 @@ public class OrderAdminService {
     private final OrderHistoryService history;
     private final OrderDetailsApplier detailsApplier;
     private final ReservationService reservations;
+    private final PaymentService payments;
     private final Clock clock;
 
     public OrderAdminService(CakeOrderRepository orders, QuoteRepository quotes, QuoteService quoteService,
             StoredFileRepository files, OrderHistoryService history, OrderDetailsApplier detailsApplier,
-            ReservationService reservations, Clock clock) {
+            ReservationService reservations, PaymentService payments, Clock clock) {
         this.orders = orders;
         this.quotes = quotes;
         this.quoteService = quoteService;
@@ -67,6 +69,7 @@ public class OrderAdminService {
         this.history = history;
         this.detailsApplier = detailsApplier;
         this.reservations = reservations;
+        this.payments = payments;
         this.clock = clock;
     }
 
@@ -108,7 +111,7 @@ public class OrderAdminService {
                 order.getCancellationReason(), order.getCancelledBy(),
                 reservations.activeReservation(order.getId()).isPresent(),
                 files.findByOrderIdAndDeletedAtIsNullOrderByIdAsc(order.getId()).stream().map(FileInfo::from).toList(),
-                quoteService.list(order.getId()),
+                quoteService.list(order.getId()), payments.summary(order.getId()),
                 history.historyOf(order.getId()).stream().map(HistoryEntry::from).toList(),
                 order.getCreatedAt(), order.getUpdatedAt());
     }

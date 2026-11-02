@@ -12,6 +12,7 @@ import { formatLongDay } from '../../../utils/date'
 import { formatBRL, toMoneyInput } from '../../../utils/money'
 import { formatDateTime } from '../../../utils/orderStatus'
 import styles from '../order/order.module.css'
+import { PaymentCard } from './PaymentCard'
 
 function statusMessage(view: TrackingView): { title: string; text: string; tone: 'info' | 'success' | 'error' } {
   const deposit = view.quote ? formatBRL(view.quote.depositAmount) : ''
@@ -24,7 +25,10 @@ function statusMessage(view: TrackingView): { title: string; text: string; tone:
     QUOTE_SENT: { title: 'Orçamento disponível', text: 'Confira o orçamento abaixo e responda dentro do prazo.', tone: 'info' },
     AWAITING_DEPOSIT: {
       title: 'Orçamento aceito',
-      text: `Para garantir a data, é necessário pagar o sinal de ${deposit}. Fale com a confeitaria pelo WhatsApp para combinar o pagamento.`,
+      text:
+        view.paymentStatus === 'DEPOSIT_UNDER_REVIEW'
+          ? 'Recebemos seu comprovante. Assim que a confeitaria conferir, seu pedido será confirmado.'
+          : `Para garantir a data, pague o sinal de ${deposit} e envie o comprovante abaixo.`,
       tone: 'info',
     },
     CONFIRMED: { title: 'Pedido confirmado', text: 'Sua data está garantida. Até a retirada!', tone: 'success' },
@@ -183,6 +187,7 @@ function OrderView({ view, onChange, onLeave }: { view: TrackingView; onChange: 
         <strong>{status.title}.</strong> {status.text}
       </Alert>
       {view.quote && <QuoteCard view={view} onChange={onChange} />}
+      {view.payment && <PaymentCard view={view} onChange={onChange} />}
       <section className={styles.card} aria-labelledby="order-title">
         <h2 id="order-title">Seu pedido</h2>
         <dl className={styles.reviewList}>
