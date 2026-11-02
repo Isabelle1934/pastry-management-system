@@ -122,7 +122,13 @@ Cancelamento, remarcação ou expiração de pedido com reserva ativa: decrement
 - **Lucro estimado:** **[PENDENTE]** padrão = faturamento previsto − despesas do período; exibido também o resultado de caixa (recebido − despesas). Rotulado sempre como "estimado".
 - Sem contabilidade fiscal.
 
-## 10. Validações principais
+## 10. Catálogo (Fase 4)
+
+- Cada tamanho define quantas massas (`maxFlavors`) e quantos recheios (`maxFillings`) a cliente pode escolher, de 1 a 10 (pendência P6 resolvida com a proposta padrão).
+- Preço-base é referência ("a partir de"); o valor final vem sempre do orçamento.
+- Itens não são excluídos, apenas desativados: somem do formulário público e permanecem nos pedidos antigos.
+
+## 11. Validações principais
 
 - Nome: 2–120 caracteres. WhatsApp: número brasileiro válido (DDD + 8/9 dígitos), normalizado.
 - Data/horário: existente na disponibilidade no momento do envio.

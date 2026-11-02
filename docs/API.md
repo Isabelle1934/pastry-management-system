@@ -23,8 +23,8 @@
 |---|---|---|
 | GET | `/health` | ✅ Fase 1 — `{"status":"UP"}` (Actuator, sem detalhes) |
 | GET | `/csrf` | ✅ Fase 3 — 204; emite o cookie `XSRF-TOKEN` (o frontend o envia de volta no header `X-XSRF-TOKEN`) |
-| GET | `/bakery` | Dados públicos da confeitaria (nome, apresentação, contatos) |
-| GET | `/catalog` | Tamanhos (com limites de massas/recheios), massas e recheios ativos — sem preços internos se assim definido |
+| GET | `/bakery` | ✅ Fase 4 — `{name, aboutText, whatsappContact, whatsappLink, instagram, address, pickupInstructions}`. Não expõe chave Pix, e-mail de avisos nem regras de orçamento |
+| GET | `/catalog` | ✅ Fase 4 — somente itens ativos: `sizes[{id, name, description, servings, basePrice, maxFlavors, maxFillings}]`, `flavors[{id, name, description}]`, `fillings[...]` |
 | GET | `/availability?from=&to=` | Datas e horários disponíveis (considera funcionamento, bloqueios, antecedência e ocupação) |
 | POST | `/orders` | Cria solicitação (multipart: JSON `order` + `referencePhotos[]` + `topperPhoto`). Retorna `trackingCode` |
 
@@ -58,10 +58,12 @@ Enquanto a senha for provisória, qualquer `/api/admin/**` fora de `/api/admin/a
 ### Configurações e catálogo
 | Método | Rota | Descrição |
 |---|---|---|
-| GET/PUT | `/settings` | Configurações da confeitaria |
-| GET/POST | `/catalog/sizes` · PUT/PATCH `/catalog/sizes/{id}` | Tamanhos (PATCH para ativar/desativar) |
-| GET/POST | `/catalog/flavors` · PUT/PATCH `/catalog/flavors/{id}` | Massas |
-| GET/POST | `/catalog/fillings` · PUT/PATCH `/catalog/fillings/{id}` | Recheios |
+| GET/PUT | `/settings` | ✅ Configurações. PUT exige `version`; WhatsApp normalizado (E.164 no banco, exibido como `(11) 99999-8888`); Instagram aceita `@usuario` ou link; `quoteExpiryWarningHours < quoteValidityHours` |
+| GET/POST | `/catalog/sizes` · PUT `/catalog/sizes/{id}` · PATCH `/catalog/sizes/{id}/active` | ✅ Tamanhos |
+| GET/POST | `/catalog/flavors` · PUT `/catalog/flavors/{id}` · PATCH `/catalog/flavors/{id}/active` | ✅ Massas |
+| GET/POST | `/catalog/fillings` · PUT `/catalog/fillings/{id}` · PATCH `/catalog/fillings/{id}/active` | ✅ Recheios |
+
+Regras do catálogo: nome único por lista sem diferenciar maiúsculas (409 `DUPLICATE_NAME`); edição e ativação exigem `version` (409 `CONCURRENT_MODIFICATION` se o item mudou em outra tela); itens não são excluídos, só desativados (`{active, version}`).
 
 ### Agenda
 | Método | Rota | Descrição |

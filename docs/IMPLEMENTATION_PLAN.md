@@ -35,7 +35,7 @@ Documentos em `docs/`, diagnóstico, pendências.
 - Login/logout por sessão, CSRF, rate limit, reset de senha por e-mail (Mailpit no dev), criação da conta inicial por variável de ambiente, tela de login e rotas protegidas.
 - **Testes:** login ok/erro, bloqueio por tentativas, CSRF ausente → 403, rota admin sem sessão → 401, ciclo de reset (expiração e uso único).
 
-### Fase 4 — Produtos e configurações
+### Fase 4 — Produtos e configurações ✅ (02/11/2026)
 - CRUD de tamanhos/massas/recheios (desativação), configurações da confeitaria, telas administrativas.
 - **Testes:** validações, limites de seleção, desativação preserva pedidos.
 

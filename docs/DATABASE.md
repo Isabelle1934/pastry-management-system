@@ -46,7 +46,7 @@ audit_log, shedlock, spring_session*
 
 ### Configurações
 **bakery_settings** (uma linha, `id = 1` com `CHECK`) — `name`, `about_text`, `whatsapp_contact`, `instagram`, `address`, `pickup_instructions`, `pix_key`, `pix_holder_name`, `min_lead_time_hours`, `max_booking_days_ahead`, `quote_validity_hours`, `quote_expiry_warning_hours`, `deposit_deadline_hours` (pendente de definição), `owner_notification_email`, `updated_at`.
-O percentual do sinal (50%) é regra fixa em código, conforme requisito.
+O percentual do sinal (50%) é regra fixa em código, conforme requisito. Implementado na V2: identidade, contato, Pix, orçamentos e e-mail de avisos; os campos de agenda (`min_lead_time_hours`, `max_booking_days_ahead`) entram na migration da Fase 5 e `deposit_deadline_hours` depende da pendência P4.
 
 ### Catálogo
 **cake_size** — `id`, `name`, `description`, `servings`, `base_price`, `max_flavors`, `max_fillings`, `active`, `display_order`.
@@ -119,7 +119,7 @@ Uma despesa é um único registro: o vínculo com pedido é apenas um atributo �
 | Versão | Conteúdo |
 |---|---|
 | V1 ✅ | admin_user, password_reset_token, spring_session, audit_log, shedlock, função `prevent_history_modification()` |
-| V2 | bakery_settings (linha inicial vazia de dados de negócio), catálogo |
+| V2 ✅ | bakery_settings (linha única id=1, textos vazios; validade 48 h e aviso 12 h como padrão editável), cake_size, cake_flavor, cake_filling (nomes únicos por `lower(name)`) |
 | V3 | agenda: weekly_slot, schedule_block, slot_occupancy, slot_reservation |
 | V4 | pedidos: cake_order, order_flavor, order_filling, cake_topper, order_history, stored_file |
 | V5 | quote, quote_item |

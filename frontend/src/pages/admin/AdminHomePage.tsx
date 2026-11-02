@@ -1,3 +1,4 @@
+import { Link } from 'react-router'
 import { useAuth } from '../../hooks/useAuth'
 import styles from './forms.module.css'
 
@@ -9,9 +10,10 @@ export function AdminHomePage() {
     <section className={styles.panel}>
       <h1>Olá, {user?.name}!</h1>
       <p>
-        Você está no painel administrativo. Os módulos de pedidos, agenda, orçamentos e financeiro serão adicionados
-        nas próximas etapas do desenvolvimento.
+        Você está no painel administrativo. Em <Link to="/admin/produtos">Produtos</Link> você cadastra tamanhos, massas e
+        recheios; em <Link to="/admin/configuracoes">Configurações</Link>, os dados da confeitaria.
       </p>
+      <p>Os módulos de agenda, pedidos, orçamentos e financeiro serão adicionados nas próximas etapas.</p>
     </section>
   )
 }

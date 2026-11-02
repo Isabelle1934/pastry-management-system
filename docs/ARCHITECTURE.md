@@ -34,7 +34,7 @@ Por estar no mesmo domínio, o cookie de sessão é *first-party*, não há CORS
 | Testes | JUnit 5, Spring Boot Test, Testcontainers (PostgreSQL), MockMvc | Testes de integração com banco real |
 | Frontend | React 19.3, TypeScript 7.0, Vite 8.3, oxlint; React Router a partir da Fase 3 | CSS Modules + variáveis CSS (tokens da identidade visual) |
 | Formulários | Validação própria leve ou `react-hook-form` + `zod` | Decisão na Fase 6 conforme complexidade |
-| Testes frontend | Vitest + Testing Library; Playwright para fluxos completos (Fase 12) | |
+| Testes frontend | Vitest 5 (funções puras desde a Fase 4); Testing Library e Playwright para fluxos completos (Fase 12) | |
 
 Regra: nenhuma dependência é adicionada sem necessidade clara; versões experimentais/descontinuadas não são usadas.
 

@@ -86,6 +86,18 @@ Mínimo 10 e máximo 64 caracteres (≤ 72 bytes, limite do BCrypt), diferente d
 **Status:** Aceita
 O `docker-compose.dev.yml` inclui o Mailpit (SMTP em `localhost:1025`, interface em `http://localhost:8025`): e-mails de desenvolvimento nunca são entregues de verdade. O `.env` local (fora do git) guarda a conta de teste.
 
+## ADR-022 — Controle de edição concorrente por `version` no corpo da requisição
+**Status:** Aceita · 02/11/2026
+Além do `@Version` do JPA (que protege o instante do commit), cada edição envia a versão que a tela carregou. Se o registro mudou depois (outra aba, outro aparelho), a API responde 409 `CONCURRENT_MODIFICATION` e a tela recarrega os dados — nenhuma alteração é sobrescrita em silêncio.
+
+## ADR-023 — Itens de catálogo são desativados, nunca excluídos
+**Status:** Aceita
+Tamanhos, massas e recheios serão referenciados por pedidos (Fase 6). Excluir quebraria o histórico; desativar remove do formulário público e mantém os dados. Os pedidos também guardarão o nome do item no momento da encomenda (snapshot).
+
+## ADR-024 — Auditoria das configurações sem valores sensíveis
+**Status:** Aceita
+Mudanças de chave Pix, titular e e-mail de avisos são registradas como "alterado", sem o valor. Os demais campos guardam antes/depois.
+
 ---
 
 ## Pendências — decisões que dependem da proprietária
@@ -97,7 +109,7 @@ O `docker-compose.dev.yml` inclui o Mailpit (SMTP em `localhost:1025`, interface
 | P3 | **E-mail** (recuperação de senha e avisos): provedor SMTP e domínio/remetente | Provedor SMTP com plano gratuito; Mailpit no desenvolvimento (✅ configurado) | Fase 12 (produção) |
 | P4 | **Prazo para pagamento do sinal** após o aceite do orçamento | Configurável, com aviso e cancelamento automático (exceto com comprovante em análise) | Fase 8 |
 | P5 | **Edição da cliente com orçamento já enviado** | Orçamento é invalidado e o pedido volta para análise | Fase 7 |
-| P6 | **Limite de massas/recheios** | Configurado por tamanho (ex.: P = 1 massa e 1 recheio) | Fase 4 |
+| P6 | **Limite de massas/recheios** | ✅ Implementado por tamanho (proposta padrão) — pode ser revisto | — |
 | P7 | **Cancelamento com sinal já pago** (reembolso, retenção) | Registrar manualmente; capacidade liberada; sem regra automática de reembolso | Fase 8 |
 | P8 | **Entregar com saldo em aberto** | Permitido, com aviso visível | Fase 9 |
 | P9 | **Lucro estimado** | Previsto − despesas, mostrando também recebido − despesas | Fase 10 |

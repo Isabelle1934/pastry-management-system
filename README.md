@@ -2,7 +2,7 @@
 
 Plataforma web para centralizar encomendas personalizadas de bolos: a cliente faz a solicitação por um formulário público e acompanha o pedido por um código; a proprietária gerencia agenda, orçamentos, pagamentos, produção e financeiro em um painel administrativo.
 
-> **Status atual:** Fase 3 concluída — autenticação do painel (login, logout, recuperação e troca de senha, conta inicial). Próxima: produtos e configurações. Veja [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md).
+> **Status atual:** Fase 4 concluída — painel com autenticação, cadastro de produtos (tamanhos, massas, recheios) e configurações da confeitaria. Próxima: agenda. Veja [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md).
 
 ## Documentação
 
@@ -66,7 +66,7 @@ cd backend && ./mvnw test
 Os testes de integração sobem um PostgreSQL 18 temporário via Testcontainers (Docker precisa estar ligado).
 
 ```bash
-cd frontend && npm run build && npm run lint
+cd frontend && npm test && npm run build && npm run lint
 ```
 
 ## Estrutura

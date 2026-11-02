@@ -26,6 +26,12 @@
   border-color: var(--color-primary);
 }
 
+.textarea {
+  min-height: 96px;
+  resize: vertical;
+  line-height: 1.4;
+}
+
 .invalid {
   border-color: var(--color-danger);
 }

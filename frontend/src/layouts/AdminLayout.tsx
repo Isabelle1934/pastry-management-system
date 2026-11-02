@@ -27,14 +27,23 @@ export function AdminLayout() {
           {user && <span className={styles.user}>{user.name}</span>}
         </div>
         <nav className={styles.nav} aria-label="Menu do painel">
-          {!user?.mustChangePassword && (
-            <NavLink to="/admin" end className={linkClass}>
-              Início
+          {user?.mustChangePassword ? (
+            <NavLink to="/admin/trocar-senha" className={linkClass}>
+              Trocar senha
             </NavLink>
+          ) : (
+            <>
+              <NavLink to="/admin" end className={linkClass}>
+                Início
+              </NavLink>
+              <NavLink to="/admin/produtos" className={linkClass}>
+                Produtos
+              </NavLink>
+              <NavLink to="/admin/configuracoes" className={linkClass}>
+                Configurações
+              </NavLink>
+            </>
           )}
-          <NavLink to="/admin/trocar-senha" className={linkClass}>
-            Trocar senha
-          </NavLink>
           <button type="button" className={styles.logout} onClick={handleLogout} disabled={leaving}>
             {leaving ? 'Saindo…' : 'Sair'}
           </button>
