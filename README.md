@@ -2,7 +2,7 @@
 
 Plataforma web para centralizar encomendas personalizadas de bolos: a cliente faz a solicitação por um formulário público e acompanha o pedido por um código; a proprietária gerencia agenda, orçamentos, pagamentos, produção e financeiro em um painel administrativo.
 
-> **Status atual:** Fase 11 concluída em parte — dashboard, menu do painel no celular e acessibilidade básica; identidade visual (P1) aguarda o material da proprietária. Fases 8–10 — pagamentos, prazos, avisos, produção, retiradas e financeiro. Fases 8 a 11 verificadas no navegador. Próxima: Fase 12 (testes e implantação). Veja [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md).
+> **Status atual:** Fases 1 a 12 concluídas — sistema completo, testado (unitários, integração, E2E) e pronto para implantar com Docker Compose ([docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)). Aguardando da proprietária: identidade visual (P1), hospedagem e domínio (P2), provedor de e-mail (P3) e política de retenção de dados (P14). Veja [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md).
 
 ## Documentação
 
@@ -11,10 +11,12 @@ Plataforma web para centralizar encomendas personalizadas de bolos: a cliente fa
 | [docs/PRD.md](docs/PRD.md) | Requisitos do produto, escopo e fora de escopo |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Arquitetura, stack, estrutura de pastas, segurança, arquivos, implantação |
 | [docs/DATABASE.md](docs/DATABASE.md) | Modelo de dados, entidades, relacionamentos e restrições |
-| [docs/API.md](docs/API.md) | Endpoints REST planejados |
+| [docs/API.md](docs/API.md) | Endpoints REST |
 | [docs/BUSINESS_RULES.md](docs/BUSINESS_RULES.md) | Regras de negócio, máquinas de estado, agenda, vencimento |
 | [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md) | Fases, entregas e critérios de aceite |
 | [docs/DECISIONS.md](docs/DECISIONS.md) | Registro de decisões técnicas (ADRs) e pendências |
+| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Implantação com Docker Compose, backups, restauração e teste E2E |
+| [docs/SECURITY.md](docs/SECURITY.md) | Revisão de segurança antes da implantação |
 
 ## Stack
 

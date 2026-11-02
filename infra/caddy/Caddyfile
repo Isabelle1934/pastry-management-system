@@ -1,0 +1,49 @@
+# SITE_ADDRESS: o domínio (ex.: encomendas.minhaconfeitaria.com.br) — o Caddy obtém e renova o
+# certificado HTTPS sozinho. Para testes locais: http://localhost (com HTTP_PORT para a porta no computador)
+{$SITE_ADDRESS} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "same-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		# "?" = só se a resposta ainda não tiver (a API envia a sua própria CSP, mais restrita).
+		?Content-Security-Policy "default-src 'self'; img-src 'self' data: blob:; style-src 'self'; script-src 'self'; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+		-Server
+	}
+
+	# API: o Caddy descarta X-Forwarded-For vindo de fora e informa o IP real ao backend,
+	# que só é acessível pela rede interna do Docker (limites por IP dependem disso).
+	handle /api/* {
+		request_body {
+			max_size 23MB
+		}
+		reverse_proxy backend:8080
+	}
+
+	# Arquivos com hash no nome podem ficar em cache por muito tempo; as páginas (index.html), nunca.
+	@assets path /assets/*
+	header @assets Cache-Control "public, max-age=31536000, immutable"
+	@pages not path /assets/* /api/*
+	header @pages Cache-Control "no-cache"
+
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+
+	# O link de redefinição de senha leva o token na URL: ele nunca vai para o log.
+	log {
+		output stdout
+		format filter {
+			wrap console
+			fields {
+				request>uri query {
+					replace token REDACTED
+				}
+			}
+		}
+	}
+}

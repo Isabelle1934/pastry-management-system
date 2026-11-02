@@ -70,7 +70,8 @@ Documentos em `docs/`, diagnóstico, pendências.
 - **Verificação manual no navegador (02/11/2026), Fases 8–11:** dashboard e menu no celular; conferência do comprovante confirmou o pedido e reservou a vaga; produção até "Pronto" com aviso de saldo e entrega bloqueada sem confirmação; lista de retiradas; despesa vinculada pelo atalho do pedido; resumo do mês com valores corretos; avisos; acompanhamento da cliente mostrando "Pronto". Corrigido: valores e datas nos avisos/histórico agora em pt-BR ("R$ 82,50", "04/12/2026"); nome acessível do botão Menu inclui avisos não lidos; código do pedido não fica preso no formulário de despesa.
 - Indicadores, revisão de responsividade (celular e desktop), acessibilidade básica, revisão visual com a proprietária.
 
-### Fase 12 — Testes e implantação
+### Fase 12 — Testes e implantação ✅ preparada (02/11/2026 — implantação real aguarda hospedagem P2, SMTP P3 e domínio)
+- Pilha de produção (`infra/docker-compose.prod.yml`) construída e testada localmente; E2E do ciclo completo passando; backup e restauração testados; revisão de segurança (`docs/SECURITY.md`); guia `docs/DEPLOYMENT.md`.
 - Fluxo completo E2E (Playwright), revisão de segurança, configuração de produção (Docker Compose + Caddy), backups com teste de restauração, `docs/DEPLOYMENT.md`.
 
 ## Dependências entre fases

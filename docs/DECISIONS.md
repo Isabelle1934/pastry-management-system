@@ -142,6 +142,10 @@ Resumo calculado em SQL (`JdbcTemplate`) a cada consulta, sem tabelas de totais 
 **Status:** Aceita · 02/11/2026
 O dashboard reaproveita as regras já testadas (lista de retiradas e resumo financeiro) em vez de recalcular por conta própria; as contagens vêm de uma consulta agregada (`count(*) filter`). Menu do painel recolhível abaixo de 900 px (botão "Menu" com `aria-expanded`), link "Pular para o conteúdo" nas áreas pública e administrativa. Mensagens para a proprietária (avisos, e-mails, histórico) formatam valores e datas em pt-BR via `Texts`; a API continua com formato técnico. Identidade visual (P1) continua pendente: nada foi inventado; os tokens neutros seguem provisórios.
 
+## ADR-036 — Implantação, backups e E2E (Fase 12)
+**Status:** Aceita · 02/11/2026
+Um servidor com Docker Compose: PostgreSQL e API sem portas publicadas; Caddy serve o frontend compilado, faz HTTPS automático e é o único caminho até a API — por isso `forward-headers-strategy: framework` é seguro (o Caddy substitui `X-Forwarded-For`; verificado). Backup diário (`pg_dump` custom + tar dos uploads) com retenção configurável e restauração por serviço separado (`profiles: restore`, exige `--confirm`), testada de ponta a ponta. E2E com Playwright 1.64.1 usando o Edge instalado (`channel: msedge`), sem baixar navegadores, contra a pilha de produção local. Revisão de segurança em `docs/SECURITY.md`; passo a passo em `docs/DEPLOYMENT.md`.
+
 ---
 
 ## Pendências — decisões que dependem da proprietária

@@ -1,4 +1,4 @@
-# API REST (planejada)
+# API REST
 
 - Base: `/api`. JSON em UTF-8. Datas `YYYY-MM-DD`, horários `HH:mm`, instantes ISO-8601 com fuso.
 - Valores monetários como **string decimal** (`"165.00"`) para evitar erros de ponto flutuante no JavaScript.
@@ -123,4 +123,4 @@ Datas `from`/`to` no formato `AAAA-MM-DD`, no fuso da confeitaria (America/Sao_P
 | GET | `/notifications/unread-count` | ✅ `{count}` |
 | POST | `/notifications/{id}/read` · `/notifications/read-all` | ✅ Marca como lido |
 
-Este documento será atualizado com os contratos exatos (DTOs) conforme cada fase for implementada.
+Erros seguem o formato ProblemDetail com `code` e `requestId` (ver início deste documento).
