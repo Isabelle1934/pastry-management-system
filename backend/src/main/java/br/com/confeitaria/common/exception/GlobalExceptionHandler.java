@@ -1,13 +1,11 @@
 package br.com.confeitaria.common.exception;
 
-import java.net.URI;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -23,7 +21,6 @@ import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
-import br.com.confeitaria.common.web.RequestIdFilter;
 import jakarta.validation.ConstraintViolationException;
 
 /**
@@ -42,6 +39,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(ApiException.class)
     ResponseEntity<ProblemDetail> handleApi(ApiException ex) {
         return problem(ex.getStatus(), ex.getCode(), ex.getMessage());
+    }
+
+    @ExceptionHandler(FieldValidationException.class)
+    ResponseEntity<ProblemDetail> handleFieldValidation(FieldValidationException ex) {
+        return validationProblem(List.of(new FieldViolation(ex.getField(), ex.getMessage())));
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
@@ -145,16 +147,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     private static ProblemDetail buildProblem(HttpStatusCode status, String code, String message) {
-        ProblemDetail detail = ProblemDetail.forStatusAndDetail(status, message);
-        detail.setType(URI.create("about:blank"));
-        HttpStatus resolved = HttpStatus.resolve(status.value());
-        detail.setTitle(resolved != null ? resolved.getReasonPhrase() : "Error");
-        detail.setProperty("code", code);
-        String requestId = MDC.get(RequestIdFilter.MDC_KEY);
-        if (requestId != null) {
-            detail.setProperty("requestId", requestId);
-        }
-        return detail;
+        return ProblemDetailFactory.create(status, code, message);
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})

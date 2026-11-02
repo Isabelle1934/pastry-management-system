@@ -31,7 +31,7 @@ Documentos em `docs/`, diagnóstico, pendências.
 - Flyway V1 (base), tratamento global de erros, estrutura de histórico/auditoria, Testcontainers.
 - **Aceite:** migrations aplicam do zero; teste de integração de persistência passa.
 
-### Fase 3 — Autenticação
+### Fase 3 — Autenticação ✅ (02/11/2026)
 - Login/logout por sessão, CSRF, rate limit, reset de senha por e-mail (Mailpit no dev), criação da conta inicial por variável de ambiente, tela de login e rotas protegidas.
 - **Testes:** login ok/erro, bloqueio por tentativas, CSRF ausente → 403, rota admin sem sessão → 401, ciclo de reset (expiração e uso único).
 

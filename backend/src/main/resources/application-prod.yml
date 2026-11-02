@@ -2,6 +2,13 @@
 server:
   forward-headers-strategy: framework
 
+# Sem valores padrão: a aplicação não sobe em produção sem estas variáveis.
+app:
+  mail:
+    from: ${APP_MAIL_FROM}
+  auth:
+    public-base-url: ${APP_PUBLIC_BASE_URL}
+
 logging:
   level:
     root: INFO

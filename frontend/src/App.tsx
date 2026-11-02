@@ -1,6 +1,11 @@
-import { SystemStatusPage } from './pages/SystemStatusPage'
+import { RouterProvider } from 'react-router'
+import { AuthProvider } from './contexts/AuthContext'
+import { router } from './routes/router'
 
-// As rotas (React Router) entram na Fase 3, junto com a área administrativa protegida.
 export default function App() {
-  return <SystemStatusPage />
+  return (
+    <AuthProvider>
+      <RouterProvider router={router} />
+    </AuthProvider>
+  )
 }

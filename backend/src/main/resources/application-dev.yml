@@ -11,3 +11,6 @@ spring:
 app:
   cors:
     allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:5173}
+  auth:
+    # Desenvolvimento em http://localhost (sem HTTPS).
+    cookie-secure: ${APP_COOKIE_SECURE:false}

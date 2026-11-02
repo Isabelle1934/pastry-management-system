@@ -70,6 +70,22 @@ Todas as exceções (de domínio, validação e do próprio Spring MVC) viram Pr
 **Status:** Aceita
 A anotação `@IntegrationTest` (`@SpringBootTest` + Testcontainers) faz todas as classes de integração reutilizarem o mesmo contexto e o mesmo container PostgreSQL 18, mantendo a suíte rápida. Os testes não usam `@Transactional` automático para exercitar commits reais (bloqueio otimista, triggers, rollback).
 
+## ADR-018 — Limite de tentativas em memória
+**Status:** Aceita · 02/11/2026
+`FixedWindowCounter` (janela fixa, `ConcurrentHashMap`) sem dependência externa. Suficiente para uma única instância; os contadores zeram ao reiniciar a aplicação (aceitável). Se houver mais de uma instância no futuro, trocar por armazenamento compartilhado (tabela no PostgreSQL ou Bucket4j com JDBC).
+
+## ADR-019 — Cookie de sessão configurado explicitamente
+**Status:** Aceita
+No Spring Boot 4 + Spring Session, as propriedades `server.servlet.session.cookie.*` não foram aplicadas ao cookie `SESSION` (verificado nos testes). Por isso `SecurityConfig#cookieSerializer` define `HttpOnly`, `SameSite=Lax`, `Path=/` e `Secure` (por `APP_COOKIE_SECURE`). Um teste com Tomcat real (`SessionCookieHttpIntegrationTests`) confere os headers `Set-Cookie` exatos.
+
+## ADR-020 — Política de senha por comprimento
+**Status:** Aceita
+Mínimo 10 e máximo 64 caracteres (≤ 72 bytes, limite do BCrypt), diferente do e-mail, sem exigir símbolos — recomendação do NIST e mais simples para uma usuária não técnica. BCrypt custo 12 via `DelegatingPasswordEncoder` (`{bcrypt}`), permitindo migrar de algoritmo sem invalidar senhas.
+
+## ADR-021 — Ambiente de desenvolvimento com Mailpit e `.env` local
+**Status:** Aceita
+O `docker-compose.dev.yml` inclui o Mailpit (SMTP em `localhost:1025`, interface em `http://localhost:8025`): e-mails de desenvolvimento nunca são entregues de verdade. O `.env` local (fora do git) guarda a conta de teste.
+
 ---
 
 ## Pendências — decisões que dependem da proprietária
@@ -78,7 +94,7 @@ A anotação `@IntegrationTest` (`@SpringBootTest` + Testcontainers) faz todas a
 |---|---|---|---|
 | P1 | **Identidade visual:** logo (SVG/PNG), fontes oficiais, códigos exatos das cores, fotos dos produtos, nome da confeitaria, texto de apresentação | — (não será inventada) | Fase 6 |
 | P2 | **Hospedagem** | VPS de baixo custo com Docker Compose | Fase 12 |
-| P3 | **E-mail** (recuperação de senha e avisos): provedor SMTP e domínio/remetente | Provedor SMTP com plano gratuito; Mailpit no desenvolvimento | Fase 3 (prod: Fase 12) |
+| P3 | **E-mail** (recuperação de senha e avisos): provedor SMTP e domínio/remetente | Provedor SMTP com plano gratuito; Mailpit no desenvolvimento (✅ configurado) | Fase 12 (produção) |
 | P4 | **Prazo para pagamento do sinal** após o aceite do orçamento | Configurável, com aviso e cancelamento automático (exceto com comprovante em análise) | Fase 8 |
 | P5 | **Edição da cliente com orçamento já enviado** | Orçamento é invalidado e o pedido volta para análise | Fase 7 |
 | P6 | **Limite de massas/recheios** | Configurado por tamanho (ex.: P = 1 massa e 1 recheio) | Fase 4 |

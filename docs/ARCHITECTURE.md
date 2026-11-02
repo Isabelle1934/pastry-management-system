@@ -84,6 +84,7 @@ Regra: nenhuma dependência é adicionada sem necessidade clara; versões experi
 │       ├── types/        # tipos dos DTOs
 │       ├── routes/       # definição de rotas + rota protegida
 │       ├── styles/       # tokens.css (cores/fontes oficiais), reset, globais
+│       ├── utils/        # funções puras (validações de formulário)
 │       └── assets/       # logo e imagens oficiais
 ├── infra/
 │   ├── docker-compose.dev.yml     # PostgreSQL local
@@ -118,12 +119,13 @@ Regra: nenhuma dependência é adicionada sem necessidade clara; versões experi
 - **CSRF:** `CookieCsrfTokenRepository` (cookie `XSRF-TOKEN` legível pelo JS, enviado no header `X-XSRF-TOKEN`) em todas as requisições que alteram estado — inclusive as públicas.
 - **Senhas:** `DelegatingPasswordEncoder` com BCrypt (custo 12). Senha mínima de 10 caracteres.
 - **Recuperação de senha:** token aleatório de 256 bits enviado por e-mail; no banco fica apenas o hash SHA-256; validade de 30 min; uso único; todas as sessões existentes são encerradas após a troca. A resposta da solicitação é sempre a mesma, exista ou não o e-mail.
-- **Primeira conta:** criada por comando/variável de ambiente na implantação (`ADMIN_EMAIL` + senha inicial forçando troca), nunca por endpoint público.
+- **Primeira conta:** criada na inicialização a partir de `APP_ADMIN_EMAIL`, `APP_ADMIN_NAME` e `APP_ADMIN_INITIAL_PASSWORD`, somente se não existir nenhuma conta. A senha é provisória: até trocá-la, o painel responde 403 `PASSWORD_CHANGE_REQUIRED` (exceto `/api/admin/auth/**`). Não há endpoint de cadastro.
+- **Link de redefinição:** `APP_PUBLIC_BASE_URL/admin/redefinir-senha#token=…`. O token vai no fragmento da URL (não é enviado ao servidor nem a logs de proxy) e o frontend o remove da barra de endereços ao abrir a página. O e-mail é enviado após o commit, de forma assíncrona (tempo de resposta igual exista ou não o e-mail).
 - **Rotas:** `/api/admin/**` exige autenticação; `/api/public/**` e `/api/tracking/**` são públicas com limitação de taxa. No frontend, rota protegida apenas melhora a UX — a proteção real é o backend.
 
 ## 6. Proteções gerais
 
-- **Rate limiting** (em memória, por IP e por identificador — suficiente para instância única): login (5 tentativas / 15 min por e-mail + IP, com bloqueio temporário), reset de senha, criação de pedidos, verificação de acompanhamento, uploads.
+- **Rate limiting** (em memória, `FixedWindowCounter`, por IP e por identificador — suficiente para instância única, ADR-018): login (5 falhas / 15 min por e-mail; 20 por IP), pedidos de redefinição (3/h por e-mail, silencioso; 10/h por IP), uso de token de redefinição (10 / 15 min por IP). Nas próximas fases: criação de pedidos, verificação de acompanhamento, uploads. Atrás do proxy, o IP real vem de `X-Forwarded-For` (`forward-headers-strategy: framework` no perfil `prod`).
 - **CORS:** desabilitado em produção (mesma origem); em desenvolvimento, apenas `http://localhost:5173`. Lista vinda de variável de ambiente.
 - **Headers:** `Content-Security-Policy`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: same-origin`, `X-Frame-Options: DENY`, HSTS (no Caddy).
 - **Logs:** erros com ID de correlação; nomes, WhatsApp, códigos de acompanhamento, tokens e senhas **nunca** registrados (mascaramento).

@@ -22,7 +22,7 @@
 | Método | Rota | Descrição |
 |---|---|---|
 | GET | `/health` | ✅ Fase 1 — `{"status":"UP"}` (Actuator, sem detalhes) |
-| GET | `/csrf` | Inicializa o cookie CSRF |
+| GET | `/csrf` | ✅ Fase 3 — 204; emite o cookie `XSRF-TOKEN` (o frontend o envia de volta no header `X-XSRF-TOKEN`) |
 | GET | `/bakery` | Dados públicos da confeitaria (nome, apresentação, contatos) |
 | GET | `/catalog` | Tamanhos (com limites de massas/recheios), massas e recheios ativos — sem preços internos se assim definido |
 | GET | `/availability?from=&to=` | Datas e horários disponíveis (considera funcionamento, bloqueios, antecedência e ocupação) |
@@ -46,12 +46,14 @@
 ### Autenticação
 | Método | Rota | Descrição |
 |---|---|---|
-| POST | `/auth/login` | Login (e-mail + senha) |
-| POST | `/auth/logout` | Logout |
-| GET | `/auth/me` | Usuária logada |
-| POST | `/auth/password/forgot` | Solicita e-mail de redefinição (público, resposta sempre igual) |
-| POST | `/auth/password/reset` | Redefine com token (público) |
-| POST | `/auth/password/change` | Troca de senha logada |
+| POST | `/auth/login` | ✅ `{email, password}` → 200 `{id, name, email, mustChangePassword}` + cookie `SESSION`. Erros: 401 `INVALID_CREDENTIALS` (mesma resposta para e-mail inexistente, senha errada ou conta desativada), 429 `TOO_MANY_ATTEMPTS` |
+| POST | `/auth/logout` | ✅ 204; encerra a sessão |
+| GET | `/auth/me` | ✅ Usuária logada; 401 `UNAUTHENTICATED` sem sessão |
+| POST | `/auth/password/forgot` | ✅ Público. `{email}` → 202 com mensagem sempre igual. 429 se o IP exceder o limite |
+| POST | `/auth/password/reset` | ✅ Público. `{token, newPassword}` → 204. 400 `INVALID_RESET_TOKEN` ou `VALIDATION_ERROR` (`newPassword`) |
+| POST | `/auth/password/change` | ✅ `{currentPassword, newPassword}` → 204. Mantém a sessão atual e encerra as demais |
+
+Enquanto a senha for provisória, qualquer `/api/admin/**` fora de `/api/admin/auth/**` responde 403 `PASSWORD_CHANGE_REQUIRED`. Falha de CSRF: 403 `CSRF_INVALID`.
 
 ### Configurações e catálogo
 | Método | Rota | Descrição |

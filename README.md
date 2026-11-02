@@ -2,7 +2,7 @@
 
 Plataforma web para centralizar encomendas personalizadas de bolos: a cliente faz a solicitação por um formulário público e acompanha o pedido por um código; a proprietária gerencia agenda, orçamentos, pagamentos, produção e financeiro em um painel administrativo.
 
-> **Status atual:** Fase 2 concluída (estrutura inicial + base do banco: migrations Flyway, tratamento de erros, auditoria). Nenhum módulo funcional implementado ainda. Veja [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md).
+> **Status atual:** Fase 3 concluída — autenticação do painel (login, logout, recuperação e troca de senha, conta inicial). Próxima: produtos e configurações. Veja [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md).
 
 ## Documentação
 
@@ -21,11 +21,11 @@ Plataforma web para centralizar encomendas personalizadas de bolos: a cliente fa
 | Camada | Versão fixada |
 |---|---|
 | Java | 25 LTS (Eclipse Temurin 25.0.5) |
-| Spring Boot | 4.1.2 (Web MVC, Data JPA, Validation, Flyway, Actuator) — Security, Session JDBC e Mail entram na Fase 3 |
+| Spring Boot | 4.1.2 (Web MVC, Data JPA, Validation, Flyway, Actuator, Security 7.1, Session JDBC, Mail) |
 | Maven | via Maven Wrapper (`backend/mvnw`) |
 | PostgreSQL | 18 (imagem `postgres:18-alpine`) |
 | Node.js | 24 LTS |
-| Frontend | React 19.3, TypeScript 7.0, Vite 8.3, oxlint |
+| Frontend | React 19.3, React Router 8.5, TypeScript 7.0, Vite 8.3, oxlint |
 | Testes backend | JUnit 5, MockMvc, Testcontainers |
 
 ## Pré-requisitos
@@ -40,10 +40,12 @@ Plataforma web para centralizar encomendas personalizadas de bolos: a cliente fa
    ```bash
    cp .env.example .env
    ```
-2. Banco de dados:
+   Para criar a conta da proprietária na primeira execução, preencha `APP_ADMIN_EMAIL`, `APP_ADMIN_NAME` e `APP_ADMIN_INITIAL_PASSWORD` no `.env` (a senha é provisória e será trocada no primeiro acesso).
+2. Banco de dados e caixa de e-mail local (Mailpit):
    ```bash
    docker compose -f infra/docker-compose.dev.yml up -d --wait
    ```
+   E-mails enviados pelo sistema (ex.: redefinição de senha) aparecem em http://localhost:8025.
 3. Backend (porta 8080), a partir de `backend/`:
    ```bash
    ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
@@ -52,7 +54,7 @@ Plataforma web para centralizar encomendas personalizadas de bolos: a cliente fa
    ```bash
    npm install && npm run dev
    ```
-5. Acesse http://localhost:5173 — a página deve mostrar **"Servidor conectado"**.
+5. Acesse http://localhost:5173 — a página deve mostrar **"Servidor conectado"**. O painel fica em http://localhost:5173/admin.
 
 O Vite encaminha `/api` para o backend, então o navegador enxerga uma única origem (igual à produção).
 
