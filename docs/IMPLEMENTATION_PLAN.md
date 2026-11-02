@@ -51,21 +51,23 @@ Documentos em `docs/`, diagnóstico, pendências.
 - Lista/detalhe/edição/recusa/cancelamento, histórico, orçamentos com itens, versões, envio, aceite/recusa pela cliente, verificação do acompanhamento.
 - **Testes:** cálculo de totais e sinal, imutabilidade após envio, versões, transições inválidas.
 
-### Fase 8 — Pagamentos e acompanhamento ✅ (02/11/2026 — área da cliente verificada no navegador; telas do painel ainda sem verificação manual)
+### Fase 8 — Pagamentos e acompanhamento ✅ (02/11/2026 — verificada no navegador)
 - Comprovante do sinal, confirmação/rejeição, registro manual, resumo financeiro do pedido, página de acompanhamento completa, processo agendado de vencimento e avisos por e-mail.
 - **Testes:** confirmação reserva capacidade, horário lotado, pagamentos preservados ao revisar orçamento, job idempotente (executar duas vezes = mesmo resultado).
 
-### Fase 9 — Produção ✅ (02/11/2026 — telas do painel ainda sem verificação manual no navegador)
+### Fase 9 — Produção ✅ (02/11/2026 — verificada no navegador)
 - Atualização de andamento, histórico, lista de próximas retiradas.
 - Andamento passo a passo (com volta de um passo), entrega conclui o pedido, entrega com saldo em aberto só com confirmação (P8), página "Produção e retiradas" com atrasados, mensagens de andamento no acompanhamento da cliente.
 - **Testes:** fluxo completo até concluir, saldo em aberto, saltos e pedidos não confirmados recusados, versão desatualizada, lista com atrasados e período, acesso restrito.
 
-### Fase 10 — Financeiro ✅ (02/11/2026 — telas do painel ainda sem verificação manual no navegador)
+### Fase 10 — Financeiro ✅ (02/11/2026 — verificada no navegador)
 - Despesas e categorias, indicadores por período.
 - Página "Financeiro" (resumo do mês, despesas, categorias), atalho "Registrar despesa deste pedido" no detalhe do pedido.
 - **Testes:** previsto × recebido, despesa vinculada contada uma vez.
 
-### Fase 11 — Dashboard e acabamento
+### Fase 11 — Dashboard e acabamento ✅ parcial (02/11/2026 — identidade visual P1 e revisão visual com a proprietária pendentes)
+- Dashboard com o que pede ação, produção, próximas retiradas, orçamentos perto de vencer e números do mês; menu do painel recolhível no celular; link para pular ao conteúdo; área pública conferida a 375 px sem rolagem horizontal.
+- **Verificação manual no navegador (02/11/2026), Fases 8–11:** dashboard e menu no celular; conferência do comprovante confirmou o pedido e reservou a vaga; produção até "Pronto" com aviso de saldo e entrega bloqueada sem confirmação; lista de retiradas; despesa vinculada pelo atalho do pedido; resumo do mês com valores corretos; avisos; acompanhamento da cliente mostrando "Pronto". Corrigido: valores e datas nos avisos/histórico agora em pt-BR ("R$ 82,50", "04/12/2026"); nome acessível do botão Menu inclui avisos não lidos; código do pedido não fica preso no formulário de despesa.
 - Indicadores, revisão de responsividade (celular e desktop), acessibilidade básica, revisão visual com a proprietária.
 
 ### Fase 12 — Testes e implantação

@@ -128,6 +128,10 @@ class PaymentFlowIntegrationTests {
                 .andExpect(jsonPath("$.payment.payments[0].amount").value("82.50"));
         assertThat(jdbc.queryForObject("select count(*) from notification where type = 'PROOF_SUBMITTED' and order_id = ?",
                 Integer.class, order.id())).isEqualTo(1);
+        assertThat(jdbc.queryForObject("select message from notification where type = 'PROOF_SUBMITTED' "
+                + "and order_id = ?", String.class, order.id())).contains("(R$ 82,50)");
+        assertThat(jdbc.queryForObject("select message from notification where type = 'NEW_ORDER' "
+                + "and order_id = ?", String.class, order.id())).contains("para 03/11/2026 às 14:00");
 
         long paymentId = pendingPaymentId(order.id());
         long proofFile = jdbc.queryForObject("select proof_file_id from payment where id = ?", Long.class, paymentId);

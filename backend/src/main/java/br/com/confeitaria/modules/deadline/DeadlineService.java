@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import br.com.confeitaria.common.audit.ActorType;
+import br.com.confeitaria.common.text.Texts;
 import br.com.confeitaria.modules.notification.entity.NotificationType;
 import br.com.confeitaria.modules.notification.service.NotificationMailer;
 import br.com.confeitaria.modules.notification.service.NotificationService;
@@ -92,7 +93,7 @@ public class DeadlineService {
         Instant limit = now.plus(Duration.ofHours(config.getQuoteExpiryWarningHours()));
         return count(quotes.findSentExpiringBetween(now, limit), quote -> notifications.notify(
                 NotificationType.QUOTE_EXPIRING, quote.getOrderId(),
-                "O orçamento de R$ " + quote.getTotal().toPlainString() + " vence em breve sem resposta da cliente. "
+                "O orçamento de " + Texts.brl(quote.getTotal()) + " vence em breve sem resposta da cliente. "
                         + "Se não for aceito até o prazo, o pedido será cancelado automaticamente.",
                 "QUOTE_EXPIRING:" + quote.getId()).isPresent());
     }
@@ -149,7 +150,7 @@ public class DeadlineService {
                 return false;
             }
             return notifications.notify(NotificationType.DEPOSIT_DEADLINE_NEAR, quote.getOrderId(),
-                    "O prazo para o sinal de R$ " + quote.getDepositAmount().toPlainString()
+                    "O prazo para o sinal de " + Texts.brl(quote.getDepositAmount())
                             + " termina em breve e ainda não há pagamento. Sem sinal, o pedido será cancelado automaticamente.",
                     "DEPOSIT_DEADLINE_NEAR:" + quote.getId()).isPresent();
         });

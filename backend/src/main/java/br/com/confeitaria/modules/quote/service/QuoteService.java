@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import br.com.confeitaria.common.audit.ActorType;
 import br.com.confeitaria.common.exception.ConflictException;
 import br.com.confeitaria.common.exception.NotFoundException;
+import br.com.confeitaria.common.text.Texts;
 import br.com.confeitaria.modules.notification.entity.NotificationType;
 import br.com.confeitaria.modules.notification.service.NotificationService;
 import br.com.confeitaria.modules.order.entity.CakeOrder;
@@ -124,8 +125,8 @@ public class QuoteService {
                 "Orçamento versão " + quote.getVersionNumber() + " aceito pela cliente.",
                 Map.of("version", quote.getVersionNumber(), "total", quote.getTotal().toPlainString()));
         notifications.notify(NotificationType.QUOTE_ACCEPTED, orderId,
-                order.getCustomerName().split(" ")[0] + " aceitou o orçamento de R$ " + quote.getTotal().toPlainString()
-                        + ". Aguardando o sinal de R$ " + quote.getDepositAmount().toPlainString() + ".",
+                order.getCustomerName().split(" ")[0] + " aceitou o orçamento de " + Texts.brl(quote.getTotal())
+                        + ". Aguardando o sinal de " + Texts.brl(quote.getDepositAmount()) + ".",
                 "QUOTE_ACCEPTED:" + quote.getId());
         return QuoteView.from(quote);
     }

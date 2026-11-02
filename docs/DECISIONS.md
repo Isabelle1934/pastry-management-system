@@ -138,6 +138,10 @@ Transições de produção centralizadas em `CakeOrder.changeProduction` (um pas
 **Status:** Aceita · 02/11/2026
 Resumo calculado em SQL (`JdbcTemplate`) a cada consulta, sem tabelas de totais — evita divergência com pagamentos e orçamentos. Previsto e pendente por data de retirada; recebido por `reviewed_at` convertido para o fuso da confeitaria; despesas por `expense_date`. Despesa vinculada é a mesma linha (`order_id` opcional), nunca somada duas vezes. Exclusão de despesa lógica (`deleted_at`, trigger bloqueia DELETE) e auditada. V7 cria 4 categorias genéricas editáveis (Ingredientes, Embalagens, Equipamentos e utensílios, Outros) para o formulário já funcionar no primeiro uso. Correção: "hoje" passa a usar o fuso configurado (`AppProperties.timezone`) também na lista de retiradas — o `Clock` é UTC.
 
+## ADR-035 — Dashboard e acabamento (Fase 11)
+**Status:** Aceita · 02/11/2026
+O dashboard reaproveita as regras já testadas (lista de retiradas e resumo financeiro) em vez de recalcular por conta própria; as contagens vêm de uma consulta agregada (`count(*) filter`). Menu do painel recolhível abaixo de 900 px (botão "Menu" com `aria-expanded`), link "Pular para o conteúdo" nas áreas pública e administrativa. Mensagens para a proprietária (avisos, e-mails, histórico) formatam valores e datas em pt-BR via `Texts`; a API continua com formato técnico. Identidade visual (P1) continua pendente: nada foi inventado; os tokens neutros seguem provisórios.
+
 ---
 
 ## Pendências — decisões que dependem da proprietária

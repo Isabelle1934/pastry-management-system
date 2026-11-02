@@ -10,6 +10,7 @@ import org.springframework.web.multipart.MultipartFile;
 import br.com.confeitaria.common.audit.ActorType;
 import br.com.confeitaria.common.exception.FieldValidationException;
 import br.com.confeitaria.common.validation.WhatsAppNumber;
+import br.com.confeitaria.common.text.Texts;
 import br.com.confeitaria.modules.file.entity.FilePurpose;
 import br.com.confeitaria.modules.file.service.FileStorageService;
 import br.com.confeitaria.modules.file.service.FileStorageService.ValidatedFile;
@@ -83,7 +84,7 @@ public class OrderCreationService {
                 Map.of("photos", validPhotos.size() + (validTopperPhoto == null ? 0 : 1)));
 
         notifications.notify(NotificationType.NEW_ORDER, order.getId(),
-                "Nova encomenda de " + name.split(" ")[0] + " para " + order.getPickupDate() + " às "
+                "Nova encomenda de " + name.split(" ")[0] + " para " + Texts.date(order.getPickupDate()) + " às "
                         + order.getPickupTime() + ".",
                 "NEW_ORDER:" + order.getId());
         return new OrderCreatedResponse(TrackingCodes.format(order.getTrackingCode()));

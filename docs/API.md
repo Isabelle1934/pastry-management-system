@@ -118,7 +118,7 @@ Datas `from`/`to` no formato `AAAA-MM-DD`, no fuso da confeitaria (America/Sao_P
 | DELETE | `/finance/expenses/{id}?version=` | ✅ 204 — exclusão lógica, auditada; some dos totais e da lista |
 | GET/POST | `/finance/categories` · PUT `/finance/categories/{id}` | ✅ `{name, version?}`; nome único sem diferenciar maiúsculas (409 `DUPLICATE_NAME`) |
 | PATCH | `/finance/categories/{id}/active` | ✅ `{active, version}` — desativar tira a categoria só das despesas novas |
-| GET | `/dashboard` | Indicadores gerais |
+| GET | `/dashboard` | ✅ `{today, actions {newOrders, proofsToReview, awaitingClientResponse, awaitingDeposit, overduePickups}, production {notStarted, inProduction, ready, pickupsToday}, upcomingPickups[] (até 8, próximos 7 dias), expiringQuotes[] (dentro do aviso configurado), month {forecastRevenue, received, pending, expenses}, unreadNotifications}` — mesmas regras do financeiro e da produção |
 | GET | `/notifications?unread=&limit=` | ✅ Avisos mais recentes (padrão 30, máx. 100) |
 | GET | `/notifications/unread-count` | ✅ `{count}` |
 | POST | `/notifications/{id}/read` · `/notifications/read-all` | ✅ Marca como lido |

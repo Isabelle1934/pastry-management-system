@@ -107,9 +107,11 @@ interface Props {
   from: string
   to: string
   presetOrderCode?: string
+  /** Chamado quando o formulário aberto pelo atalho do pedido é salvo ou cancelado. */
+  onPresetUsed?: () => void
 }
 
-export function ExpensesSection({ from, to, presetOrderCode }: Props) {
+export function ExpensesSection({ from, to, presetOrderCode, onPresetUsed }: Props) {
   const loadExpenses = useCallback(() => listExpenses(from, to), [from, to])
   const { data, loading, error, reload } = useLoader(loadExpenses)
   const { data: categories, error: categoriesError } = useLoader(listExpenseCategories)
@@ -160,10 +162,14 @@ export function ExpensesSection({ from, to, presetOrderCode }: Props) {
           presetOrderCode={presetOrderCode}
           onSaved={(saved) => {
             setEditing(null)
+            onPresetUsed?.()
             setNotice({ tone: 'success', text: `Despesa “${saved.description}” salva.` })
             void reload()
           }}
-          onCancel={() => setEditing(null)}
+          onCancel={() => {
+            setEditing(null)
+            onPresetUsed?.()
+          }}
           onStale={() => void reload()}
         />
       )}

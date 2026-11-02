@@ -15,6 +15,7 @@ import br.com.confeitaria.common.audit.ActorType;
 import br.com.confeitaria.common.exception.ConflictException;
 import br.com.confeitaria.common.exception.FieldValidationException;
 import br.com.confeitaria.common.exception.NotFoundException;
+import br.com.confeitaria.common.text.Texts;
 import br.com.confeitaria.modules.file.entity.FilePurpose;
 import br.com.confeitaria.modules.file.service.FileStorageService;
 import br.com.confeitaria.modules.notification.entity.NotificationType;
@@ -102,7 +103,7 @@ public class PaymentService {
         history.record(orderId, "PROOF_SUBMITTED", ActorType.CLIENT, "Comprovante do sinal enviado pela cliente.",
                 Map.of("amount", value.toPlainString(), "paymentId", payment.getId()));
         notifications.notify(NotificationType.PROOF_SUBMITTED, orderId,
-                firstName(order) + " enviou o comprovante do sinal (R$ " + value.toPlainString() + "). Confira e confirme no painel.",
+                firstName(order) + " enviou o comprovante do sinal (" + Texts.brl(value) + "). Confira e confirme no painel.",
                 "PROOF_SUBMITTED:" + payment.getId());
         return summary(orderId);
     }
@@ -120,7 +121,7 @@ public class PaymentService {
         payment.confirm(blankToNull(note), clock.instant());
         payments.saveAndFlush(payment);
         history.record(order.getId(), "PAYMENT_CONFIRMED", ActorType.OWNER,
-                "Pagamento de R$ " + payment.getAmount().toPlainString() + " confirmado.",
+                "Pagamento de " + Texts.brl(payment.getAmount()) + " confirmado.",
                 withActor(Map.of("paymentId", paymentId, "kind", payment.getKind().name()), actorId));
         confirmOrderIfDepositReached(order, acceptAsDeposit, actorId);
         refreshStatus(order);
@@ -159,7 +160,7 @@ public class PaymentService {
             case REFUND -> "Reembolso";
         };
         history.record(orderId, "PAYMENT_REGISTERED", ActorType.OWNER,
-                label + " de R$ " + payment.getAmount().toPlainString() + " registrado ("
+                label + " de " + Texts.brl(payment.getAmount()) + " registrado ("
                         + (request.method() == Payment.Method.PIX ? "Pix" : "dinheiro") + ").",
                 withActor(Map.of("paymentId", payment.getId(), "kind", request.kind().name()), actorId));
         if (request.kind() != Payment.Kind.REFUND) {

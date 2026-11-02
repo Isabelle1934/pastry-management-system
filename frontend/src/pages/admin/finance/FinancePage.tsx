@@ -56,7 +56,8 @@ export function FinancePage() {
       <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
         {tab === 'resumo' && <SummarySection key={month} from={from} to={to} />}
         {tab === 'despesas' && (
-          <ExpensesSection key={month} from={from} to={to} presetOrderCode={presetOrderCode} />
+          <ExpensesSection key={month} from={from} to={to} presetOrderCode={presetOrderCode}
+            onPresetUsed={() => update({})} />
         )}
         {tab === 'categorias' && <CategoriesSection />}
       </div>

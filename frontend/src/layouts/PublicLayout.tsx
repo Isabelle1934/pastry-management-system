@@ -10,12 +10,13 @@ export function PublicLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className={styles.shell}>
+      <a href="#conteudo" className={styles.skip}>Pular para o conteúdo</a>
       <header className={styles.header}>
         <Link to="/" className={styles.brand}>
           {name}
         </Link>
       </header>
-      <main className={styles.main}>{children}</main>
+      <main id="conteudo" className={styles.main} tabIndex={-1}>{children}</main>
       <footer className={styles.footer}>
         <p className={styles.footerName}>{name}</p>
         {bakery?.address && <p>{bakery.address}</p>}

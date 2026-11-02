@@ -37,6 +37,15 @@ export function AdminLayout() {
   const navigate = useNavigate()
   const [leaving, setLeaving] = useState(false)
   const unread = useUnreadCount(!!user && !user.mustChangePassword)
+  const location = useLocation()
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [menuPath, setMenuPath] = useState(location.pathname)
+
+  // Fecha o menu do celular ao trocar de página.
+  if (menuPath !== location.pathname) {
+    setMenuPath(location.pathname)
+    setMenuOpen(false)
+  }
 
   async function handleLogout() {
     setLeaving(true)
@@ -51,12 +60,21 @@ export function AdminLayout() {
 
   return (
     <div className={styles.shell}>
+      <a href="#conteudo" className={styles.skip}>Pular para o conteúdo</a>
       <header className={styles.header}>
         <div className={styles.brand}>
           <span className={styles.brandTitle}>Painel</span>
           {user && <span className={styles.user}>{user.name}</span>}
         </div>
-        <nav className={styles.nav} aria-label="Menu do painel">
+        <button type="button" className={styles.menuButton} aria-expanded={menuOpen} aria-controls="menu-painel"
+          aria-label={menuOpen ? 'Fechar menu' : unread > 0 ? `Menu (${unread} avisos não lidos)` : 'Menu'}
+          onClick={() => setMenuOpen((open) => !open)}>
+          {menuOpen ? 'Fechar menu' : 'Menu'}
+          {!menuOpen && unread > 0 && (
+            <span className={styles.badge} aria-hidden="true">{unread > 99 ? '99+' : unread}</span>
+          )}
+        </button>
+        <nav id="menu-painel" className={`${styles.nav} ${menuOpen ? styles.open : ''}`} aria-label="Menu do painel">
           {user?.mustChangePassword ? (
             <NavLink to="/admin/trocar-senha" className={linkClass}>
               Trocar senha
@@ -96,7 +114,7 @@ export function AdminLayout() {
           </button>
         </nav>
       </header>
-      <main className={styles.content}>
+      <main id="conteudo" className={styles.content} tabIndex={-1}>
         <Outlet />
       </main>
     </div>

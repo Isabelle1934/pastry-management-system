@@ -15,6 +15,7 @@ import br.com.confeitaria.common.exception.ConflictException;
 import br.com.confeitaria.common.exception.NotFoundException;
 import br.com.confeitaria.common.persistence.Versions;
 import br.com.confeitaria.common.validation.WhatsAppNumber;
+import br.com.confeitaria.common.text.Texts;
 import br.com.confeitaria.config.AppProperties;
 import br.com.confeitaria.modules.order.dto.OrderAdminDtos.OrderDetail;
 import br.com.confeitaria.modules.order.entity.CakeOrder;
@@ -90,8 +91,7 @@ public class ProductionService {
             BigDecimal balanceDue = payments.summary(orderId).balanceDue();
             if (balanceDue != null && balanceDue.signum() > 0) {
                 if (!request.confirmsBalanceDue()) {
-                    throw new ConflictException("BALANCE_DUE", "Ainda falta receber R$ "
-                            + balanceDue.toPlainString().replace('.', ',')
+                    throw new ConflictException("BALANCE_DUE", "Ainda falta receber " + Texts.brl(balanceDue)
                             + ". Registre o pagamento ou confirme a entrega com saldo em aberto.");
                 }
                 details.put("balanceDue", balanceDue.toPlainString());
