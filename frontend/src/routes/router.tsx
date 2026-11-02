@@ -9,12 +9,13 @@ import { ResetPasswordPage } from '../pages/admin/ResetPasswordPage'
 import { SchedulePage } from '../pages/admin/schedule/SchedulePage'
 import { SettingsPage } from '../pages/admin/SettingsPage'
 import { NotFoundPage } from '../pages/NotFoundPage'
-import { SystemStatusPage } from '../pages/SystemStatusPage'
+import { HomePage } from '../pages/public/HomePage'
+import { OrderFormPage } from '../pages/public/order/OrderFormPage'
 import { GuestOnly, RequireAuth } from './guards'
 
 export const router = createBrowserRouter([
-  // Página pública provisória; a página inicial da confeitaria entra na Fase 6.
-  { path: '/', element: <SystemStatusPage /> },
+  { path: '/', element: <HomePage /> },
+  { path: '/encomendar', element: <OrderFormPage /> },
   {
     path: '/admin/login',
     element: (

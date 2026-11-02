@@ -30,7 +30,7 @@ Por estar no mesmo domínio, o cookie de sessão é *first-party*, não há CORS
 | Sessão | Spring Session JDBC | Sessões sobrevivem a reinício do servidor |
 | E-mail | Spring Mail (SMTP) | Provedor a definir |
 | Agendamento | `@Scheduled` + ShedLock (JDBC) | Execução única mesmo se houver mais de uma instância |
-| Detecção de arquivo | Apache Tika Core | Verificação do conteúdo real (magic bytes) |
+| Detecção de arquivo | Assinatura binária própria (`FileType`) | 4 formatos aceitos; sem dependência extra (ADR-006 revisada) |
 | Testes | JUnit 5, Spring Boot Test, Testcontainers (PostgreSQL), MockMvc | Testes de integração com banco real |
 | Frontend | React 19.3, TypeScript 7.0, Vite 8.3, oxlint; React Router a partir da Fase 3 | CSS Modules + variáveis CSS (tokens da identidade visual) |
 | Formulários | Validação própria leve ou `react-hook-form` + `zod` | Decisão na Fase 6 conforme complexidade |
@@ -135,8 +135,9 @@ Regra: nenhuma dependência é adicionada sem necessidade clara; versões experi
 ## 7. Armazenamento de arquivos
 
 - Diretório fora de qualquer pasta pública (`/data/uploads`, volume persistente), sem permissão de execução, servido **somente** pelo backend.
-- Nome interno: UUID aleatório sem extensão original; metadados (nome original saneado, tipo detectado, tamanho, SHA-256) no banco (`stored_file`).
-- Validação: extensão permitida **e** tipo detectado pelo conteúdo (Tika) devem coincidir com a lista permitida:
+- Nome interno: `xx/UUID.bin` (subpasta pelos 2 primeiros caracteres), sem o nome nem a extensão original; metadados (nome original saneado, tipo detectado, tamanho, SHA-256) no banco (`stored_file`). Gravação em arquivo temporário + movimento atômico; se a transação for desfeita, o arquivo é apagado.
+- Diretório: `APP_UPLOAD_DIR` (dev: `backend/data/uploads`, fora do git).
+- Validação: extensão permitida **e** tipo detectado pelo conteúdo (assinatura binária — `FileType.detect`) devem coincidir com a lista permitida:
   - Fotos de referência: JPG, PNG, WEBP — até 5 MB cada.
   - Comprovantes: JPG, PNG, PDF — até 5 MB.
   - O `Content-Type` enviado pelo navegador é ignorado.

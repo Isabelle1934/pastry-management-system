@@ -76,7 +76,7 @@ Itens de catálogo são desativados, não apagados, quando já usados em pedidos
 
 **order_flavor / order_filling** — `order_id`, `flavor_id`/`filling_id`, `name_snapshot`. PK (`order_id`, item). Quantidade validada contra `max_flavors`/`max_fillings` do tamanho.
 
-**cake_topper** — `order_id` PK/FK, `theme`, `name`, `age`.
+**Topo de bolo** — colunas `topper_requested`, `topper_theme`, `topper_name`, `topper_age` em `cake_order` (0..1 por pedido; `CHECK` garante tema quando solicitado). Mais simples que uma tabela 1:1.
 
 **order_history** — `id`, `order_id`, `event_type` (`CREATED`, `EDITED_BY_CLIENT`, `EDITED_BY_OWNER`, `STATUS_CHANGED`, `QUOTE_SENT`, `QUOTE_ACCEPTED`, `PAYMENT_CONFIRMED`, `EXPIRED`, …), `actor` (`CLIENT`, `OWNER`, `SYSTEM`), `description`, `details JSONB` (valores antes/depois, sem dados sensíveis desnecessários), `created_at`. Somente inserção.
 
@@ -121,7 +121,7 @@ Uma despesa é um único registro: o vínculo com pedido é apenas um atributo �
 | V1 ✅ | admin_user, password_reset_token, spring_session, audit_log, shedlock, função `prevent_history_modification()` |
 | V2 ✅ | bakery_settings (linha única id=1, textos vazios; validade 48 h e aviso 12 h como padrão editável), cake_size, cake_flavor, cake_filling (nomes únicos por `lower(name)`) |
 | V3 ✅ | agenda: weekly_slot, schedule_block (`UNIQUE NULLS NOT DISTINCT`), slot_occupancy, slot_reservation (FK para cake_order criada na V4); `min_lead_time_hours` (24) e `max_booking_days_ahead` (90) em bakery_settings |
-| V4 | pedidos: cake_order, order_flavor, order_filling, cake_topper, order_history, stored_file |
+| V4 ✅ | pedidos: cake_order (topo de bolo nas colunas `topper_*`, em vez de tabela própria), order_flavor, order_filling, order_history (imutável), stored_file; FK slot_reservation → cake_order |
 | V5 | quote, quote_item |
 | V6 | payment |
 | V7 | expense_category, expense |

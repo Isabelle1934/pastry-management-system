@@ -1,14 +1,15 @@
 import { Link } from 'react-router'
-import styles from './SystemStatusPage.module.css'
+import { PublicLayout } from '../layouts/PublicLayout'
+import styles from './public/public.module.css'
 
 export function NotFoundPage() {
   return (
-    <main className={styles.page}>
-      <h1>Página não encontrada</h1>
-      <p className={styles.subtitle}>O endereço acessado não existe.</p>
-      <p>
+    <PublicLayout>
+      <section className={styles.hero}>
+        <h1 className={styles.heroTitle}>Página não encontrada</h1>
+        <p className={styles.about}>O endereço acessado não existe.</p>
         <Link to="/">Ir para o início</Link>
-      </p>
-    </main>
+      </section>
+    </PublicLayout>
   )
 }

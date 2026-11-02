@@ -23,8 +23,8 @@ Alternativas: `SERIALIZABLE` (exige retentativas), *advisory locks* (mais opaco)
 Vencimentos e avisos rodam no backend a cada 5 min. ShedLock evita execução duplicada se houver mais de uma instância; as atualizações são condicionais (`WHERE status = 'SENT'`) e os avisos têm `dedup_key` único → idempotente.
 
 ## ADR-006 — Arquivos em disco persistente privado, validados por conteúdo
-**Status:** Proposta
-Disco local (volume) fora da área pública, nomes UUID, Apache Tika para detectar o tipo real, download apenas pelo backend com autorização. Interface `FileStorage` permite trocar por armazenamento de objetos no futuro.
+**Status:** Aceita (revisada na Fase 6: sem Apache Tika)
+Disco local (volume) fora da área pública, nomes UUID, detecção do tipo real pela assinatura binária dos 4 formatos aceitos (JPEG, PNG, WEBP, PDF) — o Tika seria uma dependência grande para um conjunto tão pequeno, download apenas pelo backend com autorização. Interface `FileStorage` permite trocar por armazenamento de objetos no futuro.
 
 ## ADR-007 — Código de acompanhamento + 4 últimos dígitos do WhatsApp
 **Status:** Proposta
@@ -106,13 +106,21 @@ Retirada é `DATE` + `TIME` no fuso da confeitaria. A opção `hibernate.jdbc.ti
 **Status:** Aceita
 `ReservationService.reserve/release` exigem a transação de quem chama (`MANDATORY`): a confirmação do sinal (Fase 8), o cancelamento e a remarcação ocupam/liberam a vaga atomicamente com a mudança do pedido. Remarcar libera a vaga antiga e ocupa a nova na mesma transação; se a nova estiver lotada, nada muda.
 
+## ADR-027 — Topo de bolo como colunas do pedido
+**Status:** Aceita · 02/11/2026
+O topo é 0..1 por pedido e só tem tema, nome e idade (a foto vai para `stored_file`). Colunas `topper_*` em `cake_order` com `CHECK` de consistência evitam uma tabela 1:1 e um join em toda leitura.
+
+## ADR-028 — Fotos enviadas mantêm os metadados originais (EXIF)
+**Status:** Aceita, com ressalva
+Fotos de celular podem conter localização (EXIF/GPS). Remover exigiria recodificar a imagem, e o Java não lê WEBP nativamente. Como as fotos só podem ser vistas pela proprietária (download autenticado, Fase 7), o risco é baixo. Reavaliar na revisão de segurança (Fase 12).
+
 ---
 
 ## Pendências — decisões que dependem da proprietária
 
 | # | Assunto | Proposta padrão | Necessário até |
 |---|---|---|---|
-| P1 | **Identidade visual:** logo (SVG/PNG), fontes oficiais, códigos exatos das cores, fotos dos produtos, nome da confeitaria, texto de apresentação | — (não será inventada) | Fase 6 |
+| P1 | **Identidade visual:** logo (SVG/PNG), fontes oficiais, códigos exatos das cores, fotos dos produtos | — (não será inventada). Área pública pronta com visual neutro provisório; nome e apresentação já vêm de Configurações | Antes da implantação (Fase 11) |
 | P2 | **Hospedagem** | VPS de baixo custo com Docker Compose | Fase 12 |
 | P3 | **E-mail** (recuperação de senha e avisos): provedor SMTP e domínio/remetente | Provedor SMTP com plano gratuito; Mailpit no desenvolvimento (✅ configurado) | Fase 12 (produção) |
 | P4 | **Prazo para pagamento do sinal** após o aceite do orçamento | Configurável, com aviso e cancelamento automático (exceto com comprovante em análise) | Fase 8 |
@@ -121,8 +129,8 @@ Retirada é `DATE` + `TIME` no fuso da confeitaria. A opção `hibernate.jdbc.ti
 | P7 | **Cancelamento com sinal já pago** (reembolso, retenção) | Registrar manualmente; capacidade liberada; sem regra automática de reembolso | Fase 8 |
 | P8 | **Entregar com saldo em aberto** | Permitido, com aviso visível | Fase 9 |
 | P9 | **Lucro estimado** | Previsto − despesas, mostrando também recebido − despesas | Fase 10 |
-| P10 | **Decoração** | Texto livre + foto (sem catálogo) | Fase 6 |
-| P11 | **Somente retirada** (sem entrega) | Sim | Fase 6 |
+| P10 | **Decoração** | ✅ Texto livre + foto (proposta padrão) | — |
+| P11 | **Somente retirada** (sem entrega) | ✅ Sim (proposta padrão) | — |
 | P12 | **Exibir preço-base** dos tamanhos na área pública | Exibir como "a partir de" | Fase 6 |
-| P13 | **Quantidade de fotos** de referência | Até 3 do bolo + 1 do topo, 5 MB cada | Fase 6 |
+| P13 | **Quantidade de fotos** de referência | ✅ Até 3 do bolo + 1 do topo, 5 MB cada (proposta padrão) | — |
 | P14 | **Retenção de dados pessoais** (LGPD) | Manter enquanto necessário; definir política de exclusão/anonimização | Fase 12 |

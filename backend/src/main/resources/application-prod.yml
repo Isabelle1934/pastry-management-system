@@ -8,6 +8,8 @@ app:
     from: ${APP_MAIL_FROM}
   auth:
     public-base-url: ${APP_PUBLIC_BASE_URL}
+  storage:
+    upload-dir: ${APP_UPLOAD_DIR}
 
 logging:
   level:

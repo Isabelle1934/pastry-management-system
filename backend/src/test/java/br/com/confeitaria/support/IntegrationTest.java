@@ -18,7 +18,7 @@ import br.com.confeitaria.TestcontainersConfiguration;
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-@SpringBootTest
+@SpringBootTest(properties = "app.storage.upload-dir=${java.io.tmpdir}/confeitaria-test-uploads")
 @AutoConfigureMockMvc
 @Import({TestcontainersConfiguration.class, TestSupportConfiguration.class})
 public @interface IntegrationTest {

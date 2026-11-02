@@ -43,7 +43,7 @@ Documentos em `docs/`, diagnóstico, pendências.
 - Modelo semanal, bloqueios, antecedência, cálculo de disponibilidade, `slot_occupancy`/`slot_reservation`, serviço de reserva/liberação.
 - **Testes:** geração de horários (incluindo fuso e virada de dia), bloqueios, **teste de concorrência** com N threads confirmando no mesmo horário com capacidade K → exatamente K sucessos.
 
-### Fase 6 — Encomendas públicas
+### Fase 6 — Encomendas públicas ✅ (02/11/2026 — visual neutro provisório até P1)
 - Página inicial (com identidade visual oficial), formulário em 5 etapas, uploads seguros, geração de código, tela de sucesso.
 - **Testes:** validações backend, upload com extensão falsa rejeitado, arquivo grande rejeitado, código único.
 

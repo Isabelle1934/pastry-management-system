@@ -7,7 +7,3 @@ export interface ProblemDetail {
   code?: string
   errors?: { field: string; message: string }[]
 }
-
-export interface HealthResponse {
-  status: 'UP' | 'DOWN' | 'OUT_OF_SERVICE' | 'UNKNOWN'
-}

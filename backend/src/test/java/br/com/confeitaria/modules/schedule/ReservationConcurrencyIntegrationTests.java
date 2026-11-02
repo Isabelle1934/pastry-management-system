@@ -14,7 +14,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,7 +33,6 @@ import br.com.confeitaria.support.MutableClock;
 @IntegrationTest
 class ReservationConcurrencyIntegrationTests {
 
-    private static final AtomicLong ORDER_IDS = new AtomicLong(1_000_000);
     /** Terça-feira. */
     private static final LocalDate DATE = LocalDate.of(2026, 11, 10);
     private static final LocalTime TIME = LocalTime.of(14, 0);
@@ -60,8 +58,8 @@ class ReservationConcurrencyIntegrationTests {
         schedule.reset(24, 90);
     }
 
-    private static long newOrderId() {
-        return ORDER_IDS.incrementAndGet();
+    private long newOrderId() {
+        return schedule.newOrder();
     }
 
     private void reserve(long orderId, LocalDate date, LocalTime time) {
@@ -101,8 +99,13 @@ class ReservationConcurrencyIntegrationTests {
     void simultaneousConfirmationsNeverExceedTheSlotCapacity() throws Exception {
         schedule.slot(2, "14:00", 3, true);
 
+        java.util.concurrent.ConcurrentLinkedQueue<Long> orderIds = new java.util.concurrent.ConcurrentLinkedQueue<>();
+        for (int i = 0; i < 20; i++) {
+            orderIds.add(newOrderId());
+        }
+
         List<String> results = runConcurrently(20, () -> {
-            reserve(newOrderId(), DATE, TIME);
+            reserve(orderIds.poll(), DATE, TIME);
             return null;
         });
 

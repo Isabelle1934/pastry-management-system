@@ -1,0 +1,93 @@
+.hero {
+  text-align: center;
+  padding: var(--space-4) 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.heroTitle {
+  margin: 0;
+  font-size: 2rem;
+}
+
+.about {
+  margin: 0;
+  max-width: 560px;
+  white-space: pre-line;
+  color: var(--color-text-muted);
+  font-size: 1.05rem;
+}
+
+.cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  padding: 0 var(--space-5);
+  border-radius: 999px;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font-weight: 700;
+  font-size: 1.1rem;
+  text-decoration: none;
+}
+
+.cta:hover {
+  background: var(--color-primary-hover);
+}
+
+.cta:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
+}
+
+.infoGrid {
+  display: grid;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+@media (min-width: 700px) {
+  .infoGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.infoCard {
+  padding: var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.infoCard h2 {
+  margin: 0 0 var(--space-2);
+  font-size: 1.15rem;
+}
+
+.infoCard p {
+  margin: 0 0 var(--space-2);
+  white-space: pre-line;
+}
+
+.infoCard a {
+  color: var(--color-primary);
+}
+
+.steps {
+  margin: 0;
+  padding-left: 1.2em;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.muted {
+  color: var(--color-text-muted);
+}
+
+.centered {
+  text-align: center;
+}

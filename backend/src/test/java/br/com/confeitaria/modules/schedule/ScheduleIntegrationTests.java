@@ -116,7 +116,8 @@ class ScheduleIntegrationTests {
         schedule.slot(3, "10:00", 1, true);
         schedule.block(TUESDAY, "14:00");
         schedule.block(WEDNESDAY, null);
-        tx.executeWithoutResult(s -> reservations.reserve(42L, TUESDAY, LocalTime.of(16, 0)));
+        long orderId = schedule.newOrder();
+        tx.executeWithoutResult(s -> reservations.reserve(orderId, TUESDAY, LocalTime.of(16, 0)));
 
         mockMvc.perform(get("/api/public/availability").param("from", "2026-11-03").param("to", "2026-11-04"))
                 .andExpect(jsonPath("$.days", hasSize(0)));
@@ -137,7 +138,8 @@ class ScheduleIntegrationTests {
         schedule.slot(2, "14:00", 1, true);
         assertThat(availability.isBookable(TUESDAY, LocalTime.of(14, 0))).isTrue();
 
-        tx.executeWithoutResult(s -> reservations.reserve(7L, TUESDAY, LocalTime.of(14, 0)));
+        long orderId = schedule.newOrder();
+        tx.executeWithoutResult(s -> reservations.reserve(orderId, TUESDAY, LocalTime.of(14, 0)));
 
         assertThat(availability.isBookable(TUESDAY, LocalTime.of(14, 0))).isFalse();
         assertThat(availability.isBookable(TUESDAY, LocalTime.of(15, 0))).as("horário inexistente").isFalse();
@@ -216,7 +218,8 @@ class ScheduleIntegrationTests {
     @Test
     void ownerManagesBlocksAndIsWarnedAboutConfirmedOrders() throws Exception {
         schedule.slot(2, "14:00", 2, true);
-        tx.executeWithoutResult(s -> reservations.reserve(99L, TUESDAY, LocalTime.of(14, 0)));
+        long orderId = schedule.newOrder();
+        tx.executeWithoutResult(s -> reservations.reserve(orderId, TUESDAY, LocalTime.of(14, 0)));
 
         String body = send(post("/api/admin/schedule/blocks"),
                 "{\"date\":\"2026-11-03\",\"startTime\":\"14:00\",\"reason\":\"Feriado\"}")

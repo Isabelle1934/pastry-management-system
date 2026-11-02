@@ -72,6 +72,14 @@ O `UPDATE` condicional trava a linha do horário: duas confirmações simultâne
 ### Liberação de capacidade
 Cancelamento, remarcação ou expiração de pedido com reserva ativa: decrementa `reserved_count` e marca a reserva como `RELEASED` com motivo, na mesma transação. Remarcação = liberar o horário antigo + reservar o novo (mesma transação, mesmas regras).
 
+## 3.1 Solicitação pública (✅ Fase 6)
+
+- Todas as regras são revalidadas no servidor: WhatsApp válido, tamanho ativo, massas/recheios ativos, sem repetição e dentro do limite do tamanho, horário ainda disponível, tema obrigatório quando há topo.
+- Decoração é texto livre + fotos (P10); apenas retirada (P11); até 3 fotos de referência e 1 do topo, 5 MB cada (P13).
+- Código de acompanhamento: 16 caracteres Crockford Base32 (80 bits) — `TrackingCodes`.
+- Limite de 5 solicitações por hora por IP.
+- A solicitação **não** ocupa vaga; o horário só é garantido na confirmação do sinal.
+
 ## 4. Edição pela cliente
 
 - Permitida em `PENDING_REVIEW` e `QUOTE_SENT` (antes do aceite).

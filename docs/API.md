@@ -26,7 +26,7 @@
 | GET | `/bakery` | ✅ Fase 4 — `{name, aboutText, whatsappContact, whatsappLink, instagram, address, pickupInstructions}`. Não expõe chave Pix, e-mail de avisos nem regras de orçamento |
 | GET | `/catalog` | ✅ Fase 4 — somente itens ativos: `sizes[{id, name, description, servings, basePrice, maxFlavors, maxFillings}]`, `flavors[{id, name, description}]`, `fillings[...]` |
 | GET | `/availability?from=&to=` | ✅ Fase 5 — `{from, to, days:[{date, times:["14:00"]}]}`: só horários que podem ser escolhidos agora (sem contagens). Sem parâmetros: de hoje até 62 dias ou o limite configurado |
-| POST | `/orders` | Cria solicitação (multipart: JSON `order` + `referencePhotos[]` + `topperPhoto`). Retorna `trackingCode` |
+| POST | `/orders` | ✅ Fase 6 — multipart: parte `order` (JSON: `customerName, customerWhatsapp, pickupDate, pickupTime, sizeId, flavorIds[], fillingIds[], decoration, cakeText, notes, topperRequested, topperTheme, topperName, topperAge`), até 3 `referencePhotos` e 1 `topperPhoto` (JPG/PNG/WEBP, 5 MB cada). 201 `{trackingCode: "XXXX-XXXX-XXXX-XXXX"}`. Erros por campo (400), 413 acima do limite do servidor, 429 após 5 envios/h por IP. Não ocupa vaga na agenda |
 
 ## Acompanhamento — `/api/tracking`
 

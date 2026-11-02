@@ -19,6 +19,11 @@ spring:
     jdbc:
       # Tabelas criadas pela migration V1 (Flyway), nunca pelo Spring Session.
       initialize-schema: never
+  servlet:
+    multipart:
+      # 3 fotos + 1 foto do topo de até 5 MB cada, mais a parte JSON.
+      max-file-size: 5MB
+      max-request-size: 22MB
   mail:
     host: ${MAIL_HOST:localhost}
     port: ${MAIL_PORT:1025}
@@ -65,6 +70,10 @@ app:
   cors:
     # Em produção o frontend é servido no mesmo domínio: lista vazia = CORS desabilitado.
     allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:}
+  storage:
+    # Diretório privado e persistente para arquivos enviados (fora de pastas públicas).
+    upload-dir: ${APP_UPLOAD_DIR:./data/uploads}
+    max-file-size: 5MB
   mail:
     from: ${APP_MAIL_FROM:nao-responda@localhost}
   auth:
