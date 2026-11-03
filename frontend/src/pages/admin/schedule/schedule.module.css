@@ -8,6 +8,7 @@
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
@@ -27,7 +28,7 @@
 
 .dayTitle {
   margin: 0;
-  font-size: 1rem;
+  font-size: 1.3rem;
 }
 
 .muted {
@@ -74,11 +75,11 @@
 .chip {
   display: inline-block;
   padding: 2px var(--space-2);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font-size: 0.8rem;
   font-weight: 600;
-  background: var(--color-border);
-  color: var(--color-text);
+  background: var(--palette-nude);
+  color: var(--palette-chocolate);
 }
 
 .chipOk {

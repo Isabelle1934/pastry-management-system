@@ -1,49 +1,86 @@
 .page {
   min-height: 100vh;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
+  display: grid;
+  align-items: center;
+  justify-items: center;
   padding: var(--space-4) var(--space-3);
+  background:
+    radial-gradient(circle at 85% 10%, rgb(232 217 200 / 0.8), transparent 40%),
+    var(--color-background);
+}
+
+@media (min-width: 900px) {
+  .page {
+    grid-template-columns: minmax(320px, 0.9fr) 1.1fr;
+    padding: 0;
+  }
+}
+
+.aside {
+  display: none;
+}
+
+@media (min-width: 900px) {
+  .aside {
+    align-self: stretch;
+    justify-self: stretch;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: var(--space-5);
+    background:
+      radial-gradient(circle at 20% 15%, rgb(184 155 123 / 0.3), transparent 45%),
+      var(--color-surface-dark);
+  }
+}
+
+.quote {
+  margin: 0;
+  max-width: 18ch;
+  font-family: var(--font-heading);
+  font-variant-numeric: lining-nums;
+  font-size: 2.6rem;
+  font-style: italic;
+  font-weight: 500;
+  line-height: 1.1;
+  color: var(--color-on-dark);
 }
 
 .card {
   width: 100%;
-  max-width: 420px;
-  margin-top: var(--space-4);
-  padding: var(--space-4) var(--space-3);
+  max-width: 440px;
+  padding: var(--space-5) var(--space-4);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
 }
 
+@media (max-width: 480px) {
+  .card {
+    padding: var(--space-4) var(--space-3);
+  }
+}
+
 .eyebrow {
   margin: 0;
-  font-size: 0.8rem;
-  letter-spacing: 0.06em;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: var(--tracking-caps);
   text-transform: uppercase;
-  color: var(--color-text-muted);
+  color: var(--color-text-soft);
 }
 
 .title {
   margin: 0;
-  font-size: 1.6rem;
+  font-size: 2.2rem;
+  font-weight: 500;
 }
 
 .subtitle {
   margin: 0;
   color: var(--color-text-muted);
-}
-
-@media (min-width: 600px) {
-  .page {
-    align-items: center;
-  }
-
-  .card {
-    margin-top: 0;
-    padding: var(--space-5) var(--space-4);
-  }
 }

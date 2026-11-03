@@ -5,10 +5,11 @@ import styles from './public/public.module.css'
 export function NotFoundPage() {
   return (
     <PublicLayout>
-      <section className={styles.hero}>
-        <h1 className={styles.heroTitle}>Página não encontrada</h1>
-        <p className={styles.about}>O endereço acessado não existe.</p>
-        <Link to="/">Ir para o início</Link>
+      <section className={styles.notFound}>
+        <p className={styles.eyebrow}>Erro 404</p>
+        <h1>Página não encontrada</h1>
+        <p>O endereço acessado não existe.</p>
+        <Link to="/" className={styles.cta}>Ir para o início</Link>
       </section>
     </PublicLayout>
   )

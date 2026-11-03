@@ -1,11 +1,13 @@
 .page {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-4);
 }
 
 .page h1 {
   margin: 0;
+  font-size: var(--text-2xl);
+  font-weight: 500;
 }
 
 .intro {
@@ -15,7 +17,7 @@
 
 .tabs {
   display: flex;
-  gap: var(--space-1);
+  gap: var(--space-2);
   border-bottom: 1px solid var(--color-border);
   overflow-x: auto;
 }
@@ -27,20 +29,25 @@
   border-bottom: 3px solid transparent;
   background: transparent;
   color: var(--color-text-muted);
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
+  transition: color var(--duration-fast) ease, border-color var(--duration-base) var(--ease-out);
+}
+
+.tab:hover {
+  color: var(--color-text);
 }
 
 .tab[aria-selected='true'] {
   color: var(--color-text);
-  border-bottom-color: var(--color-primary);
+  border-bottom-color: var(--palette-champagne);
 }
 
 .tab:focus-visible {
-  outline: 3px solid var(--color-focus);
-  outline-offset: -3px;
+  outline: none;
+  box-shadow: var(--ring);
 }
 
 .section {
@@ -59,7 +66,7 @@
 
 .toolbar h2 {
   margin: 0;
-  font-size: 1.2rem;
+  font-size: 1.5rem;
 }
 
 .list {
@@ -78,6 +85,7 @@
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
 }
 
 .inactive {
@@ -93,7 +101,7 @@
 
 .cardTitle {
   margin: 0;
-  font-size: 1.05rem;
+  font-size: 1.3rem;
 }
 
 .price {
@@ -119,8 +127,9 @@
 .badge {
   display: inline-block;
   padding: 2px var(--space-2);
-  border-radius: 999px;
-  background: var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--palette-nude);
+  color: var(--palette-chocolate);
   font-size: 0.8rem;
   font-weight: 600;
 }
@@ -134,12 +143,15 @@
 .formCard {
   padding: var(--space-3);
   background: var(--color-surface);
-  border: 2px solid var(--color-primary);
+  border: 1px solid var(--color-accent);
   border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-xs);
 }
 
 .formCard h3 {
   margin: 0 0 var(--space-3);
+  font-size: 1.5rem;
 }
 
 .form {
@@ -170,4 +182,28 @@
   color: var(--color-text-muted);
   border: 1px dashed var(--color-border-strong);
   border-radius: var(--radius-lg);
+}
+
+.card {
+  transition: box-shadow var(--duration-base) var(--ease-out), border-color var(--duration-fast) ease;
+}
+
+.card:hover {
+  box-shadow: var(--shadow-sm);
+}
+
+.formCard {
+  animation: cardIn var(--duration-base) var(--ease-out) both;
+}
+
+@keyframes cardIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.99);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }

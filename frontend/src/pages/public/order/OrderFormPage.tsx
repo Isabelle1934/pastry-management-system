@@ -2,11 +2,14 @@ import { useCallback, useState } from 'react'
 import { Link } from 'react-router'
 import { Alert } from '../../../components/Alert'
 import { Button } from '../../../components/Button'
+import { Icon } from '../../../components/Icon'
 import { useLoader } from '../../../hooks/useLoader'
 import { PublicLayout } from '../../../layouts/PublicLayout'
 import { ApiError } from '../../../services/api'
 import { getAvailability, getCatalog, submitOrder } from '../../../services/publicApi'
 import { OrderSuccess } from './OrderSuccess'
+import { OrderSummary } from './OrderSummary'
+import motion from '../../../styles/motion.module.css'
 import {
   FIELD_STEP,
   initialOrderForm,
@@ -98,21 +101,31 @@ export function OrderFormPage() {
   }
 
   return (
-    <PublicLayout>
-      <div className={styles.page}>
-        <h1>Fazer encomenda</h1>
-        <ol className={styles.stepper} aria-label="Etapas">
-          {STEPS.map((label, index) => (
-            <li
-              key={label}
-              className={`${styles.stepItem} ${index < step ? styles.stepDone : ''}`}
-              aria-current={index === step ? 'step' : undefined}
-            >
-              <span className={styles.stepNumber}>{index + 1}</span>
-              <span className={styles.stepLabel}>{label}</span>
-            </li>
-          ))}
-        </ol>
+    <PublicLayout wide>
+      <div className={`${styles.page} ${styles.formPage}`}>
+        <header className={styles.pageHeader}>
+          <p className={styles.eyebrow}>Encomenda</p>
+          <h1>Fazer encomenda</h1>
+          <p className={styles.hint}>Leva poucos minutos. Você recebe um orçamento personalizado antes de pagar qualquer valor.</p>
+        </header>
+        <div className={styles.progress}>
+          <div className={styles.progressTrack} aria-hidden="true">
+            <div className={styles.progressBar} style={{ transform: `scaleX(${(step + 1) / STEPS.length})` }} />
+          </div>
+          <ol className={styles.stepper} aria-label="Etapas">
+            {STEPS.map((label, index) => (
+              <li
+                key={label}
+                className={`${styles.stepItem} ${index < step ? styles.stepDone : ''}`}
+                aria-current={index === step ? 'step' : undefined}
+              >
+                <span className={styles.stepNumber}>{index + 1}</span>
+                <span className={styles.stepLabel}>{label}</span>
+              </li>
+            ))}
+          </ol>
+          <p className={styles.progressText}>Etapa {step + 1} de {STEPS.length}</p>
+        </div>
 
         {loading && <Loading />}
         {error && (
@@ -125,47 +138,53 @@ export function OrderFormPage() {
         )}
 
         {data && data.catalog.sizes.length > 0 && (
-          <form
-            onSubmit={(e) => {
-              e.preventDefault()
-              if (step === LAST_STEP) void submit()
-              else next()
-            }}
-            noValidate
-          >
-            {(() => {
-              const props = { form, errors, update, catalog: data.catalog, availability: data.availability }
-              switch (step) {
-                case 0:
-                  return <StepCustomer {...props} />
-                case 1:
-                  return <StepSchedule {...props} />
-                case 2:
-                  return <StepCake {...props} />
-                case 3:
-                  return <StepTopper {...props} />
-                default:
-                  return <StepReview {...props} goTo={goTo} />
-              }
-            })()}
+          <div className={styles.formLayout}>
+            <form
+              className={styles.form}
+              onSubmit={(e) => {
+                e.preventDefault()
+                if (step === LAST_STEP) void submit()
+                else next()
+              }}
+              noValidate
+            >
+              <div key={step} className={motion.slideIn}>
+                {(() => {
+                  const props = { form, errors, update, catalog: data.catalog, availability: data.availability }
+                  switch (step) {
+                    case 0:
+                      return <StepCustomer {...props} />
+                    case 1:
+                      return <StepSchedule {...props} />
+                    case 2:
+                      return <StepCake {...props} />
+                    case 3:
+                      return <StepTopper {...props} />
+                    default:
+                      return <StepReview {...props} goTo={goTo} />
+                  }
+                })()}
+              </div>
 
-            {submitError && <Alert tone="error">{submitError}</Alert>}
+              {submitError && <Alert tone="error">{submitError}</Alert>}
 
-            <div className={styles.nav} style={{ marginTop: 'var(--space-3)' }}>
-              {step > 0 ? (
-                <Button variant="secondary" onClick={() => goTo((step - 1) as StepIndex)} disabled={submitting}>
-                  Voltar
-                </Button>
-              ) : (
-                <span />
-              )}
-              {step === 1 && data.availability.days.length === 0 ? null : (
-                <Button type="submit" loading={submitting}>
-                  {step === LAST_STEP ? 'Enviar encomenda' : 'Continuar'}
-                </Button>
-              )}
-            </div>
-          </form>
+              <div className={styles.nav}>
+                {step > 0 ? (
+                  <Button variant="secondary" onClick={() => goTo((step - 1) as StepIndex)} disabled={submitting}>
+                    <Icon name="arrowLeft" size={18} /> Voltar
+                  </Button>
+                ) : (
+                  <span />
+                )}
+                {step === 1 && data.availability.days.length === 0 ? null : (
+                  <Button type="submit" loading={submitting}>
+                    {step === LAST_STEP ? 'Enviar encomenda' : 'Continuar'} <Icon name={step === LAST_STEP ? 'check' : 'arrowRight'} size={18} />
+                  </Button>
+                )}
+              </div>
+            </form>
+            <OrderSummary form={form} catalog={data.catalog} />
+          </div>
         )}
       </div>
     </PublicLayout>

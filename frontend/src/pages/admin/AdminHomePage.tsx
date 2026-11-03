@@ -1,119 +1,217 @@
+import type { CSSProperties, ReactNode } from 'react'
 import { Link } from 'react-router'
 import { Alert } from '../../components/Alert'
 import { Button } from '../../components/Button'
+import { Icon, type IconName } from '../../components/Icon'
+import { Loading } from '../../components/Loading'
 import { useAuth } from '../../hooks/useAuth'
 import { useLoader } from '../../hooks/useLoader'
 import { getDashboard } from '../../services/dashboard'
-import { formatShortDay } from '../../utils/date'
+import motion from '../../styles/motion.module.css'
+import type { Money } from '../../types/catalog'
+import type { PickupItem } from '../../types/order'
+import { formatLongDay, formatShortDay } from '../../utils/date'
 import { formatBRL, toCents } from '../../utils/money'
 import { formatDateTime, PRODUCTION_STATUS } from '../../utils/orderStatus'
 import styles from './dashboard.module.css'
-import panel from './panel.module.css'
-import { Loading } from '../../components/Loading'
 
-function Tile({ to, count, label, attention = false }: { to: string; count: number; label: string; attention?: boolean }) {
+function Card({ icon, title, action, className, children }: {
+  icon: IconName
+  title: string
+  action?: { to: string; label: string }
+  className?: string
+  children: ReactNode
+}) {
   return (
-    <Link to={to} className={`${styles.tile} ${attention && count > 0 ? styles.attention : ''}`}>
-      <span className={styles.count}>{count}</span>
-      <span className={styles.label}>{label}</span>
-    </Link>
+    <section className={`${styles.card} ${className ?? ''}`} aria-label={title}>
+      <header className={styles.cardHeader}>
+        <span className={styles.cardIcon}><Icon name={icon} size={20} /></span>
+        <h2>{title}</h2>
+        {action && (
+          <Link to={action.to} className={styles.cardAction}>
+            {action.label} <Icon name="arrowRight" size={16} />
+          </Link>
+        )}
+      </header>
+      {children}
+    </section>
   )
 }
 
-/** Painel inicial: o que pede ação agora, a produção, as próximas retiradas e os números do mês. */
+function PickupList({ items, showDay }: { items: PickupItem[]; showDay: boolean }) {
+  return (
+    <ul className={styles.list}>
+      {items.map((item) => (
+        <li key={item.id}>
+          <Link to={`/admin/pedidos/${item.id}`} className={styles.listLink}>
+            <span className={styles.time}>
+              {showDay && <small>{formatShortDay(item.pickupDate)}</small>}
+              {item.pickupTime}
+            </span>
+            <span className={styles.listMain}>
+              <strong>{item.customerName}</strong>
+              <span className={styles.muted}>{item.sizeName} · {PRODUCTION_STATUS[item.productionStatus]}</span>
+            </span>
+            {item.balanceDue != null && toCents(item.balanceDue) > 0 && (
+              <span className={styles.due}>Falta {formatBRL(item.balanceDue)}</span>
+            )}
+          </Link>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+function Empty({ children }: { children: ReactNode }) {
+  return <p className={styles.empty}>{children}</p>
+}
+
+/** Valores do mês com barras proporcionais ao maior deles. */
+function MonthChart({ rows }: { rows: { label: string; value: Money; tone: string }[] }) {
+  const max = Math.max(1, ...rows.map((row) => toCents(row.value)))
+  return (
+    <dl className={styles.chart}>
+      {rows.map((row) => (
+        <div key={row.label} className={styles.chartRow}>
+          <dt>{row.label}</dt>
+          <dd>
+            <span className={styles.bar} aria-hidden="true">
+              <span className={`${styles.barFill} ${styles[row.tone]}`}
+                style={{ '--w': toCents(row.value) / max } as CSSProperties} />
+            </span>
+            <strong>{formatBRL(row.value)}</strong>
+          </dd>
+        </div>
+      ))}
+    </dl>
+  )
+}
+
+/** Painel inicial: pedidos de hoje, próximas entregas, aprovações pendentes, orçamentos vencendo e o mês. */
 export function AdminHomePage() {
   const { user } = useAuth()
   const { data, loading, error, reload } = useLoader(getDashboard)
 
+  const todayPickups = data?.upcomingPickups.filter((item) => item.pickupDate === data.today) ?? []
+  const nextPickups = data?.upcomingPickups.filter((item) => item.pickupDate !== data.today) ?? []
+  const approvals = data ? data.actions.newOrders + data.actions.proofsToReview + data.actions.awaitingClientResponse : 0
+  const forecast = data ? toCents(data.month.forecastRevenue) : 0
+  const receivedShare = data && forecast > 0 ? Math.round((toCents(data.month.received) / forecast) * 100) : null
+
   return (
-    <div className={panel.page}>
-      <div className={panel.toolbar}>
-        <h1>Olá, {user?.name}!</h1>
-        <Button variant="secondary" onClick={() => void reload()} loading={loading && !!data}>Atualizar</Button>
-      </div>
+    <div className={styles.page}>
+      <header className={styles.header}>
+        <div>
+          {data && <p className={styles.eyebrow}>{formatLongDay(data.today)}</p>}
+          <h1>Olá, {user?.name}!</h1>
+        </div>
+        <Button variant="secondary" onClick={() => void reload()} loading={loading && !!data}>
+          <Icon name="refresh" size={18} /> Atualizar
+        </Button>
+      </header>
 
       {loading && !data && <Loading />}
       {error && <Alert tone="error">{error}</Alert>}
 
       {data && (
         <>
-          <section aria-labelledby="actions-title" className={panel.section}>
-            <h2 id="actions-title" className={panel.cardTitle}>Precisa da sua atenção</h2>
-            <div className={styles.grid}>
-              <Tile to="/admin/pedidos?situacao=PENDING_REVIEW" count={data.actions.newOrders}
-                label="Pedidos novos para orçar" attention />
-              <Tile to="/admin/pedidos?situacao=AWAITING_DEPOSIT" count={data.actions.proofsToReview}
-                label="Comprovantes para conferir" attention />
-              <Tile to="/admin/producao" count={data.actions.overduePickups} label="Retiradas atrasadas" attention />
-              <Tile to="/admin/pedidos?situacao=QUOTE_SENT" count={data.actions.awaitingClientResponse}
-                label="Orçamentos aguardando a cliente" />
-              <Tile to="/admin/pedidos?situacao=AWAITING_DEPOSIT" count={data.actions.awaitingDeposit}
-                label="Aguardando sinal" />
-              <Tile to="/admin/avisos" count={data.unreadNotifications} label="Avisos não lidos" />
-            </div>
-          </section>
+          {data.actions.overduePickups > 0 && (
+            <Alert tone="error">
+              {data.actions.overduePickups === 1
+                ? '1 retirada atrasada ainda não foi marcada como entregue.'
+                : `${data.actions.overduePickups} retiradas atrasadas ainda não foram marcadas como entregues.`}{' '}
+              <Link to="/admin/producao">Ver produção</Link>
+            </Alert>
+          )}
 
-          <section aria-labelledby="production-title" className={panel.section}>
-            <h2 id="production-title" className={panel.cardTitle}>Produção</h2>
-            <div className={styles.grid}>
-              <Tile to="/admin/producao" count={data.production.pickupsToday} label="Retiradas hoje" />
-              <Tile to="/admin/producao" count={data.production.notStarted} label="Confirmados, não iniciados" />
-              <Tile to="/admin/producao" count={data.production.inProduction} label="Em produção" />
-              <Tile to="/admin/producao" count={data.production.ready} label="Prontos para retirada" />
-            </div>
-          </section>
-
-          <div className={styles.columns}>
-            <section aria-labelledby="pickups-title" className={styles.block}>
-              <h2 id="pickups-title">Próximas retiradas</h2>
-              {data.upcomingPickups.length === 0 ? (
-                <p className={styles.muted}>Nenhuma retirada confirmada nos próximos 7 dias.</p>
+          <div className={`${styles.grid} ${motion.stagger}`}>
+            <Card icon="bag" title="Pedidos de hoje" className={styles.wide}
+              action={{ to: '/admin/producao', label: 'Produção' }}>
+              <p className={styles.big}>
+                {data.production.pickupsToday}
+                <span>{data.production.pickupsToday === 1 ? 'retirada hoje' : 'retiradas hoje'}</span>
+              </p>
+              {todayPickups.length > 0 ? (
+                <PickupList items={todayPickups} showDay={false} />
               ) : (
-                <ul className={styles.rows}>
-                  {data.upcomingPickups.map((item) => (
-                    <li key={item.id}>
-                      <span>
-                        <Link to={`/admin/pedidos/${item.id}`}>{item.customerName}</Link>
-                        <br />
-                        <span className={styles.muted}>
-                          {formatShortDay(item.pickupDate)} às {item.pickupTime} · {PRODUCTION_STATUS[item.productionStatus]}
+                <Empty>Nenhuma retirada pendente para hoje.</Empty>
+              )}
+            </Card>
+
+            <Card icon="orders" title="Aguardando aprovação" className={styles.narrow}
+              action={{ to: '/admin/pedidos', label: 'Pedidos' }}>
+              <p className={styles.big}>
+                {approvals}
+                <span>aguardando</span>
+              </p>
+              <ul className={styles.counters}>
+                <li>
+                  <Link to="/admin/pedidos?situacao=PENDING_REVIEW"
+                    className={data.actions.newOrders > 0 ? styles.attention : ''}>
+                    <span>Novos para orçar</span><strong>{data.actions.newOrders}</strong>
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/admin/pedidos?situacao=AWAITING_DEPOSIT"
+                    className={data.actions.proofsToReview > 0 ? styles.attention : ''}>
+                    <span>Comprovantes para conferir</span><strong>{data.actions.proofsToReview}</strong>
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/admin/pedidos?situacao=QUOTE_SENT">
+                    <span>Orçamentos com a cliente</span><strong>{data.actions.awaitingClientResponse}</strong>
+                  </Link>
+                </li>
+              </ul>
+            </Card>
+
+            <Card icon="calendar" title="Próximas entregas" className={styles.wide}
+              action={{ to: '/admin/producao', label: 'Ver todas' }}>
+              {nextPickups.length > 0 ? (
+                <PickupList items={nextPickups} showDay />
+              ) : (
+                <Empty>Nenhuma retirada confirmada nos próximos 7 dias.</Empty>
+              )}
+            </Card>
+
+            <Card icon="clock" title="Orçamentos perto de vencer" className={styles.narrow}>
+              {data.expiringQuotes.length > 0 ? (
+                <ul className={styles.list}>
+                  {data.expiringQuotes.map((quote) => (
+                    <li key={quote.orderId}>
+                      <Link to={`/admin/pedidos/${quote.orderId}`} className={styles.listLink}>
+                        <span className={styles.listMain}>
+                          <strong>{quote.customerName}</strong>
+                          <span className={styles.muted}>vence {formatDateTime(quote.validUntil)}</span>
                         </span>
-                      </span>
-                      {item.balanceDue != null && toCents(item.balanceDue) > 0 && (
-                        <span>Falta {formatBRL(item.balanceDue)}</span>
-                      )}
+                      </Link>
                     </li>
                   ))}
                 </ul>
+              ) : (
+                <Empty>Nenhum orçamento vencendo nos próximos dias.</Empty>
               )}
-              <p><Link to="/admin/producao">Ver produção e retiradas</Link></p>
-            </section>
+            </Card>
 
-            <section aria-labelledby="month-title" className={styles.block}>
-              <h2 id="month-title">Este mês</h2>
-              <ul className={styles.rows}>
-                <li><span>Faturamento previsto</span><strong>{formatBRL(data.month.forecastRevenue)}</strong></li>
-                <li><span>Recebido</span><strong>{formatBRL(data.month.received)}</strong></li>
-                <li><span>A receber</span><strong>{formatBRL(data.month.pending)}</strong></li>
-                <li><span>Despesas</span><strong>{formatBRL(data.month.expenses)}</strong></li>
-              </ul>
-              <p><Link to="/admin/financeiro">Ver financeiro</Link></p>
-            </section>
+            <Card icon="finance" title="Resumo financeiro do mês" className={styles.full}
+              action={{ to: '/admin/financeiro', label: 'Financeiro' }}>
+              <div className={styles.finance}>
+                <div className={styles.financeHighlight}>
+                  <span className={styles.muted}>Recebido</span>
+                  <strong>{formatBRL(data.month.received)}</strong>
+                  {receivedShare != null && (
+                    <span className={styles.muted}>{receivedShare}% do faturamento previsto</span>
+                  )}
+                </div>
+                <MonthChart rows={[
+                  { label: 'Faturamento previsto', value: data.month.forecastRevenue, tone: 'forecast' },
+                  { label: 'Recebido', value: data.month.received, tone: 'received' },
+                  { label: 'A receber', value: data.month.pending, tone: 'pending' },
+                  { label: 'Despesas', value: data.month.expenses, tone: 'expenses' },
+                ]} />
+              </div>
+            </Card>
           </div>
-
-          {data.expiringQuotes.length > 0 && (
-            <section aria-labelledby="expiring-title" className={styles.block}>
-              <h2 id="expiring-title">Orçamentos perto de vencer</h2>
-              <ul className={styles.rows}>
-                {data.expiringQuotes.map((quote) => (
-                  <li key={quote.orderId}>
-                    <Link to={`/admin/pedidos/${quote.orderId}`}>{quote.customerName}</Link>
-                    <span>vence {formatDateTime(quote.validUntil)}</span>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
         </>
       )}
     </div>

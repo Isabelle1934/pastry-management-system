@@ -26,10 +26,12 @@ body {
   overflow-x: hidden;
 }
 
+/* Algarismos alinhados (lining-nums) onde houver a serifada: os de estilo antigo confundem "0" com "o". */
 h1,
 h2,
 h3 {
   font-family: var(--font-heading);
+  font-variant-numeric: lining-nums;
   font-weight: 600;
   line-height: 1.15;
   letter-spacing: -0.01em;

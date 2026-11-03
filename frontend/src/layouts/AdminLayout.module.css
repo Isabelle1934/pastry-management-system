@@ -1,92 +1,265 @@
 .shell {
+  --topbar-height: 64px;
   min-height: 100vh;
+}
+
+/* --- Barra lateral --- */
+.sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 40;
+  width: var(--sidebar-width);
   display: flex;
   flex-direction: column;
+  background:
+    radial-gradient(circle at 0% 0%, rgb(184 155 123 / 0.18), transparent 50%),
+    var(--color-surface-dark);
+  color: var(--color-on-dark-muted);
 }
 
-.header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  background: var(--color-surface);
-  border-bottom: 1px solid var(--color-border);
-}
-
-.brand {
-  display: flex;
-  flex-direction: column;
-}
-
-.brandTitle {
-  font-weight: 700;
-  font-size: 1.1rem;
-}
-
-.user {
-  font-size: 0.85rem;
-  color: var(--color-text-muted);
+.sidebarBrand {
+  padding: var(--space-4) 20px var(--space-3);
 }
 
 .nav {
+  flex: 1;
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-1);
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 12px;
+  overflow-y: auto;
 }
 
-/* Celular e tablet: menu recolhível em vez de várias linhas de links. */
-.menuButton {
-  display: none;
+.navGroup {
+  margin: var(--space-3) 12px var(--space-1);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: rgb(217 199 179 / 0.6);
+}
+
+.link,
+.logout {
+  position: relative;
   min-height: 44px;
+  display: flex;
   align-items: center;
-  padding: 0 var(--space-3);
-  border: 1px solid var(--color-border-strong);
+  gap: 12px;
+  padding: 0 12px;
+  border: none;
   border-radius: var(--radius-md);
   background: transparent;
-  color: var(--color-text);
+  color: var(--color-on-dark-muted);
   font-size: 0.95rem;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color var(--duration-fast) ease, color var(--duration-fast) ease;
+}
+
+.link svg,
+.logout svg {
+  flex: none;
+  opacity: 0.85;
+}
+
+.link:hover,
+.logout:hover:not(:disabled) {
+  background: rgb(248 244 238 / 0.07);
+  color: var(--color-on-dark);
+}
+
+.active {
+  background: rgb(248 244 238 / 0.11);
+  color: var(--color-on-dark);
+  font-weight: 700;
+}
+
+/* Filete champagne ao lado do item atual. */
+.active::before {
+  content: '';
+  position: absolute;
+  left: -12px;
+  top: 10px;
+  bottom: 10px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--palette-champagne);
+}
+
+.link:focus-visible,
+.logout:focus-visible,
+.menuButton:focus-visible {
+  outline: 2px solid var(--palette-champagne);
+  outline-offset: 1px;
+}
+
+.sidebarFooter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) 12px var(--space-4);
+  border-top: 1px solid rgb(232 217 200 / 0.12);
+}
+
+.user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 0 12px;
+  font-size: var(--text-sm);
+  color: var(--color-on-dark);
+}
+
+.avatar {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--palette-champagne);
+  color: var(--palette-chocolate);
+  font-weight: 700;
+}
+
+.userName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.badge {
+  margin-left: auto;
+  min-width: 22px;
+  padding: 0 7px;
+  border-radius: var(--radius-pill);
+  background: var(--palette-champagne);
+  color: var(--palette-chocolate);
+  font-size: var(--text-xs);
+  font-weight: 800;
+  line-height: 22px;
+  text-align: center;
+}
+
+/* --- Conteúdo --- */
+.content {
+  min-height: 100vh;
+  margin-left: var(--sidebar-width);
+  padding: var(--space-5) var(--space-5) var(--space-6);
+}
+
+.contentInner {
+  max-width: 1080px;
+  margin: 0 auto;
+}
+
+.content:focus {
+  outline: none;
+}
+
+/* --- Barra superior e gaveta (celular e tablet) --- */
+.topbar,
+.overlay {
+  display: none;
+}
+
+.menuButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--text-sm);
   font-weight: 600;
   cursor: pointer;
 }
 
-.menuButton:focus-visible {
-  outline: 3px solid var(--color-focus);
-  outline-offset: 1px;
+.menuButton .badge {
+  margin-left: 2px;
 }
 
 @media (max-width: 899px) {
-  .menuButton {
-    display: inline-flex;
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 45;
+    height: var(--topbar-height);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    padding: 10px var(--space-3);
+    background: rgb(248 244 238 / 0.9);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .topbar > :first-child {
+    min-width: 0;
+  }
+
+  /* A gaveta abre abaixo da barra superior, que mantém o botão "Fechar menu" visível. */
+  .sidebar {
+    top: var(--topbar-height);
+    width: min(300px, 86vw);
+    transform: translateX(-100%);
+    visibility: hidden;
+    box-shadow: var(--shadow-lg);
+    transition:
+      transform var(--duration-base) var(--ease-out),
+      visibility 0s linear var(--duration-base);
+  }
+
+  .sidebar.open {
+    transform: none;
+    visibility: visible;
+    transition: transform var(--duration-base) var(--ease-out);
+  }
+
+  .sidebarBrand {
+    display: none;
   }
 
   .nav {
-    display: none;
-    flex-basis: 100%;
-    flex-direction: column;
-    align-items: stretch;
     padding-top: var(--space-2);
-    border-top: 1px solid var(--color-border);
   }
 
-  .nav.open {
-    display: flex;
+  .overlay {
+    position: fixed;
+    inset: var(--topbar-height) 0 0;
+    z-index: 35;
+    display: block;
+    background: rgb(56 39 31 / 0.4);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--duration-base) ease;
   }
 
-  .link,
-  .logout {
-    justify-content: flex-start;
-    padding: 0 var(--space-3);
+  .overlayOpen {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .content {
+    margin-left: 0;
+    padding: var(--space-4) var(--space-3) var(--space-5);
   }
 }
 
+/* --- Acessibilidade --- */
 .skip {
   position: absolute;
   left: var(--space-2);
   top: -100px;
-  z-index: 10;
+  z-index: 60;
   padding: var(--space-2) var(--space-3);
   background: var(--color-primary);
   color: var(--color-on-primary);
@@ -95,63 +268,4 @@
 
 .skip:focus {
   top: var(--space-2);
-}
-
-.content:focus {
-  outline: none;
-}
-
-.link,
-.logout {
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-  padding: 0 var(--space-2);
-  border-radius: var(--radius-md);
-  color: var(--color-text);
-  text-decoration: none;
-  font-size: 0.95rem;
-}
-
-.link:hover,
-.logout:hover:not(:disabled) {
-  background: var(--color-surface-muted);
-}
-
-.active {
-  font-weight: 700;
-  background: var(--color-surface-muted);
-}
-
-.logout {
-  border: 1px solid var(--color-border-strong);
-  background: transparent;
-  cursor: pointer;
-}
-
-.link:focus-visible,
-.logout:focus-visible {
-  outline: 3px solid var(--color-focus);
-  outline-offset: 1px;
-}
-
-.content {
-  flex: 1;
-  width: 100%;
-  max-width: 960px;
-  margin: 0 auto;
-  padding: var(--space-4) var(--space-3);
-}
-
-.badge {
-  margin-left: var(--space-1);
-  min-width: 20px;
-  padding: 0 6px;
-  border-radius: 999px;
-  background: var(--color-danger);
-  color: #fff;
-  font-size: 0.75rem;
-  font-weight: 700;
-  line-height: 20px;
-  text-align: center;
 }

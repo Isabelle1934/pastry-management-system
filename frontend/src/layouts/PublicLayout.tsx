@@ -31,7 +31,7 @@ export function PublicLayout({ children, wide = false }: PublicLayoutProps) {
           <nav className={styles.nav} aria-label="Principal">
             <NavLink to="/acompanhar" className={navClass}>
               <Icon name="search" size={18} />
-              <span>Acompanhar<span className={styles.hideSm}> pedido</span></span>
+              <span className={styles.navText}>Acompanhar pedido</span>
             </NavLink>
             <NavLink to="/encomendar" className={styles.navCta}>
               Encomendar
