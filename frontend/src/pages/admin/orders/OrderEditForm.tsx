@@ -14,6 +14,7 @@ import { isoWeekday } from '../../../utils/date'
 import panel from '../panel.module.css'
 import { describeSaveError } from '../saveErrors'
 import styles from './orders.module.css'
+import { Loading } from '../../../components/Loading'
 
 async function loadEditData() {
   const [sizes, flavors, fillings, slots] = await Promise.all([
@@ -100,7 +101,7 @@ export function OrderEditForm({ order, onSaved, onCancel, onStale }: Props) {
   const set = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) =>
     setForm((current) => ({ ...current, [key]: value }))
 
-  if (loading) return <p role="status">Carregando…</p>
+  if (loading) return <Loading />
   if (error || !data) return <Alert tone="error">{error ?? 'Não foi possível carregar.'}</Alert>
 
   const size = data.sizes.find((s) => s.id === form.sizeId)

@@ -7,6 +7,7 @@ import type { CalendarSlot } from '../../../types/schedule'
 import { addDays, formatShortDay, todayIso } from '../../../utils/date'
 import panel from '../panel.module.css'
 import styles from './schedule.module.css'
+import { Loading } from '../../../components/Loading'
 
 const PAGE_DAYS = 14
 
@@ -46,7 +47,7 @@ export function CalendarSection() {
         </Button>
       </div>
 
-      {loading && <p role="status">Carregando…</p>}
+      {loading && <Loading />}
       {error && <Alert tone="error">{error}</Alert>}
       {days && days.every((day) => day.slots.length === 0) && (
         <p className={panel.empty}>

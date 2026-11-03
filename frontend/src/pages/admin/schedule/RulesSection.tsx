@@ -8,6 +8,7 @@ import type { ScheduleRules } from '../../../types/schedule'
 import panel from '../panel.module.css'
 import { describeSaveError } from '../saveErrors'
 import styles from './schedule.module.css'
+import { Loading } from '../../../components/Loading'
 
 function RulesForm({ initial }: { initial: ScheduleRules }) {
   const [rules, setRules] = useState(initial)
@@ -91,7 +92,7 @@ export function RulesSection() {
         <h2 id="rules-title">Regras de agendamento</h2>
       </div>
       <p className={styles.muted}>Valem para os horários oferecidos no formulário de encomenda.</p>
-      {loading && <p role="status">Carregando…</p>}
+      {loading && <Loading />}
       {error && <Alert tone="error">{error}</Alert>}
       {data && <RulesForm initial={data} />}
     </section>

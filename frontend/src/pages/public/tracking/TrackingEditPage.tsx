@@ -14,6 +14,7 @@ import styles from '../order/order.module.css'
 import { StepCake } from '../order/steps/StepCake'
 import { StepSchedule } from '../order/steps/StepSchedule'
 import { StepTopper } from '../order/steps/StepTopper'
+import { Loading } from '../../../components/Loading'
 
 function toForm(view: TrackingView): OrderFormState {
   return {
@@ -135,7 +136,7 @@ export function TrackingEditPage() {
     <PublicLayout>
       <div className={styles.page}>
         <h1>Alterar pedido</h1>
-        {loading && <p role="status">Carregando…</p>}
+        {loading && <Loading />}
         {error && <Alert tone="error">{error}</Alert>}
         {data && !data.view.editable && (
           <Alert tone="info">

@@ -13,6 +13,7 @@ import { formatBRL, toMoneyInput } from '../../../utils/money'
 import { formatDateTime } from '../../../utils/orderStatus'
 import styles from '../order/order.module.css'
 import { PaymentCard } from './PaymentCard'
+import { Loading } from '../../../components/Loading'
 
 function statusMessage(view: TrackingView): { title: string; text: string; tone: 'info' | 'success' | 'error' } {
   const deposit = view.quote ? formatBRL(view.quote.depositAmount) : ''
@@ -259,7 +260,7 @@ export function TrackingPage() {
       <div className={styles.page}>
         <h1>Acompanhar pedido</h1>
         {error && <Alert tone="error">{error}</Alert>}
-        {view === undefined && !error && <p role="status">Carregando…</p>}
+        {view === undefined && !error && <Loading />}
         {view === null && <Lookup onFound={setView} />}
         {view && <OrderView view={view} onChange={setView} onLeave={() => void leave()} />}
       </div>

@@ -10,6 +10,7 @@ import { WEEKDAY_NAMES } from '../../../utils/date'
 import panel from '../panel.module.css'
 import { describeSaveError } from '../saveErrors'
 import styles from './schedule.module.css'
+import { Loading } from '../../../components/Loading'
 
 const DAY_OPTIONS = [1, 2, 3, 4, 5, 6, 7].map((day) => ({ value: String(day), label: WEEKDAY_NAMES[day] }))
 
@@ -219,7 +220,7 @@ export function WeeklySlotsSection() {
         }}
       />
       {notice && <Alert tone={notice.tone}>{notice.text}</Alert>}
-      {loading && <p role="status">Carregando…</p>}
+      {loading && <Loading />}
       {error && <Alert tone="error">{error}</Alert>}
       {slots && (
         <div className={styles.weekGrid}>

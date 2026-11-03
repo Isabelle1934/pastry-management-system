@@ -7,6 +7,7 @@ import { listExpenseCategories, saveExpenseCategory, setExpenseCategoryActive } 
 import type { ExpenseCategory } from '../../../types/finance'
 import panel from '../panel.module.css'
 import { describeSaveError } from '../saveErrors'
+import { Loading } from '../../../components/Loading'
 
 function sortCategories(categories: ExpenseCategory[]): ExpenseCategory[] {
   return [...categories].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))
@@ -111,7 +112,7 @@ export function CategoriesSection() {
         />
       )}
 
-      {loading && !data && <p role="status">Carregando…</p>}
+      {loading && !data && <Loading />}
       {error && <Alert tone="error">{error}</Alert>}
       {data && data.length === 0 && <p className={panel.empty}>Nenhuma categoria cadastrada.</p>}
       {data && data.length > 0 && (

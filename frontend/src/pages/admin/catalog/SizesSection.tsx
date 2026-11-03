@@ -8,6 +8,7 @@ import { formatBRL } from '../../../utils/money'
 import styles from '../panel.module.css'
 import { describeSaveError } from '../saveErrors'
 import { SizeForm } from './SizeForm'
+import { Loading } from '../../../components/Loading'
 
 function sortSizes(sizes: CakeSize[]): CakeSize[] {
   return [...sizes].sort((a, b) => a.displayOrder - b.displayOrder || a.name.localeCompare(b.name, 'pt-BR'))
@@ -74,7 +75,7 @@ export function SizesSection() {
         />
       )}
 
-      {loading && <p role="status">Carregando…</p>}
+      {loading && <Loading />}
       {error && <Alert tone="error">{error}</Alert>}
       {sizes && sizes.length === 0 && (
         <p className={styles.empty}>Nenhum tamanho cadastrado ainda. Use “Adicionar tamanho” para começar.</p>

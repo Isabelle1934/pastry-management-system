@@ -23,7 +23,14 @@ export function Button({
 
   return (
     <button type={type} className={classes} disabled={disabled || loading} aria-busy={loading || undefined} {...props}>
-      {loading ? 'Aguarde…' : children}
+      {loading ? (
+        <>
+          <span className={styles.spinner} aria-hidden="true" />
+          Aguarde…
+        </>
+      ) : (
+        children
+      )}
     </button>
   )
 }

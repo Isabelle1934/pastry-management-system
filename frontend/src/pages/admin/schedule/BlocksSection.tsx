@@ -10,6 +10,7 @@ import { formatLongDay, isoWeekday, todayIso } from '../../../utils/date'
 import panel from '../panel.module.css'
 import { describeSaveError } from '../saveErrors'
 import styles from './schedule.module.css'
+import { Loading } from '../../../components/Loading'
 
 const WHOLE_DAY = ''
 
@@ -135,7 +136,7 @@ export function BlocksSection() {
         }}
       />
       {notice && <Alert tone={notice.tone}>{notice.text}</Alert>}
-      {loading && <p role="status">Carregando…</p>}
+      {loading && <Loading />}
       {error && <Alert tone="error">{error}</Alert>}
       {blocks && blocks.length === 0 && <p className={panel.empty}>Nenhum bloqueio programado.</p>}
       {blocks && blocks.length > 0 && (

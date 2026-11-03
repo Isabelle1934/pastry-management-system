@@ -1,16 +1,9 @@
 import type { ReactNode } from 'react'
 import { Navigate, useLocation } from 'react-router'
+import { Loading } from '../components/Loading'
 import { useAuth } from '../hooks/useAuth'
 
 const CHANGE_PASSWORD_PATH = '/admin/trocar-senha'
-
-function Loading() {
-  return (
-    <p role="status" style={{ padding: 'var(--space-4)', textAlign: 'center' }}>
-      Carregando…
-    </p>
-  )
-}
 
 /**
  * Exige sessão para o painel. É só conveniência de navegação: a proteção real

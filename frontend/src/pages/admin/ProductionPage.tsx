@@ -13,6 +13,7 @@ import styles from './orders/orders.module.css'
 import { StatusChip } from './orders/StatusChip'
 import panel from './panel.module.css'
 import { describeSaveError } from './saveErrors'
+import { Loading } from '../../components/Loading'
 
 const PERIODS = [7, 14, 30]
 const TONE: Record<ProductionStatus, Tone> = { NOT_STARTED: 'neutral', IN_PRODUCTION: 'info', READY: 'ok', DELIVERED: 'ok' }
@@ -95,7 +96,7 @@ export function ProductionPage() {
         </p>
       )}
 
-      {loading && !data && <p role="status">Carregando…</p>}
+      {loading && !data && <Loading />}
       {error && <Alert tone="error">{error}</Alert>}
       {data && data.orders.length === 0 && (
         <p className={panel.empty}>Nenhuma retirada confirmada até {formatLongDay(data.until)}.</p>

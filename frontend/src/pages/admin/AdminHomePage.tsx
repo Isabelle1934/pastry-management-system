@@ -9,6 +9,7 @@ import { formatBRL, toCents } from '../../utils/money'
 import { formatDateTime, PRODUCTION_STATUS } from '../../utils/orderStatus'
 import styles from './dashboard.module.css'
 import panel from './panel.module.css'
+import { Loading } from '../../components/Loading'
 
 function Tile({ to, count, label, attention = false }: { to: string; count: number; label: string; attention?: boolean }) {
   return (
@@ -31,7 +32,7 @@ export function AdminHomePage() {
         <Button variant="secondary" onClick={() => void reload()} loading={loading && !!data}>Atualizar</Button>
       </div>
 
-      {loading && !data && <p role="status">Carregando…</p>}
+      {loading && !data && <Loading />}
       {error && <Alert tone="error">{error}</Alert>}
 
       {data && (

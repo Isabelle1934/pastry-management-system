@@ -10,6 +10,7 @@ import type { BakerySettings } from '../../types/settings'
 import { validateEmail } from '../../utils/validation'
 import styles from './panel.module.css'
 import { describeSaveError } from './saveErrors'
+import { Loading } from '../../components/Loading'
 
 type Field =
   | 'name'
@@ -250,7 +251,7 @@ export function SettingsPage() {
   return (
     <div className={styles.page}>
       <h1>Configurações</h1>
-      {loading && <p role="status">Carregando…</p>}
+      {loading && <Loading />}
       {error && <Alert tone="error">{error}</Alert>}
       {data && <SettingsForm initial={data} onSaved={(saved) => setData(() => saved)} />}
       <p>

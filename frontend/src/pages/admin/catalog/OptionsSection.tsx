@@ -8,6 +8,7 @@ import { listOptions, saveOption, setOptionActive } from '../../../services/cata
 import type { CatalogOption, OptionKind } from '../../../types/catalog'
 import styles from '../panel.module.css'
 import { describeSaveError } from '../saveErrors'
+import { Loading } from '../../../components/Loading'
 
 export interface OptionLabels {
   title: string
@@ -162,7 +163,7 @@ export function OptionsSection({ kind, labels }: { kind: OptionKind; labels: Opt
         />
       )}
 
-      {loading && <p role="status">Carregando…</p>}
+      {loading && <Loading />}
       {error && <Alert tone="error">{error}</Alert>}
       {options && options.length === 0 && <p className={styles.empty}>{labels.empty}</p>}
       {options && options.length > 0 && (

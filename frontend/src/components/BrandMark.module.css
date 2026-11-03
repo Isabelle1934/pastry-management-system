@@ -1,0 +1,68 @@
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  color: var(--color-text);
+}
+
+.monogram {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--color-accent);
+  border-radius: 50%;
+  font-family: var(--font-heading);
+  font-size: 1.35rem;
+  font-weight: 600;
+  font-style: italic;
+  color: var(--color-text-muted);
+  background: radial-gradient(circle at 30% 25%, var(--color-surface), var(--palette-nude));
+}
+
+.logo {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.1;
+}
+
+.name {
+  font-family: var(--font-heading);
+  font-size: 1.4rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.caption {
+  margin-top: 2px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--color-text-soft);
+}
+
+.dark {
+  color: var(--color-on-dark);
+}
+
+.dark .monogram {
+  color: var(--palette-chocolate);
+  border-color: var(--palette-champagne);
+}
+
+.dark .caption {
+  color: var(--color-on-dark-muted);
+}

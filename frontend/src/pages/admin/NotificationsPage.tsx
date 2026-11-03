@@ -12,6 +12,7 @@ import {
 import { formatDateTime } from '../../utils/orderStatus'
 import styles from './orders/orders.module.css'
 import panel from './panel.module.css'
+import { Loading } from '../../components/Loading'
 
 export function NotificationsPage() {
   const { data, loading, error, reload } = useLoader(listNotifications)
@@ -50,7 +51,7 @@ export function NotificationsPage() {
       <p className={styles.muted}>
         Novas encomendas, respostas a orçamentos, comprovantes e prazos. Os avisos importantes também chegam por e-mail.
       </p>
-      {loading && <p role="status">Carregando…</p>}
+      {loading && <Loading />}
       {error && <Alert tone="error">{error}</Alert>}
       {data && data.length === 0 && <p className={panel.empty}>Nenhum aviso por enquanto.</p>}
       {data && data.length > 0 && (

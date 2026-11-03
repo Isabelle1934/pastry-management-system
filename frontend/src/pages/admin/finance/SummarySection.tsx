@@ -5,6 +5,7 @@ import { getFinanceSummary } from '../../../services/finance'
 import { formatBRL } from '../../../utils/money'
 import panel from '../panel.module.css'
 import styles from './finance.module.css'
+import { Loading } from '../../../components/Loading'
 
 function Stat({ label, value, detail }: { label: string; value: string; detail?: string }) {
   return (
@@ -26,7 +27,7 @@ export function SummarySection({ from, to }: { from: string; to: string }) {
   const load = useCallback(() => getFinanceSummary(from, to), [from, to])
   const { data, loading, error } = useLoader(load)
 
-  if (loading && !data) return <p role="status">Carregando…</p>
+  if (loading && !data) return <Loading />
   if (error) return <Alert tone="error">{error}</Alert>
   if (!data) return null
 

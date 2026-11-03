@@ -11,6 +11,7 @@ import { formatDate } from '../../../utils/date'
 import { formatBRL, parseMoneyInput, toMoneyInput } from '../../../utils/money'
 import panel from '../panel.module.css'
 import { describeSaveError } from '../saveErrors'
+import { Loading } from '../../../components/Loading'
 
 interface FormProps {
   expense?: Expense
@@ -174,7 +175,7 @@ export function ExpensesSection({ from, to, presetOrderCode, onPresetUsed }: Pro
         />
       )}
 
-      {loading && !data && <p role="status">Carregando…</p>}
+      {loading && !data && <Loading />}
       {error && <Alert tone="error">{error}</Alert>}
       {data && data.content.length === 0 && <p className={panel.empty}>Nenhuma despesa registrada neste período.</p>}
       {data && data.content.length > 0 && (

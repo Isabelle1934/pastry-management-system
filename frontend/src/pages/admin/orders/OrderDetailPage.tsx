@@ -21,6 +21,7 @@ import { ProductionPanel } from './ProductionPanel'
 import styles from './orders.module.css'
 import { QuotePanel } from './QuotePanel'
 import { StatusChip } from './StatusChip'
+import { Loading } from '../../../components/Loading'
 
 const ACTOR = { OWNER: 'Você', CLIENT: 'Cliente', SYSTEM: 'Sistema' } as const
 const CLOSED = ['COMPLETED', 'REJECTED', 'CANCELLED']
@@ -66,7 +67,7 @@ export function OrderDetailPage() {
     await reload()
   }, [reload])
 
-  if (loading && !order) return <p role="status">Carregando…</p>
+  if (loading && !order) return <Loading />
   if (error) return <Alert tone="error">{error}</Alert>
   if (!order) return null
 

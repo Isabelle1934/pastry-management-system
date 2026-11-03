@@ -12,6 +12,7 @@ import { COMMERCIAL_STATUS, STATUS_FILTER_ORDER } from '../../../utils/orderStat
 import panel from '../panel.module.css'
 import styles from './orders.module.css'
 import { StatusChip } from './StatusChip'
+import { Loading } from '../../../components/Loading'
 
 export function OrdersPage() {
   const [params, setParams] = useSearchParams()
@@ -73,7 +74,7 @@ export function OrdersPage() {
         </Button>
       </form>
 
-      {loading && <p role="status">Carregando…</p>}
+      {loading && <Loading />}
       {error && <Alert tone="error">{error}</Alert>}
       {data && data.content.length === 0 && (
         <p className={panel.empty}>{q || status ? 'Nenhum pedido encontrado com esses filtros.' : 'Nenhum pedido ainda.'}</p>

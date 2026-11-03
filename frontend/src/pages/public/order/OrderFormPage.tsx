@@ -23,6 +23,7 @@ import { StepCustomer } from './steps/StepCustomer'
 import { StepReview } from './steps/StepReview'
 import { StepSchedule } from './steps/StepSchedule'
 import { StepTopper } from './steps/StepTopper'
+import { Loading } from '../../../components/Loading'
 
 const LAST_STEP: StepIndex = 4
 
@@ -113,7 +114,7 @@ export function OrderFormPage() {
           ))}
         </ol>
 
-        {loading && <p role="status">Carregando…</p>}
+        {loading && <Loading />}
         {error && (
           <Alert tone="error">
             {error} <Link to="/">Voltar ao início</Link>
