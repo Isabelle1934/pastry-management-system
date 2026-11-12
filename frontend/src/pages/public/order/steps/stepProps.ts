@@ -1,4 +1,4 @@
-import type { Availability, PublicCatalog } from '../../../../types/public'
+import type { Availability, BakeryInfo, PublicCatalog } from '../../../../types/public'
 import type { FieldErrors, OrderFormState } from '../orderForm'
 
 export interface StepProps {
@@ -7,6 +7,7 @@ export interface StepProps {
   update: (patch: Partial<OrderFormState>) => void
   catalog: PublicCatalog
   availability: Availability
+  bakery: BakeryInfo
   /** Na edição pelo acompanhamento não há envio de fotos. */
   allowPhotos?: boolean
 }

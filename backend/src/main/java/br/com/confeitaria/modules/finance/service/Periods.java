@@ -6,17 +6,17 @@ import java.time.temporal.ChronoUnit;
 import br.com.confeitaria.common.exception.FieldValidationException;
 
 /** Período dos relatórios: padrão = mês atual; no máximo 366 dias. */
-final class Periods {
+public final class Periods {
 
-    static final int MAX_DAYS = 366;
+    public static final int MAX_DAYS = 366;
 
-    record Range(LocalDate from, LocalDate to) {
+    public record Range(LocalDate from, LocalDate to) {
     }
 
     private Periods() {
     }
 
-    static Range resolve(LocalDate from, LocalDate to, LocalDate today) {
+    public static Range resolve(LocalDate from, LocalDate to, LocalDate today) {
         LocalDate start = from != null ? from : (to != null ? to.withDayOfMonth(1) : today.withDayOfMonth(1));
         LocalDate end = to != null ? to : start.withDayOfMonth(start.lengthOfMonth());
         if (end.isBefore(start)) {

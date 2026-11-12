@@ -28,6 +28,7 @@ import br.com.confeitaria.modules.order.dto.OrderAdminDtos.Choice;
 import br.com.confeitaria.modules.order.dto.OrderAdminDtos.FileInfo;
 import br.com.confeitaria.modules.order.dto.OrderAdminDtos.HistoryEntry;
 import br.com.confeitaria.modules.order.dto.OrderAdminDtos.OrderDetail;
+import br.com.confeitaria.modules.order.dto.OrderAdminDtos.OrderItemView;
 import br.com.confeitaria.modules.order.dto.OrderAdminDtos.OrderSummary;
 import br.com.confeitaria.modules.order.dto.OrderAdminDtos.PageResponse;
 import br.com.confeitaria.modules.order.dto.PublicOrderDtos.OrderRequest;
@@ -104,7 +105,10 @@ public class OrderAdminService {
         return new OrderDetail(order.getId(), TrackingCodes.format(order.getTrackingCode()), order.getVersion(),
                 order.getCustomerName(), WhatsAppNumber.format(order.getCustomerWhatsapp()),
                 "https://wa.me/" + order.getCustomerWhatsapp().substring(1), order.getPickupDate(),
-                order.getPickupTime().toString(), order.getSize().getId(), order.getSizeNameSnapshot(), flavors, fillings,
+                order.getPickupTime().toString(), order.isCustomCake(), OrderItemView.of(order),
+                order.getFulfillmentType(), order.getDeliveryAddress(), order.getDeliveryDistrict(),
+                order.getDeliveryReference(), order.getSize() == null ? null : order.getSize().getId(),
+                order.getSizeNameSnapshot(), flavors, fillings,
                 order.getDecoration(), order.getCakeText(), order.getNotes(), order.isTopperRequested(),
                 order.getTopperTheme(), order.getTopperName(), order.getTopperAge(), order.getCommercialStatus(),
                 order.getPaymentStatus(), order.getProductionStatus(), order.getCancelledAt(),

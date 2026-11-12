@@ -59,7 +59,7 @@ public class OrderCreationService {
         CakeOrder order = new CakeOrder(newTrackingCode(), name, whatsapp);
         detailsApplier.apply(order, request.details(), OrderDetailsApplier.Actor.CLIENT);
 
-        if (!request.topperRequested() && topperPhoto != null && !topperPhoto.isEmpty()) {
+        if (!request.details().topperRequested() && topperPhoto != null && !topperPhoto.isEmpty()) {
             throw new FieldValidationException("topperPhoto", "A foto do topo só pode ser enviada ao solicitar o topo.");
         }
         // Arquivos: tudo validado antes de gravar qualquer coisa.

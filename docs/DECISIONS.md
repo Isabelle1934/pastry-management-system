@@ -162,7 +162,10 @@ Um servidor com Docker Compose: PostgreSQL e API sem portas publicadas; Caddy se
 | P8 | **Entregar com saldo em aberto** | ✅ Permitido, com aviso visível e confirmação explícita (proposta padrão) | — |
 | P9 | **Lucro estimado** | ✅ Previsto − despesas, mostrando também recebido − despesas (proposta padrão) | — |
 | P10 | **Decoração** | ✅ Texto livre + foto (proposta padrão) | — |
-| P11 | **Somente retirada** (sem entrega) | ✅ Sim (proposta padrão) | — |
+| P11 | **Somente retirada** (sem entrega) | Substituída por P15: delivery configurável (desligado por padrão) | — |
 | P12 | **Exibir preço-base** dos tamanhos na área pública | Exibir como "a partir de" | Fase 6 |
 | P13 | **Quantidade de fotos** de referência | ✅ Até 3 do bolo + 1 do topo, 5 MB cada (proposta padrão) | — |
-| P14 | **Retenção de dados pessoais** (LGPD) | Manter enquanto necessário; definir política de exclusão/anonimização | Fase 12 |
+| P14 | **Retenção de dados pessoais** (LGPD) | Manter enquanto necessário; definir política de exclusão/anonimização. Agora inclui endereços de entrega e a lista de clientes | Fase 12 |
+| P15 | **Delivery:** bairros/área atendida, cálculo da taxa, se bolos personalizados podem ser entregues | Delivery desligado por padrão; taxa lançada no orçamento como item; texto livre "Informações do delivery" nas Configurações | Antes de ativar o delivery |
+| P16 | **Catálogo inicial:** categorias, produtos, preços, quantidades mínimas, dias e fotos reais | — (não será inventado). A proprietária cadastra pelo painel; sem produtos, o site funciona como antes (só bolo personalizado) | Antes de divulgar o cardápio |
+| P17 | **Pagamento de produtos com preço fixo** | Mantido o fluxo atual: todo pedido passa por orçamento e sinal de 50%, mesmo só com itens de preço fixo | Se quiser venda direta sem orçamento |

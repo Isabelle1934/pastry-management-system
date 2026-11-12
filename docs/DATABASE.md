@@ -123,8 +123,8 @@ Uma despesa é um único registro: o vínculo com pedido é apenas um atributo �
 | V3 ✅ | agenda: weekly_slot, schedule_block (`UNIQUE NULLS NOT DISTINCT`), slot_occupancy, slot_reservation (FK para cake_order criada na V4); `min_lead_time_hours` (24) e `max_booking_days_ahead` (90) em bakery_settings |
 | V4 ✅ | pedidos: cake_order (topo de bolo nas colunas `topper_*`, em vez de tabela própria), order_flavor, order_filling, order_history (imutável), stored_file; FK slot_reservation → cake_order |
 | V5 ✅ | quote, quote_item; índices únicos parciais (1 vigente e 1 rascunho por pedido); triggers impedem alterar itens/valores ou excluir orçamento depois de enviado |
-| V6 | payment |
-| V7 | expense_category, expense |
-| V8 | notification |
+| V6 ✅ | payment, notification, prazo do sinal em bakery_settings |
+| V7 ✅ | expense_category, expense |
+| V8 ✅ | catálogo e atendimento: product_category, product (situação ACTIVE/UNAVAILABLE/INACTIVE, preço opcional, período, dias da semana em máscara de bits, retirada/delivery), order_item (cópia de nome/categoria/preço/unidade; PK pedido+produto), stored_file passa a aceitar fotos de produto (`product_id`, finalidade `PRODUCT_PHOTO`), cake_order ganha `custom_cake`, `fulfillment_type` e endereço de entrega (tamanho passa a ser opcional), bakery_settings ganha `pickup_enabled`, `delivery_enabled`, `delivery_info`, `custom_cake_enabled`, `custom_cake_delivery`. Pedidos existentes ficam como bolo personalizado com retirada |
 
 Migrations são criadas na fase de cada módulo (não todas de uma vez) e nunca editadas depois de aplicadas. Nenhum dado fictício é inserido por migration; dados de demonstração existirão apenas em perfil `dev`.

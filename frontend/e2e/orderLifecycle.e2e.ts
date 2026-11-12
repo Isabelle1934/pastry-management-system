@@ -92,15 +92,17 @@ test('encomenda percorre todo o ciclo até a entrega', async ({ browser }) => {
   })
 
   let trackingCode = ''
-  await test.step('cliente faz a encomenda em 5 etapas', async () => {
-    await clientPage.goto('/encomendar')
+  await test.step('cliente faz a encomenda de bolo personalizado', async () => {
+    await clientPage.goto('/encomendar?bolo=1')
     await clientPage.getByLabel('Nome completo').fill(CUSTOMER)
     await clientPage.getByLabel('WhatsApp (com DDD)').fill(WHATSAPP)
     await clientPage.getByRole('button', { name: 'Continuar' }).click()
 
-    await clientPage.locator('label:has(input[name="pickupDate"])').first().click()
-    await choose(clientPage, '10:00')
-    await clientPage.getByRole('button', { name: 'Continuar' }).click()
+    // Com produtos no cardápio aparece a etapa "O que você deseja?" (o bolo personalizado já vem marcado).
+    const itemsStep = clientPage.getByRole('heading', { name: 'O que você deseja?' })
+    const cakeStep = clientPage.getByRole('heading', { name: 'Seu bolo' })
+    await expect(itemsStep.or(cakeStep)).toBeVisible()
+    if (await itemsStep.isVisible()) await clientPage.getByRole('button', { name: 'Continuar' }).click()
 
     await choose(clientPage, `Médio ${RUN}`)
     await choose(clientPage, `Chocolate ${RUN}`)
@@ -109,6 +111,10 @@ test('encomenda percorre todo o ciclo até a entrega', async ({ browser }) => {
     await clientPage.getByRole('button', { name: 'Continuar' }).click()
 
     await choose(clientPage, 'Não, obrigado(a)')
+    await clientPage.getByRole('button', { name: 'Continuar' }).click()
+
+    await clientPage.locator('label:has(input[name="pickupDate"])').first().click()
+    await choose(clientPage, '10:00')
     await clientPage.getByRole('button', { name: 'Continuar' }).click()
 
     await expect(clientPage.getByRole('heading', { name: 'Revise sua encomenda' })).toBeVisible()

@@ -113,7 +113,8 @@ public class ProductionService {
         return new PickupItem(order.getId(), TrackingCodes.format(order.getTrackingCode()), order.getVersion(),
                 order.getCustomerName(), WhatsAppNumber.format(order.getCustomerWhatsapp()),
                 "https://wa.me/" + order.getCustomerWhatsapp().substring(1), order.getPickupDate(),
-                order.getPickupTime().toString(), order.getSizeNameSnapshot(), order.getCakeText(),
+                order.getPickupTime().toString(), order.getSizeNameSnapshot(), order.summary(),
+                order.getFulfillmentType(), order.getDeliveryAddress(), order.getDeliveryDistrict(), order.getCakeText(),
                 order.isTopperRequested(), order.getProductionStatus(), order.getPaymentStatus(), summary.total(),
                 summary.balanceDue(), order.getPickupDate().isBefore(today));
     }

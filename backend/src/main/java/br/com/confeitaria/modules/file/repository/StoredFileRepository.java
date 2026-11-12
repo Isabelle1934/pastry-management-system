@@ -9,4 +9,8 @@ import br.com.confeitaria.modules.file.entity.StoredFile;
 public interface StoredFileRepository extends JpaRepository<StoredFile, Long> {
 
     List<StoredFile> findByOrderIdAndDeletedAtIsNullOrderByIdAsc(Long orderId);
+
+    List<StoredFile> findByProductIdAndDeletedAtIsNullOrderByIdAsc(Long productId);
+
+    List<StoredFile> findByProductIdInAndDeletedAtIsNullOrderByIdAsc(java.util.Collection<Long> productIds);
 }

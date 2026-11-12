@@ -50,12 +50,34 @@ public class CakeOrder extends BaseEntity {
     @Column(name = "pickup_time", nullable = false)
     private LocalTime pickupTime;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "size_id", nullable = false)
+    /** Falso = pedido só com produtos do catálogo (sem bolo personalizado). */
+    @Column(name = "custom_cake", nullable = false)
+    private boolean customCake = true;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "size_id")
     private CakeSize size;
 
-    @Column(name = "size_name_snapshot", nullable = false, length = 80)
+    @Column(name = "size_name_snapshot", length = 80)
     private String sizeNameSnapshot;
+
+    @ElementCollection
+    @CollectionTable(name = "order_item", joinColumns = @JoinColumn(name = "order_id"))
+    @MapKeyColumn(name = "product_id")
+    private Map<Long, OrderItem> items = new LinkedHashMap<>();
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "fulfillment_type", nullable = false, length = 20)
+    private FulfillmentType fulfillmentType = FulfillmentType.PICKUP;
+
+    @Column(name = "delivery_address", length = 300)
+    private String deliveryAddress;
+
+    @Column(name = "delivery_district", length = 100)
+    private String deliveryDistrict;
+
+    @Column(name = "delivery_reference", length = 200)
+    private String deliveryReference;
 
     @ElementCollection
     @CollectionTable(name = "order_flavor", joinColumns = @JoinColumn(name = "order_id"))
@@ -125,11 +147,39 @@ public class CakeOrder extends BaseEntity {
     }
 
     public void customize(CakeSize size, String decoration, String cakeText, String notes) {
+        this.customCake = true;
         this.size = Objects.requireNonNull(size);
         this.sizeNameSnapshot = size.getName();
         this.decoration = decoration;
         this.cakeText = cakeText;
         this.notes = notes;
+    }
+
+    /** Pedido só com produtos do catálogo: remove o bolo personalizado (e o topo, que depende dele). */
+    public void withoutCustomCake(String notes) {
+        this.customCake = false;
+        this.size = null;
+        this.sizeNameSnapshot = null;
+        this.decoration = null;
+        this.cakeText = null;
+        this.notes = notes;
+        this.flavors.clear();
+        this.fillings.clear();
+        removeTopper();
+    }
+
+    /** @param chosen id do produto → item (com cópia dos dados do produto), na ordem escolhida */
+    public void chooseItems(Map<Long, OrderItem> chosen) {
+        items.clear();
+        items.putAll(chosen);
+    }
+
+    public void setFulfillment(FulfillmentType type, String address, String district, String reference) {
+        this.fulfillmentType = Objects.requireNonNull(type);
+        boolean delivery = type == FulfillmentType.DELIVERY;
+        this.deliveryAddress = delivery ? Objects.requireNonNull(address) : null;
+        this.deliveryDistrict = delivery ? district : null;
+        this.deliveryReference = delivery ? reference : null;
     }
 
     /** @param choices id do item → nome, na ordem escolhida pela cliente */
@@ -296,6 +346,47 @@ public class CakeOrder extends BaseEntity {
 
     public CakeSize getSize() {
         return size;
+    }
+
+    public boolean isCustomCake() {
+        return customCake;
+    }
+
+    /** Itens do catálogo na ordem escolhida (chave = id do produto). */
+    public List<Map.Entry<Long, OrderItem>> getItemEntries() {
+        return items.entrySet().stream()
+                .sorted(Comparator.comparingInt(e -> e.getValue().getPosition()))
+                .toList();
+    }
+
+    public Map<Long, OrderItem> getItemsByProduct() {
+        return Map.copyOf(items);
+    }
+
+    /** Resumo curto para listas: "Bolo Médio + Brigadeiro ×50". */
+    public String summary() {
+        List<String> parts = new java.util.ArrayList<>();
+        if (customCake && sizeNameSnapshot != null) {
+            parts.add("Bolo " + sizeNameSnapshot);
+        }
+        getItemEntries().forEach(e -> parts.add(e.getValue().getNameSnapshot() + " ×" + e.getValue().getQuantity()));
+        return String.join(" + ", parts);
+    }
+
+    public FulfillmentType getFulfillmentType() {
+        return fulfillmentType;
+    }
+
+    public String getDeliveryAddress() {
+        return deliveryAddress;
+    }
+
+    public String getDeliveryDistrict() {
+        return deliveryDistrict;
+    }
+
+    public String getDeliveryReference() {
+        return deliveryReference;
     }
 
     public String getSizeNameSnapshot() {

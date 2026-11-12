@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { Fragment, useEffect, useState, type FormEvent } from 'react'
 import { Link, useLocation } from 'react-router'
 import { Alert } from '../../../components/Alert'
 import { Button } from '../../../components/Button'
@@ -200,14 +200,27 @@ function OrderView({ view, onChange, onLeave }: { view: TrackingView; onChange: 
           <dt>Código</dt><dd>{view.trackingCode}</dd>
           <dt>Nome</dt><dd>{view.customerName}</dd>
           <dt>WhatsApp</dt><dd>{view.whatsappMasked}</dd>
-          <dt>Retirada</dt><dd>{formatLongDay(view.pickupDate)} às {view.pickupTime}</dd>
-          <dt>Tamanho</dt><dd>{view.sizeName}</dd>
-          <dt>Massa</dt><dd>{view.flavors.map((f) => f.name).join(', ')}</dd>
-          <dt>Recheio</dt><dd>{view.fillings.map((f) => f.name).join(', ')}</dd>
-          {view.decoration && (<><dt>Decoração</dt><dd>{view.decoration}</dd></>)}
-          {view.cakeText && (<><dt>Nome/frase</dt><dd>{view.cakeText}</dd></>)}
+          <dt>{view.fulfillmentType === 'DELIVERY' ? 'Entrega' : 'Retirada'}</dt>
+          <dd>{formatLongDay(view.pickupDate)} às {view.pickupTime}</dd>
+          {view.fulfillmentType === 'DELIVERY' && (
+            <><dt>Endereço</dt><dd>{[view.deliveryAddress, view.deliveryDistrict].filter(Boolean).join(' – ')}</dd></>
+          )}
+          {view.items.map((item) => (
+            <Fragment key={item.productId}>
+              <dt>{item.quantity} ×</dt><dd>{item.name}</dd>
+            </Fragment>
+          ))}
+          {view.customCake && (
+            <>
+              <dt>Bolo</dt><dd>{view.sizeName}</dd>
+              <dt>Massa</dt><dd>{view.flavors.map((f) => f.name).join(', ')}</dd>
+              <dt>Recheio</dt><dd>{view.fillings.map((f) => f.name).join(', ')}</dd>
+              {view.decoration && (<><dt>Decoração</dt><dd>{view.decoration}</dd></>)}
+              {view.cakeText && (<><dt>Nome/frase</dt><dd>{view.cakeText}</dd></>)}
+              <dt>Topo</dt><dd>{view.topperRequested ? [view.topperTheme, view.topperName, view.topperAge].filter(Boolean).join(' · ') : 'Não'}</dd>
+            </>
+          )}
           {view.notes && (<><dt>Observações</dt><dd>{view.notes}</dd></>)}
-          <dt>Topo</dt><dd>{view.topperRequested ? [view.topperTheme, view.topperName, view.topperAge].filter(Boolean).join(' · ') : 'Não'}</dd>
           <dt>Fotos</dt><dd>{view.photoCount}</dd>
         </dl>
         {view.editable && (

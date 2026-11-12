@@ -127,13 +127,6 @@ export function StepCake({ form, errors, update, catalog, allowPhotos = true }: 
         error={errors.cakeText}
         maxLength={100}
       />
-      <TextAreaField
-        label="Observações (opcional)"
-        value={form.notes}
-        onChange={(e) => update({ notes: e.target.value })}
-        error={errors.notes}
-        maxLength={1000}
-      />
       {allowPhotos && <PhotoPicker
         label="Fotos de referência (opcional)"
         hint={`Até ${MAX_REFERENCE_PHOTOS} fotos em JPG, PNG ou WEBP, com até 5 MB cada.`}

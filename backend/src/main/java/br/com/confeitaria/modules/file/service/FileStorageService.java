@@ -95,9 +95,13 @@ public class FileStorageService {
         return new ValidatedFile(file, type, originalName);
     }
 
-    /** Grava o arquivo e registra os metadados. Exige a transação de quem chama. */
+    /**
+     * Grava o arquivo e registra os metadados. Exige a transação de quem chama.
+     *
+     * @param ownerId id do pedido ou, para {@link FilePurpose#PRODUCT_PHOTO}, do produto
+     */
     @Transactional(propagation = Propagation.MANDATORY)
-    public StoredFile store(ValidatedFile file, Long orderId, FilePurpose purpose, ActorType uploadedBy) {
+    public StoredFile store(ValidatedFile file, Long ownerId, FilePurpose purpose, ActorType uploadedBy) {
         String key = newStorageKey();
         Path target = resolve(key);
         String sha256;
@@ -118,7 +122,7 @@ public class FileStorageService {
         }
         deleteOnRollback(target);
 
-        StoredFile stored = new StoredFile(key, orderId, purpose, file.originalName(), file.type(), size, sha256,
+        StoredFile stored = new StoredFile(key, ownerId, purpose, file.originalName(), file.type(), size, sha256,
                 uploadedBy, clock.instant());
         return repository.save(stored);
     }
@@ -127,8 +131,17 @@ public class FileStorageService {
     @Transactional(readOnly = true)
     public StoredFile findForOrder(Long orderId, Long fileId) {
         return repository.findById(fileId)
-                .filter(f -> f.getOrderId().equals(orderId) && f.getDeletedAt() == null)
+                .filter(f -> orderId.equals(f.getOrderId()) && f.getDeletedAt() == null)
                 .orElseThrow(() -> new NotFoundException("Arquivo não encontrado."));
+    }
+
+    /** Foto de um produto do catálogo. Nunca devolve arquivo de pedido nem de outro produto. */
+    @Transactional(readOnly = true)
+    public StoredFile findForProduct(Long productId, Long fileId) {
+        return repository.findById(fileId)
+                .filter(f -> productId.equals(f.getProductId()) && f.getPurpose() == FilePurpose.PRODUCT_PHOTO
+                        && f.getDeletedAt() == null)
+                .orElseThrow(() -> new NotFoundException("Foto não encontrada."));
     }
 
     public InputStream open(StoredFile file) {

@@ -7,6 +7,7 @@ import { useLoader } from '../../../hooks/useLoader'
 import { cancelOrder, getOrder, orderFileUrl, rejectOrder } from '../../../services/orders'
 import type { OrderDetail } from '../../../types/order'
 import { formatLongDay } from '../../../utils/date'
+import { priceLabel } from '../../../utils/productRules'
 import {
   COMMERCIAL_STATUS,
   formatDateTime,
@@ -174,36 +175,63 @@ export function OrderDetailPage() {
 
       <div className={styles.grid}>
         <section className={styles.section}>
-          <h2>Retirada</h2>
+          <h2>{order.fulfillmentType === 'DELIVERY' ? 'Entrega (delivery)' : 'Retirada na confeitaria'}</h2>
           <dl className={styles.dl}>
             <Item label="Data" value={formatLongDay(order.pickupDate)} />
             <Item label="Horário" value={order.pickupTime} />
+            {order.fulfillmentType === 'DELIVERY' && (
+              <>
+                <Item label="Endereço" value={order.deliveryAddress} />
+                <Item label="Bairro" value={order.deliveryDistrict} />
+                <Item label="Referência" value={order.deliveryReference} />
+              </>
+            )}
+            <Item label="Observações" value={order.notes} />
             <Item label="Pedido em" value={formatDateTime(order.createdAt)} />
           </dl>
         </section>
-        <section className={styles.section}>
-          <h2>Bolo</h2>
-          <dl className={styles.dl}>
-            <Item label="Tamanho" value={order.sizeName} />
-            <Item label="Massa" value={order.flavors.map((f) => f.name).join(', ')} />
-            <Item label="Recheio" value={order.fillings.map((f) => f.name).join(', ')} />
-            <Item label="Decoração" value={order.decoration} />
-            <Item label="Nome/frase" value={order.cakeText} />
-            <Item label="Observações" value={order.notes} />
-          </dl>
-        </section>
-        <section className={styles.section}>
-          <h2>Topo de bolo</h2>
-          {order.topperRequested ? (
+        {order.items.length > 0 && (
+          <section className={styles.section}>
+            <h2>Produtos do catálogo</h2>
             <dl className={styles.dl}>
-              <Item label="Tema" value={order.topperTheme} />
-              <Item label="Nome" value={order.topperName} />
-              <Item label="Idade" value={order.topperAge} />
+              {order.items.map((item) => (
+                <Item
+                  key={item.productId}
+                  label={`${item.quantity} × ${item.name}`}
+                  value={`${priceLabel(item.unitPrice, item.unitLabel)} · ${item.category}${item.notes ? ` · ${item.notes}` : ''}`}
+                />
+              ))}
             </dl>
-          ) : (
-            <p className={styles.muted}>Não solicitado.</p>
-          )}
-        </section>
+            <p className={styles.muted}>Nome e preço como estavam no momento da encomenda.</p>
+          </section>
+        )}
+        {order.customCake && (
+          <section className={styles.section}>
+            <h2>Bolo personalizado</h2>
+            <dl className={styles.dl}>
+              <Item label="Tamanho" value={order.sizeName} />
+              <Item label="Massa" value={order.flavors.map((f) => f.name).join(', ')} />
+              <Item label="Recheio" value={order.fillings.map((f) => f.name).join(', ')} />
+              <Item label="Decoração" value={order.decoration} />
+              <Item label="Nome/frase" value={order.cakeText} />
+            </dl>
+          </section>
+        )}
+        {order.customCake && (
+          <section className={styles.section}>
+            <h2>Topo de bolo</h2>
+            {order.topperRequested ? (
+              <dl className={styles.dl}>
+                <Item label="Tema" value={order.topperTheme} />
+                <Item label="Nome" value={order.topperName} />
+                <Item label="Idade" value={order.topperAge} />
+                <Item label="Valor" value="Cobrado à parte — inclua no orçamento" />
+              </dl>
+            ) : (
+              <p className={styles.muted}>Não solicitado.</p>
+            )}
+          </section>
+        )}
         <section className={styles.section}>
           <h2>Fotos de referência</h2>
           <Photos order={order} />

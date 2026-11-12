@@ -2,26 +2,34 @@ import { useCallback, useState, type FormEvent } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router'
 import { Alert } from '../../../components/Alert'
 import { Button } from '../../../components/Button'
+import { Loading } from '../../../components/Loading'
 import { useLoader } from '../../../hooks/useLoader'
 import { PublicLayout } from '../../../layouts/PublicLayout'
 import { ApiError } from '../../../services/api'
-import { getAvailability, getCatalog } from '../../../services/publicApi'
+import { getAvailability, getBakery, getCatalog } from '../../../services/publicApi'
 import { currentTracking, editTrackedOrder } from '../../../services/tracking'
 import type { TrackingView } from '../../../types/order'
-import type { Availability, PublicCatalog } from '../../../types/public'
+import type { PublicProduct } from '../../../types/product'
+import type { Availability, BakeryInfo, PublicCatalog } from '../../../types/public'
 import { initialOrderForm, toPayload, validateStep, type FieldErrors, type OrderFormState } from '../order/orderForm'
 import styles from '../order/order.module.css'
 import { StepCake } from '../order/steps/StepCake'
+import { StepItems } from '../order/steps/StepItems'
 import { StepSchedule } from '../order/steps/StepSchedule'
 import { StepTopper } from '../order/steps/StepTopper'
-import { Loading } from '../../../components/Loading'
 
 function toForm(view: TrackingView): OrderFormState {
   return {
     ...initialOrderForm,
     customerName: view.customerName,
+    customCake: view.customCake,
+    items: view.items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
     pickupDate: view.pickupDate,
     pickupTime: view.pickupTime,
+    fulfillmentType: view.fulfillmentType,
+    deliveryAddress: view.deliveryAddress ?? '',
+    deliveryDistrict: view.deliveryDistrict ?? '',
+    deliveryReference: view.deliveryReference ?? '',
     sizeId: view.sizeId,
     flavorIds: view.flavors.map((f) => f.id),
     fillingIds: view.fillings.map((f) => f.id),
@@ -37,7 +45,8 @@ function toForm(view: TrackingView): OrderFormState {
 
 /**
  * O pedido pode ter escolhas que não aparecem mais para novas encomendas (horário agora dentro da
- * antecedência, item desativado). Elas continuam disponíveis para a cliente manter.
+ * antecedência, item ou produto desativado). Elas continuam disponíveis para a cliente manter, com os
+ * dados copiados no pedido.
  */
 function withCurrentChoices(view: TrackingView, catalog: PublicCatalog, availability: Availability) {
   const days = availability.days.some((d) => d.date === view.pickupDate)
@@ -49,36 +58,71 @@ function withCurrentChoices(view: TrackingView, catalog: PublicCatalog, availabi
     : [...availability.days, { date: view.pickupDate, times: [view.pickupTime] }].sort((a, b) => a.date.localeCompare(b.date))
   const missing = <T extends { id: number }>(list: T[], current: { id: number; name: string }[], make: (c: { id: number; name: string }) => T) =>
     [...list, ...current.filter((c) => !list.some((o) => o.id === c.id)).map(make)]
+
+  const keptProducts: PublicProduct[] = view.items
+    .filter((item) => !catalog.products.some((p) => p.id === item.productId && p.available))
+    .map((item) => ({
+      id: item.productId, categoryId: -1, name: item.name, description: null, price: item.unitPrice,
+      unitLabel: item.unitLabel, minQuantity: 1, available: true, orderable: true, seasonal: false,
+      availableFrom: null, availableUntil: null, availableDays: [], pickupAllowed: true, deliveryAllowed: true,
+      photoIds: [],
+    }))
+  const products = [...catalog.products.filter((p) => !keptProducts.some((k) => k.id === p.id)), ...keptProducts]
+  const categories = keptProducts.length > 0
+    ? [...catalog.categories, { id: -1, name: 'Já no seu pedido', description: null }]
+    : catalog.categories
+
+  const sizes = view.sizeId == null || catalog.sizes.some((s) => s.id === view.sizeId)
+    ? catalog.sizes
+    : [...catalog.sizes, { id: view.sizeId, name: view.sizeName ?? '', description: null, servings: null, basePrice: '0.00',
+        maxFlavors: Math.max(view.flavors.length, 1), maxFillings: Math.max(view.fillings.length, 1) }]
+
   return {
     availability: { ...availability, days },
     catalog: {
-      sizes: catalog.sizes.some((s) => s.id === view.sizeId)
-        ? catalog.sizes
-        : [...catalog.sizes, { id: view.sizeId, name: view.sizeName, description: null, servings: null, basePrice: '0.00',
-            maxFlavors: Math.max(view.flavors.length, 1), maxFillings: Math.max(view.fillings.length, 1) }],
+      ...catalog,
+      customCakeEnabled: catalog.customCakeEnabled || view.customCake,
+      sizes,
       flavors: missing(catalog.flavors, view.flavors, (c) => ({ ...c, description: null })),
       fillings: missing(catalog.fillings, view.fillings, (c) => ({ ...c, description: null })),
+      products,
+      categories,
     },
   }
 }
 
 async function loadEditData() {
-  const [view, catalog, availability] = await Promise.all([currentTracking(), getCatalog(), getAvailability()])
-  return view ? { view, ...withCurrentChoices(view, catalog, availability) } : null
+  const [view, catalog, availability, bakery] = await Promise.all([
+    currentTracking(), getCatalog(), getAvailability(), getBakery(),
+  ])
+  return view ? { view, bakery, ...withCurrentChoices(view, catalog, availability) } : null
 }
 
-function EditForm({ view, catalog, availability }: { view: TrackingView; catalog: PublicCatalog; availability: Availability }) {
+interface EditFormProps {
+  view: TrackingView
+  catalog: PublicCatalog
+  availability: Availability
+  bakery: BakeryInfo
+}
+
+function EditForm({ view, catalog, availability, bakery }: EditFormProps) {
   const navigate = useNavigate()
   const [form, setForm] = useState(() => toForm(view))
   const [errors, setErrors] = useState<FieldErrors>({})
   const [formError, setFormError] = useState<string>()
   const [saving, setSaving] = useState(false)
   const update = useCallback((patch: Partial<OrderFormState>) => setForm((current) => ({ ...current, ...patch })), [])
+  const showItems = catalog.products.some((p) => p.available)
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
-    const size = catalog.sizes.find((s) => s.id === form.sizeId)
-    const stepErrors = { ...validateStep(1, form, size), ...validateStep(2, form, size), ...validateStep(3, form, size) }
+    const context = { size: catalog.sizes.find((s) => s.id === form.sizeId), products: catalog.products }
+    const stepErrors = {
+      ...(showItems ? validateStep('items', form, context) : {}),
+      ...(form.customCake ? validateStep('cake', form, context) : {}),
+      ...(form.customCake ? validateStep('topper', form, context) : {}),
+      ...validateStep('schedule', form, context),
+    }
     setErrors(stepErrors)
     setFormError(undefined)
     if (Object.keys(stepErrors).length > 0) {
@@ -87,14 +131,8 @@ function EditForm({ view, catalog, availability }: { view: TrackingView; catalog
     }
     setSaving(true)
     try {
-      const payload = toPayload(form)
-      await editTrackedOrder({
-        pickupDate: payload.pickupDate, pickupTime: payload.pickupTime, sizeId: payload.sizeId,
-        flavorIds: payload.flavorIds, fillingIds: payload.fillingIds, decoration: payload.decoration,
-        cakeText: payload.cakeText, notes: payload.notes, topperRequested: payload.topperRequested,
-        topperTheme: payload.topperTheme, topperName: payload.topperName, topperAge: payload.topperAge,
-        version: view.version,
-      })
+      const { customerName: _name, customerWhatsapp: _phone, ...payload } = toPayload(form)
+      await editTrackedOrder({ ...payload, version: view.version })
       navigate('/acompanhar', { state: { saved: true } })
     } catch (err) {
       if (err instanceof ApiError && Object.keys(err.fieldErrors).length > 0) {
@@ -108,15 +146,16 @@ function EditForm({ view, catalog, availability }: { view: TrackingView; catalog
     }
   }
 
-  const props = { form, errors, update, catalog, availability, allowPhotos: false }
+  const props = { form, errors, update, catalog, availability, bakery, allowPhotos: false }
   return (
     <form className={styles.page} onSubmit={handleSubmit} noValidate>
       {view.commercialStatus === 'QUOTE_SENT' && (
         <Alert tone="info">Ao salvar, o orçamento atual deixa de valer e a confeitaria vai preparar um novo.</Alert>
       )}
+      {showItems && <StepItems {...props} />}
+      {form.customCake && <StepCake {...props} />}
+      {form.customCake && <StepTopper {...props} />}
       <StepSchedule {...props} />
-      <StepCake {...props} />
-      <StepTopper {...props} />
       <p className={styles.hint}>Para trocar as fotos enviadas, fale com a confeitaria pelo WhatsApp.</p>
       {formError && <Alert tone="error">{formError}</Alert>}
       <div className={styles.nav}>

@@ -6,7 +6,8 @@ function item(id: number, pickupDate: string, overdue = false): PickupItem {
   return {
     id, trackingCode: 'ABCD-1234-EFGH-5678', version: 0, customerName: `Cliente ${id}`,
     customerWhatsapp: '(11) 98765-4321', whatsappLink: 'https://wa.me/5511987654321', pickupDate, pickupTime: '14:00',
-    sizeName: 'Médio', cakeText: null, topperRequested: false, productionStatus: 'NOT_STARTED',
+    sizeName: 'Médio', summary: 'Bolo Médio', fulfillmentType: 'PICKUP', deliveryAddress: null, deliveryDistrict: null,
+    cakeText: null, topperRequested: false, productionStatus: 'NOT_STARTED',
     paymentStatus: 'DEPOSIT_PAID', total: '165.00', balanceDue: '82.50', overdue,
   }
 }

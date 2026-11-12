@@ -32,4 +32,17 @@ public final class FileResponses {
                 .header("Content-Disposition", disposition.toString())
                 .body(new InputStreamResource(storage.open(file)));
     }
+
+    /**
+     * Foto pública do catálogo: o conteúdo de um id nunca muda (trocar a foto gera outro arquivo),
+     * então pode ficar em cache no navegador.
+     */
+    public static ResponseEntity<InputStreamResource> publicImage(FileStorageService storage, StoredFile file) {
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(file.getContentType()))
+                .contentLength(file.getSizeBytes())
+                .cacheControl(CacheControl.maxAge(java.time.Duration.ofDays(7)).cachePublic())
+                .header("Content-Disposition", ContentDisposition.inline().build().toString())
+                .body(new InputStreamResource(storage.open(file)));
+    }
 }

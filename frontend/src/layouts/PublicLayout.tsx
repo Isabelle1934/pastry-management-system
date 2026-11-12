@@ -29,6 +29,10 @@ export function PublicLayout({ children, wide = false }: PublicLayoutProps) {
             <BrandMark name={name} />
           </Link>
           <nav className={styles.nav} aria-label="Principal">
+            <NavLink to="/cardapio" className={navClass}>
+              <Icon name="bag" size={18} />
+              <span className={styles.navText}>Cardápio</span>
+            </NavLink>
             <NavLink to="/acompanhar" className={navClass}>
               <Icon name="search" size={18} />
               <span className={styles.navText}>Acompanhar pedido</span>
@@ -52,6 +56,7 @@ export function PublicLayout({ children, wide = false }: PublicLayoutProps) {
           </div>
           <div className={styles.footerCol}>
             <h2 className={styles.footerTitle}>Encomendas</h2>
+            <Link to="/cardapio">Cardápio</Link>
             <Link to="/encomendar">Fazer encomenda</Link>
             <Link to="/acompanhar">Acompanhar pedido</Link>
           </div>

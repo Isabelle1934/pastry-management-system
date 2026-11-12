@@ -1,4 +1,5 @@
 import type { Money } from './catalog'
+import type { FulfillmentType, OrderItemInput, PublicCategory, PublicProduct } from './product'
 
 export interface BakeryInfo {
   name: string | null
@@ -8,6 +9,13 @@ export interface BakeryInfo {
   instagram: string | null
   address: string | null
   pickupInstructions: string | null
+  pickupEnabled: boolean
+  deliveryEnabled: boolean
+  /** Área atendida, taxa e prazos do delivery (só quando o delivery está ativo). */
+  deliveryInfo: string | null
+  customCakeEnabled: boolean
+  /** Bolos personalizados também podem ser entregues. */
+  customCakeDelivery: boolean
 }
 
 export interface PublicSize {
@@ -30,6 +38,10 @@ export interface PublicCatalog {
   sizes: PublicSize[]
   flavors: PublicOption[]
   fillings: PublicOption[]
+  categories: PublicCategory[]
+  products: PublicProduct[]
+  /** Aceita novas encomendas de bolo personalizado. */
+  customCakeEnabled: boolean
 }
 
 export interface AvailableDay {
@@ -49,7 +61,8 @@ export interface OrderPayload {
   customerWhatsapp: string
   pickupDate: string
   pickupTime: string
-  sizeId: number
+  customCake: boolean
+  sizeId: number | null
   flavorIds: number[]
   fillingIds: number[]
   decoration: string
@@ -59,4 +72,9 @@ export interface OrderPayload {
   topperTheme: string
   topperName: string
   topperAge: number | null
+  items: OrderItemInput[]
+  fulfillmentType: FulfillmentType
+  deliveryAddress: string
+  deliveryDistrict: string
+  deliveryReference: string
 }

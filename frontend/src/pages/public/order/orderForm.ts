@@ -2,6 +2,7 @@
  * Estado e validação do formulário de encomenda, separados da interface para poderem ser testados.
  * O backend valida tudo de novo — estas regras só orientam a cliente antes do envio.
  */
+import type { FulfillmentType, OrderItemInput, PublicProduct } from '../../../types/product'
 import type { OrderPayload, PublicSize } from '../../../types/public'
 
 export const MAX_REFERENCE_PHOTOS = 3
@@ -9,14 +10,41 @@ export const MAX_FILE_BYTES = 5 * 1024 * 1024
 export const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 const ACCEPTED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp']
 
-export const STEPS = ['Seus dados', 'Data e horário', 'Seu bolo', 'Topo de bolo', 'Revisão'] as const
-export type StepIndex = 0 | 1 | 2 | 3 | 4
+/** Etapas possíveis; as de bolo e topo só aparecem quando a cliente quer um bolo personalizado. */
+export type StepKey = 'customer' | 'items' | 'cake' | 'topper' | 'schedule' | 'review'
+
+export const STEP_LABELS: Record<StepKey, string> = {
+  customer: 'Seus dados',
+  items: 'Produtos',
+  cake: 'Seu bolo',
+  topper: 'Topo de bolo',
+  schedule: 'Data e entrega',
+  review: 'Revisão',
+}
+
+/**
+ * Sequência de etapas. Sem produtos no catálogo, a etapa "Produtos" não aparece e a encomenda é de bolo
+ * personalizado, como antes.
+ */
+export function visibleSteps(form: Pick<OrderFormState, 'customCake'>, hasProducts: boolean): StepKey[] {
+  const steps: StepKey[] = ['customer']
+  if (hasProducts) steps.push('items')
+  if (form.customCake) steps.push('cake', 'topper')
+  steps.push('schedule', 'review')
+  return steps
+}
 
 export interface OrderFormState {
   customerName: string
   customerWhatsapp: string
+  customCake: boolean
+  items: OrderItemInput[]
   pickupDate: string
   pickupTime: string
+  fulfillmentType: FulfillmentType
+  deliveryAddress: string
+  deliveryDistrict: string
+  deliveryReference: string
   sizeId: number | null
   flavorIds: number[]
   fillingIds: number[]
@@ -34,8 +62,14 @@ export interface OrderFormState {
 export const initialOrderForm: OrderFormState = {
   customerName: '',
   customerWhatsapp: '',
+  customCake: true,
+  items: [],
   pickupDate: '',
   pickupTime: '',
+  fulfillmentType: 'PICKUP',
+  deliveryAddress: '',
+  deliveryDistrict: '',
+  deliveryReference: '',
   sizeId: null,
   flavorIds: [],
   fillingIds: [],
@@ -53,23 +87,29 @@ export const initialOrderForm: OrderFormState = {
 export type FieldErrors = Partial<Record<keyof OrderFormState, string>>
 
 /** Em qual etapa está cada campo (para levar a cliente ao erro devolvido pelo servidor). */
-export const FIELD_STEP: Record<string, StepIndex> = {
-  customerName: 0,
-  customerWhatsapp: 0,
-  pickupDate: 1,
-  pickupTime: 1,
-  sizeId: 2,
-  flavorIds: 2,
-  fillingIds: 2,
-  decoration: 2,
-  cakeText: 2,
-  notes: 2,
-  referencePhotos: 2,
-  topperRequested: 3,
-  topperTheme: 3,
-  topperName: 3,
-  topperAge: 3,
-  topperPhoto: 3,
+export const FIELD_STEP: Record<string, StepKey> = {
+  customerName: 'customer',
+  customerWhatsapp: 'customer',
+  customCake: 'items',
+  items: 'items',
+  sizeId: 'cake',
+  flavorIds: 'cake',
+  fillingIds: 'cake',
+  decoration: 'cake',
+  cakeText: 'cake',
+  referencePhotos: 'cake',
+  topperRequested: 'topper',
+  topperTheme: 'topper',
+  topperName: 'topper',
+  topperAge: 'topper',
+  topperPhoto: 'topper',
+  pickupDate: 'schedule',
+  pickupTime: 'schedule',
+  fulfillmentType: 'schedule',
+  deliveryAddress: 'schedule',
+  deliveryDistrict: 'schedule',
+  deliveryReference: 'schedule',
+  notes: 'schedule',
 }
 
 /** Aceita os formatos comuns de celular/fixo brasileiro com DDD (a normalização final é do servidor). */
@@ -93,9 +133,15 @@ export function validatePhoto(file: File): string | undefined {
   return undefined
 }
 
-export function validateStep(step: StepIndex, form: OrderFormState, size: PublicSize | undefined): FieldErrors {
+export interface ValidationContext {
+  size?: PublicSize
+  products?: PublicProduct[]
+}
+
+export function validateStep(step: StepKey, form: OrderFormState, context: ValidationContext = {}): FieldErrors {
   const errors: FieldErrors = {}
-  if (step === 0) {
+  const { size, products = [] } = context
+  if (step === 'customer') {
     const name = form.customerName.trim()
     if (name.length < 2) errors.customerName = 'Informe seu nome completo.'
     else if (name.length > 120) errors.customerName = 'O nome deve ter no máximo 120 caracteres.'
@@ -103,11 +149,18 @@ export function validateStep(step: StepIndex, form: OrderFormState, size: Public
     else if (!looksLikeBrazilianPhone(form.customerWhatsapp))
       errors.customerWhatsapp = 'Informe um WhatsApp válido com DDD, ex.: (11) 99999-8888.'
   }
-  if (step === 1) {
-    if (!form.pickupDate) errors.pickupDate = 'Escolha a data de retirada.'
-    else if (!form.pickupTime) errors.pickupTime = 'Escolha o horário de retirada.'
+  if (step === 'items') {
+    if (!form.customCake && form.items.length === 0)
+      errors.items = 'Escolha pelo menos um produto ou o bolo personalizado.'
+    for (const item of form.items) {
+      const product = products.find((p) => p.id === item.productId)
+      if (product && item.quantity < product.minQuantity) {
+        errors.items = `A quantidade mínima de "${product.name}" é ${product.minQuantity}.`
+        break
+      }
+    }
   }
-  if (step === 2) {
+  if (step === 'cake') {
     if (!size) errors.sizeId = 'Escolha o tamanho.'
     if (form.flavorIds.length === 0) errors.flavorIds = 'Escolha pelo menos uma massa.'
     else if (size && form.flavorIds.length > size.maxFlavors)
@@ -117,13 +170,12 @@ export function validateStep(step: StepIndex, form: OrderFormState, size: Public
       errors.fillingIds = `Este tamanho permite até ${size.maxFillings} ${size.maxFillings === 1 ? 'recheio' : 'recheios'}.`
     if (form.cakeText.length > 100) errors.cakeText = 'Máximo de 100 caracteres.'
     if (form.decoration.length > 1000) errors.decoration = 'Máximo de 1000 caracteres.'
-    if (form.notes.length > 1000) errors.notes = 'Máximo de 1000 caracteres.'
     if (form.referencePhotos.length > MAX_REFERENCE_PHOTOS)
       errors.referencePhotos = `Envie no máximo ${MAX_REFERENCE_PHOTOS} fotos.`
     const invalidPhoto = form.referencePhotos.map(validatePhoto).find(Boolean)
     if (invalidPhoto) errors.referencePhotos = invalidPhoto
   }
-  if (step === 3 && form.topperRequested) {
+  if (step === 'topper' && form.topperRequested) {
     if (!form.topperTheme.trim()) errors.topperTheme = 'Informe o tema do topo.'
     if (form.topperAge.trim() && !/^\d{1,3}$/.test(form.topperAge.trim()))
       errors.topperAge = 'Informe a idade em números.'
@@ -132,6 +184,13 @@ export function validateStep(step: StepIndex, form: OrderFormState, size: Public
       const invalid = validatePhoto(form.topperPhoto)
       if (invalid) errors.topperPhoto = invalid
     }
+  }
+  if (step === 'schedule') {
+    if (!form.pickupDate) errors.pickupDate = 'Escolha a data.'
+    else if (!form.pickupTime) errors.pickupTime = 'Escolha o horário.'
+    if (form.fulfillmentType === 'DELIVERY' && !form.deliveryAddress.trim())
+      errors.deliveryAddress = 'Informe o endereço de entrega.'
+    if (form.notes.length > 1000) errors.notes = 'Máximo de 1000 caracteres.'
   }
   return errors
 }
@@ -158,20 +217,29 @@ export function toggleChoice(selected: number[], id: number, max: number): numbe
 }
 
 export function toPayload(form: OrderFormState): OrderPayload {
+  const cake = form.customCake
+  const topper = cake && form.topperRequested
+  const delivery = form.fulfillmentType === 'DELIVERY'
   return {
     customerName: form.customerName.trim(),
     customerWhatsapp: form.customerWhatsapp.trim(),
     pickupDate: form.pickupDate,
     pickupTime: form.pickupTime,
-    sizeId: form.sizeId ?? 0,
-    flavorIds: form.flavorIds,
-    fillingIds: form.fillingIds,
-    decoration: form.decoration.trim(),
-    cakeText: form.cakeText.trim(),
+    customCake: cake,
+    sizeId: cake ? form.sizeId : null,
+    flavorIds: cake ? form.flavorIds : [],
+    fillingIds: cake ? form.fillingIds : [],
+    decoration: cake ? form.decoration.trim() : '',
+    cakeText: cake ? form.cakeText.trim() : '',
     notes: form.notes.trim(),
-    topperRequested: form.topperRequested,
-    topperTheme: form.topperRequested ? form.topperTheme.trim() : '',
-    topperName: form.topperRequested ? form.topperName.trim() : '',
-    topperAge: form.topperRequested && form.topperAge.trim() ? Number(form.topperAge) : null,
+    topperRequested: topper,
+    topperTheme: topper ? form.topperTheme.trim() : '',
+    topperName: topper ? form.topperName.trim() : '',
+    topperAge: topper && form.topperAge.trim() ? Number(form.topperAge) : null,
+    items: form.items.map(({ productId, quantity }) => ({ productId, quantity })),
+    fulfillmentType: form.fulfillmentType,
+    deliveryAddress: delivery ? form.deliveryAddress.trim() : '',
+    deliveryDistrict: delivery ? form.deliveryDistrict.trim() : '',
+    deliveryReference: delivery ? form.deliveryReference.trim() : '',
   }
 }

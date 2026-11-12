@@ -25,8 +25,33 @@ type Field =
   | 'quoteExpiryWarningHours'
   | 'depositDeadlineHours'
   | 'ownerNotificationEmail'
+  | 'deliveryInfo'
 
 type FormValues = Record<Field, string>
+
+type ToggleKey = 'pickupEnabled' | 'deliveryEnabled' | 'customCakeEnabled' | 'customCakeDelivery'
+type ToggleValues = Record<ToggleKey, boolean>
+
+function toToggles(settings: BakerySettings): ToggleValues {
+  return {
+    pickupEnabled: settings.pickupEnabled,
+    deliveryEnabled: settings.deliveryEnabled,
+    customCakeEnabled: settings.customCakeEnabled,
+    customCakeDelivery: settings.customCakeDelivery,
+  }
+}
+
+function Toggle({ label, hint, checked, onChange }: { label: string; hint?: string; checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <label style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'flex-start', cursor: 'pointer' }}>
+      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} style={{ marginTop: 4 }} />
+      <span>
+        <strong style={{ fontWeight: 600 }}>{label}</strong>
+        {hint && <span style={{ display: 'block', color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)' }}>{hint}</span>}
+      </span>
+    </label>
+  )
+}
 
 function toForm(settings: BakerySettings): FormValues {
   return {
@@ -42,6 +67,7 @@ function toForm(settings: BakerySettings): FormValues {
     quoteExpiryWarningHours: String(settings.quoteExpiryWarningHours),
     depositDeadlineHours: settings.depositDeadlineHours == null ? '' : String(settings.depositDeadlineHours),
     ownerNotificationEmail: settings.ownerNotificationEmail ?? '',
+    deliveryInfo: settings.deliveryInfo ?? '',
   }
 }
 
@@ -66,7 +92,9 @@ function hoursHint(value: string): string | undefined {
 
 function SettingsForm({ initial, onSaved }: { initial: BakerySettings; onSaved: (s: BakerySettings) => void }) {
   const [values, setValues] = useState<FormValues>(() => toForm(initial))
+  const [toggles, setToggles] = useState<ToggleValues>(() => toToggles(initial))
   const [version, setVersion] = useState(initial.version)
+  const toggle = (key: ToggleKey) => (value: boolean) => setToggles((current) => ({ ...current, [key]: value }))
   const [errors, setErrors] = useState<Partial<Record<Field, string>>>({})
   const [notice, setNotice] = useState<{ tone: 'success' | 'error'; text: string }>()
   const [saving, setSaving] = useState(false)
@@ -97,9 +125,12 @@ function SettingsForm({ initial, onSaved }: { initial: BakerySettings; onSaved: 
         ? validateEmail(values.ownerNotificationEmail)
         : undefined,
     }
-    setErrors(nextErrors)
+    const fulfillmentError = !toggles.pickupEnabled && !toggles.deliveryEnabled
+      ? 'Mantenha pelo menos uma forma de atendimento: retirada ou delivery.'
+      : undefined
+    setErrors({ ...nextErrors, deliveryInfo: fulfillmentError })
     setNotice(undefined)
-    if (Object.values(nextErrors).some(Boolean)) return
+    if (Object.values(nextErrors).some(Boolean) || fulfillmentError) return
 
     setSaving(true)
     try {
@@ -116,9 +147,12 @@ function SettingsForm({ initial, onSaved }: { initial: BakerySettings; onSaved: 
         quoteExpiryWarningHours: warning,
         depositDeadlineHours: values.depositDeadlineHours.trim() ? Number(values.depositDeadlineHours) : null,
         ownerNotificationEmail: values.ownerNotificationEmail,
+        ...toggles,
+        deliveryInfo: values.deliveryInfo,
         version,
       })
       setValues(toForm(saved))
+      setToggles(toToggles(saved))
       setVersion(saved.version)
       onSaved(saved)
       setNotice({ tone: 'success', text: 'Configurações salvas.' })
@@ -175,6 +209,31 @@ function SettingsForm({ initial, onSaved }: { initial: BakerySettings; onSaved: 
           error={errors.pickupInstructions}
           maxLength={1000}
         />
+      </Fieldset>
+
+      <Fieldset
+        title="Atendimento"
+        description="Formas de receber as encomendas. Cada produto do catálogo também diz se aceita retirada e/ou delivery."
+      >
+        <Toggle label="Retirada na confeitaria" checked={toggles.pickupEnabled} onChange={toggle('pickupEnabled')} />
+        <Toggle label="Entrega por delivery" hint="A cliente informa o endereço; a taxa de entrega entra no orçamento."
+          checked={toggles.deliveryEnabled} onChange={toggle('deliveryEnabled')} />
+        {toggles.deliveryEnabled && (
+          <TextAreaField
+            label="Informações do delivery"
+            hint="Ex.: bairros atendidos, como a taxa é calculada. Aparece para a cliente ao escolher a entrega."
+            value={values.deliveryInfo}
+            onChange={set('deliveryInfo')}
+            maxLength={500}
+          />
+        )}
+        <Toggle label="Aceitar encomendas de bolo personalizado" hint="Desmarque para pausar novos pedidos de bolo personalizado."
+          checked={toggles.customCakeEnabled} onChange={toggle('customCakeEnabled')} />
+        {toggles.deliveryEnabled && toggles.customCakeEnabled && (
+          <Toggle label="Bolos personalizados também podem ser entregues"
+            checked={toggles.customCakeDelivery} onChange={toggle('customCakeDelivery')} />
+        )}
+        {errors.deliveryInfo && <Alert tone="error">{errors.deliveryInfo}</Alert>}
       </Fieldset>
 
       <Fieldset title="Pagamento por Pix" description="Mostrado à cliente somente quando ela precisar pagar o sinal.">

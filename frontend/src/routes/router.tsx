@@ -2,6 +2,8 @@ import { createBrowserRouter } from 'react-router'
 import { AdminLayout } from '../layouts/AdminLayout'
 import { AdminHomePage } from '../pages/admin/AdminHomePage'
 import { CatalogPage } from '../pages/admin/catalog/CatalogPage'
+import { CustomersPage } from '../pages/admin/CustomersPage'
+import { ReportsPage } from '../pages/admin/ReportsPage'
 import { ChangePasswordPage } from '../pages/admin/ChangePasswordPage'
 import { ForgotPasswordPage } from '../pages/admin/ForgotPasswordPage'
 import { OrderDetailPage } from '../pages/admin/orders/OrderDetailPage'
@@ -15,6 +17,7 @@ import { SchedulePage } from '../pages/admin/schedule/SchedulePage'
 import { SettingsPage } from '../pages/admin/SettingsPage'
 import { NotFoundPage } from '../pages/NotFoundPage'
 import { HomePage } from '../pages/public/HomePage'
+import { MenuPage } from '../pages/public/MenuPage'
 import { OrderFormPage } from '../pages/public/order/OrderFormPage'
 import { TrackingEditPage } from '../pages/public/tracking/TrackingEditPage'
 import { TrackingPage } from '../pages/public/tracking/TrackingPage'
@@ -22,6 +25,7 @@ import { GuestOnly, RequireAuth } from './guards'
 
 export const router = createBrowserRouter([
   { path: '/', element: <HomePage /> },
+  { path: '/cardapio', element: <MenuPage /> },
   { path: '/encomendar', element: <OrderFormPage /> },
   { path: '/acompanhar', element: <TrackingPage /> },
   { path: '/acompanhar/editar', element: <TrackingEditPage /> },
@@ -57,7 +61,11 @@ export const router = createBrowserRouter([
       { path: 'producao', element: <ProductionPage /> },
       { path: 'agenda', element: <SchedulePage /> },
       { path: 'financeiro', element: <FinancePage /> },
+      { path: 'catalogo', element: <CatalogPage /> },
+      // Endereço antigo do catálogo, mantido para links salvos.
       { path: 'produtos', element: <CatalogPage /> },
+      { path: 'clientes', element: <CustomersPage /> },
+      { path: 'relatorios', element: <ReportsPage /> },
       { path: 'configuracoes', element: <SettingsPage /> },
       { path: 'avisos', element: <NotificationsPage /> },
       { path: 'trocar-senha', element: <ChangePasswordPage /> },

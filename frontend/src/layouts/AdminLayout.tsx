@@ -115,13 +115,20 @@ export function AdminLayout() {
               <NavLink to="/admin/agenda" className={linkClass}>
                 <Icon name="calendar" /> Agenda
               </NavLink>
+              <p className={styles.navGroup}>Negócio</p>
+              <NavLink to="/admin/catalogo" className={linkClass}>
+                <Icon name="cake" /> Catálogo
+              </NavLink>
+              <NavLink to="/admin/clientes" className={linkClass}>
+                <Icon name="users" /> Clientes
+              </NavLink>
               <NavLink to="/admin/financeiro" className={linkClass}>
                 <Icon name="finance" /> Financeiro
               </NavLink>
-              <p className={styles.navGroup}>Confeitaria</p>
-              <NavLink to="/admin/produtos" className={linkClass}>
-                <Icon name="cake" /> Produtos
+              <NavLink to="/admin/relatorios" className={linkClass}>
+                <Icon name="chart" /> Relatórios
               </NavLink>
+              <p className={styles.navGroup}>Confeitaria</p>
               <NavLink to="/admin/configuracoes" className={linkClass}>
                 <Icon name="settings" /> Configurações
               </NavLink>

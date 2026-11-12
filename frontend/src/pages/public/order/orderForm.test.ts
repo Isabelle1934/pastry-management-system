@@ -8,8 +8,10 @@ import {
   toPayload,
   validatePhoto,
   validateStep,
+  visibleSteps,
   type OrderFormState,
 } from './orderForm'
+import type { PublicProduct } from '../../../types/product'
 
 const size: PublicSize = {
   id: 7,
@@ -35,33 +37,64 @@ describe('looksLikeBrazilianPhone', () => {
 
 describe('validateStep', () => {
   it('requires name and phone on step 1', () => {
-    expect(validateStep(0, initialOrderForm, undefined)).toEqual({
+    expect(validateStep('customer', initialOrderForm)).toEqual({
       customerName: 'Informe seu nome completo.',
       customerWhatsapp: 'Informe seu WhatsApp.',
     })
     expect(
-      validateStep(0, { ...initialOrderForm, customerName: 'Ana', customerWhatsapp: '11999998888' }, undefined),
+      validateStep('customer', { ...initialOrderForm, customerName: 'Ana', customerWhatsapp: '11999998888' }),
     ).toEqual({})
   })
 
-  it('requires date then time on step 2', () => {
-    expect(validateStep(1, initialOrderForm, undefined)).toHaveProperty('pickupDate')
-    expect(validateStep(1, { ...initialOrderForm, pickupDate: '2026-11-03' }, undefined)).toHaveProperty('pickupTime')
+  it('requires date then time, and the address for delivery', () => {
+    expect(validateStep('schedule', initialOrderForm)).toHaveProperty('pickupDate')
+    expect(validateStep('schedule', { ...initialOrderForm, pickupDate: '2026-11-03' })).toHaveProperty('pickupTime')
+    const delivery = { ...initialOrderForm, pickupDate: '2026-11-03', pickupTime: '14:00', fulfillmentType: 'DELIVERY' as const }
+    expect(validateStep('schedule', delivery)).toEqual({ deliveryAddress: 'Informe o endereço de entrega.' })
+    expect(validateStep('schedule', { ...delivery, deliveryAddress: 'Rua A, 1' })).toEqual({})
   })
 
-  it('enforces the size limits on step 3', () => {
+  it('enforces the size limits on the cake step', () => {
     const form: OrderFormState = { ...initialOrderForm, sizeId: 7, flavorIds: [1, 2, 3], fillingIds: [] }
-    const errors = validateStep(2, form, size)
+    const errors = validateStep('cake', form, { size })
     expect(errors.flavorIds).toBe('Este tamanho permite até 2 massas.')
     expect(errors.fillingIds).toBe('Escolha pelo menos um recheio.')
   })
 
   it('requires the theme only when a topper is requested', () => {
-    expect(validateStep(3, initialOrderForm, size)).toEqual({})
-    expect(validateStep(3, { ...initialOrderForm, topperRequested: true, topperAge: 'dez' }, size)).toEqual({
+    expect(validateStep('topper', initialOrderForm, { size })).toEqual({})
+    expect(validateStep('topper', { ...initialOrderForm, topperRequested: true, topperAge: 'dez' }, { size })).toEqual({
       topperTheme: 'Informe o tema do topo.',
       topperAge: 'Informe a idade em números.',
     })
+  })
+})
+
+describe('catalog steps', () => {
+  const product: PublicProduct = {
+    id: 3, categoryId: 1, name: 'Brigadeiro', description: null, price: '3.50', unitLabel: 'unidade', minQuantity: 25,
+    available: true, orderable: true, seasonal: false, availableFrom: null, availableUntil: null, availableDays: [],
+    pickupAllowed: true, deliveryAllowed: false, photoIds: [],
+  }
+
+  it('shows cake and topper steps only for a custom cake, and the products step only with a catalog', () => {
+    expect(visibleSteps({ customCake: true }, false)).toEqual(['customer', 'cake', 'topper', 'schedule', 'review'])
+    expect(visibleSteps({ customCake: false }, true)).toEqual(['customer', 'items', 'schedule', 'review'])
+  })
+
+  it('requires a product or the custom cake, respecting the minimum quantity', () => {
+    const empty = { ...initialOrderForm, customCake: false }
+    expect(validateStep('items', empty).items).toMatch(/pelo menos um produto/)
+    expect(validateStep('items', { ...empty, items: [{ productId: 3, quantity: 10 }] }, { products: [product] }).items)
+      .toBe('A quantidade mínima de "Brigadeiro" é 25.')
+    expect(validateStep('items', { ...empty, items: [{ productId: 3, quantity: 25 }] }, { products: [product] })).toEqual({})
+  })
+
+  it('sends only the cake fields when a custom cake is chosen', () => {
+    const payload = toPayload({ ...initialOrderForm, customCake: false, sizeId: 7, flavorIds: [1], topperRequested: true,
+      topperTheme: 'Jardim', items: [{ productId: 3, quantity: 25 }] })
+    expect(payload).toMatchObject({ customCake: false, sizeId: null, flavorIds: [], topperRequested: false,
+      items: [{ productId: 3, quantity: 25 }], fulfillmentType: 'PICKUP', deliveryAddress: '' })
   })
 })
 

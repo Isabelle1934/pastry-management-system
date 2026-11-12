@@ -25,8 +25,12 @@ public class StoredFile {
     @Column(name = "storage_key", nullable = false, length = 80, updatable = false)
     private String storageKey;
 
-    @Column(name = "order_id", nullable = false, updatable = false)
+    /** Dono do arquivo: um pedido OU um produto (fotos do catálogo). */
+    @Column(name = "order_id", updatable = false)
     private Long orderId;
+
+    @Column(name = "product_id", updatable = false)
+    private Long productId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30, updatable = false)
@@ -60,7 +64,11 @@ public class StoredFile {
     public StoredFile(String storageKey, Long orderId, FilePurpose purpose, String originalName, FileType type,
             long sizeBytes, String sha256, ActorType uploadedBy, Instant createdAt) {
         this.storageKey = storageKey;
-        this.orderId = orderId;
+        if (purpose == FilePurpose.PRODUCT_PHOTO) {
+            this.productId = orderId;
+        } else {
+            this.orderId = orderId;
+        }
         this.purpose = purpose;
         this.originalName = originalName;
         this.contentType = type.contentType();
@@ -80,6 +88,15 @@ public class StoredFile {
 
     public Long getOrderId() {
         return orderId;
+    }
+
+    public Long getProductId() {
+        return productId;
+    }
+
+    /** Exclusão lógica (o arquivo em disco é mantido para auditoria). */
+    public void markDeleted(Instant now) {
+        this.deletedAt = now;
     }
 
     public FilePurpose getPurpose() {

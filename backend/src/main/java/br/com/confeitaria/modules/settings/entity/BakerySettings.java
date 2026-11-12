@@ -63,6 +63,23 @@ public class BakerySettings {
     @Column(name = "deposit_deadline_hours")
     private Integer depositDeadlineHours;
 
+    @Column(name = "pickup_enabled", nullable = false)
+    private boolean pickupEnabled = true;
+
+    @Column(name = "delivery_enabled", nullable = false)
+    private boolean deliveryEnabled;
+
+    /** Área atendida, taxa e prazos do delivery, exibidos para a cliente. */
+    @Column(name = "delivery_info", length = 500)
+    private String deliveryInfo;
+
+    @Column(name = "custom_cake_enabled", nullable = false)
+    private boolean customCakeEnabled = true;
+
+    /** Bolos personalizados podem ser entregues por delivery. */
+    @Column(name = "custom_cake_delivery", nullable = false)
+    private boolean customCakeDelivery;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -100,6 +117,35 @@ public class BakerySettings {
 
     public void updateNotifications(String ownerNotificationEmail) {
         this.ownerNotificationEmail = ownerNotificationEmail;
+    }
+
+    public void updateFulfillment(boolean pickupEnabled, boolean deliveryEnabled, String deliveryInfo,
+            boolean customCakeEnabled, boolean customCakeDelivery) {
+        this.pickupEnabled = pickupEnabled;
+        this.deliveryEnabled = deliveryEnabled;
+        this.deliveryInfo = deliveryInfo;
+        this.customCakeEnabled = customCakeEnabled;
+        this.customCakeDelivery = customCakeDelivery;
+    }
+
+    public boolean isPickupEnabled() {
+        return pickupEnabled;
+    }
+
+    public boolean isDeliveryEnabled() {
+        return deliveryEnabled;
+    }
+
+    public String getDeliveryInfo() {
+        return deliveryInfo;
+    }
+
+    public boolean isCustomCakeEnabled() {
+        return customCakeEnabled;
+    }
+
+    public boolean isCustomCakeDelivery() {
+        return customCakeDelivery;
     }
 
     public void updateScheduling(int minLeadTimeHours, int maxBookingDaysAhead) {

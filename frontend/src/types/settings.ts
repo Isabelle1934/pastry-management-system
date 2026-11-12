@@ -11,6 +11,11 @@ export interface BakerySettings {
   quoteExpiryWarningHours: number
   depositDeadlineHours: number | null
   ownerNotificationEmail: string | null
+  pickupEnabled: boolean
+  deliveryEnabled: boolean
+  deliveryInfo: string | null
+  customCakeEnabled: boolean
+  customCakeDelivery: boolean
   version: number
 }
 

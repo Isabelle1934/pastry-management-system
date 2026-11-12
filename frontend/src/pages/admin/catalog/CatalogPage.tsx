@@ -1,12 +1,16 @@
 import { useSearchParams } from 'react-router'
 import styles from '../panel.module.css'
+import { CategoriesSection } from './CategoriesSection'
 import { OptionsSection, type OptionLabels } from './OptionsSection'
+import { ProductsSection } from './ProductsSection'
 import { SizesSection } from './SizesSection'
 
 const TABS = [
-  { id: 'tamanhos', label: 'Tamanhos' },
-  { id: 'massas', label: 'Massas' },
-  { id: 'recheios', label: 'Recheios' },
+  { id: 'produtos', label: 'Produtos' },
+  { id: 'categorias', label: 'Categorias' },
+  { id: 'tamanhos', label: 'Bolo: tamanhos' },
+  { id: 'massas', label: 'Bolo: massas' },
+  { id: 'recheios', label: 'Bolo: recheios' },
 ] as const
 
 type TabId = (typeof TABS)[number]['id']
@@ -27,16 +31,17 @@ const FILLING_LABELS: OptionLabels = {
 
 export function CatalogPage() {
   const [params, setParams] = useSearchParams()
-  const current: TabId = TABS.some((t) => t.id === params.get('aba')) ? (params.get('aba') as TabId) : 'tamanhos'
+  const current: TabId = TABS.some((t) => t.id === params.get('aba')) ? (params.get('aba') as TabId) : 'produtos'
 
   return (
     <div className={styles.page}>
-      <h1>Produtos</h1>
+      <h1>Catálogo</h1>
       <p className={styles.intro}>
-        O que você cadastrar aqui aparece como opção no formulário de encomenda. Itens desativados deixam de aparecer,
-        mas continuam nos pedidos antigos.
+        Produtos e categorias aparecem no cardápio do site; tamanhos, massas e recheios são as opções do bolo
+        personalizado. Nada é apagado: itens desativados saem do site, mas os pedidos antigos continuam com os dados
+        originais.
       </p>
-      <div className={styles.tabs} role="tablist" aria-label="Tipo de item">
+      <div className={styles.tabs} role="tablist" aria-label="Parte do catálogo">
         {TABS.map((tab) => (
           <button
             key={tab.id}
@@ -53,6 +58,8 @@ export function CatalogPage() {
         ))}
       </div>
       <div role="tabpanel" id={`panel-${current}`} aria-labelledby={`tab-${current}`}>
+        {current === 'produtos' && <ProductsSection />}
+        {current === 'categorias' && <CategoriesSection />}
         {current === 'tamanhos' && <SizesSection />}
         {current === 'massas' && <OptionsSection key="flavors" kind="flavors" labels={FLAVOR_LABELS} />}
         {current === 'recheios' && <OptionsSection key="fillings" kind="fillings" labels={FILLING_LABELS} />}

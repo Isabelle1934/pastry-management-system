@@ -119,8 +119,10 @@ export function ProductionPage() {
                   <div className={styles.row}>
                     <span>
                       {!group.date && `${formatLongDay(item.pickupDate)} · `}
-                      {item.sizeName}
+                      {item.summary}
                       {item.cakeText && ` · “${item.cakeText}”`}
+                      {item.fulfillmentType === 'DELIVERY' &&
+                        ` · Delivery: ${[item.deliveryAddress, item.deliveryDistrict].filter(Boolean).join(' – ')}`}
                       {item.topperRequested && ' · com topo'}
                     </span>
                     {item.balanceDue != null && toCents(item.balanceDue) > 0 ? (

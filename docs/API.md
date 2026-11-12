@@ -23,10 +23,11 @@
 |---|---|---|
 | GET | `/health` | ✅ Fase 1 — `{"status":"UP"}` (Actuator, sem detalhes) |
 | GET | `/csrf` | ✅ Fase 3 — 204; emite o cookie `XSRF-TOKEN` (o frontend o envia de volta no header `X-XSRF-TOKEN`) |
-| GET | `/bakery` | ✅ Fase 4 — `{name, aboutText, whatsappContact, whatsappLink, instagram, address, pickupInstructions}`. Não expõe chave Pix, e-mail de avisos nem regras de orçamento |
-| GET | `/catalog` | ✅ Fase 4 — somente itens ativos: `sizes[{id, name, description, servings, basePrice, maxFlavors, maxFillings}]`, `flavors[{id, name, description}]`, `fillings[...]` |
+| GET | `/bakery` | ✅ Fase 4 — `{name, aboutText, whatsappContact, whatsappLink, instagram, address, pickupInstructions, pickupEnabled, deliveryEnabled, deliveryInfo, customCakeEnabled, customCakeDelivery}`. `deliveryInfo` só vem com o delivery ativo. Não expõe chave Pix, e-mail de avisos nem regras de orçamento |
+| GET | `/catalog` | ✅ Fase 4 / catálogo — opções ativas do bolo personalizado: `sizes[{id, name, description, servings, basePrice, maxFlavors, maxFillings}]`, `flavors[{id, name, description}]`, `fillings[...]`; produtos visíveis (ativos ou temporariamente indisponíveis, em categoria ativa e dentro do período): `categories[{id, name, description}]` (só as que têm produto), `products[{id, categoryId, name, description, price (null = sob orçamento), unitLabel, minQuantity, available, orderable, seasonal, availableFrom, availableUntil, availableDays[1–7], pickupAllowed, deliveryAllowed, photoIds[]}]`; `customCakeEnabled` |
+| GET | `/products/{productId}/photos/{fileId}` | ✅ Foto de produto visível no catálogo (404 para produto inativo ou foto de outro produto). Cache público de 7 dias — o conteúdo de um id nunca muda |
 | GET | `/availability?from=&to=` | ✅ Fase 5 — `{from, to, days:[{date, times:["14:00"]}]}`: só horários que podem ser escolhidos agora (sem contagens). Sem parâmetros: de hoje até 62 dias ou o limite configurado |
-| POST | `/orders` | ✅ Fase 6 — multipart: parte `order` (JSON: `customerName, customerWhatsapp, pickupDate, pickupTime, sizeId, flavorIds[], fillingIds[], decoration, cakeText, notes, topperRequested, topperTheme, topperName, topperAge`), até 3 `referencePhotos` e 1 `topperPhoto` (JPG/PNG/WEBP, 5 MB cada). 201 `{trackingCode: "XXXX-XXXX-XXXX-XXXX"}`. Erros por campo (400), 413 acima do limite do servidor, 429 após 5 envios/h por IP. Não ocupa vaga na agenda |
+| POST | `/orders` | ✅ Fase 6 — multipart: parte `order` (JSON: `customerName, customerWhatsapp, pickupDate, pickupTime, customCake (padrão true), sizeId, flavorIds[], fillingIds[], decoration, cakeText, notes, topperRequested, topperTheme, topperName, topperAge, items[{productId, quantity, notes?}], fulfillmentType (PICKUP/DELIVERY, padrão PICKUP), deliveryAddress, deliveryDistrict, deliveryReference`). Tamanho/massa/recheio só são exigidos com `customCake`; sem bolo é preciso ao menos 1 item; topo só com bolo; com `DELIVERY` o endereço é obrigatório. O mesmo corpo (sem nome/WhatsApp) é usado em `PUT /api/tracking/order`; até 3 `referencePhotos` e 1 `topperPhoto` (JPG/PNG/WEBP, 5 MB cada). 201 `{trackingCode: "XXXX-XXXX-XXXX-XXXX"}`. Erros por campo (400), 413 acima do limite do servidor, 429 após 5 envios/h por IP. Não ocupa vaga na agenda |
 
 ## Acompanhamento — `/api/tracking`
 
@@ -62,6 +63,12 @@ Enquanto a senha for provisória, qualquer `/api/admin/**` fora de `/api/admin/a
 | GET/POST | `/catalog/sizes` · PUT `/catalog/sizes/{id}` · PATCH `/catalog/sizes/{id}/active` | ✅ Tamanhos |
 | GET/POST | `/catalog/flavors` · PUT `/catalog/flavors/{id}` · PATCH `/catalog/flavors/{id}/active` | ✅ Massas |
 | GET/POST | `/catalog/fillings` · PUT `/catalog/fillings/{id}` · PATCH `/catalog/fillings/{id}/active` | ✅ Recheios |
+
+| GET/POST | `/catalog/categories` · PUT `/catalog/categories/{id}` · PATCH `/catalog/categories/{id}/active` | ✅ Categorias de produtos `{name, description?, displayOrder?, version?}`; resposta inclui `productCount`. Desativar tira a categoria e seus produtos do site |
+| GET/POST | `/catalog/products` · GET/PUT `/catalog/products/{id}` | ✅ Produtos `{categoryId, name, description?, price? (vazio = sob orçamento), unitLabel?, minQuantity?, orderable?, seasonal?, availableFrom?, availableUntil?, availableDays?[1–7], pickupAllowed?, deliveryAllowed?, displayOrder?, version?}`. Resposta inclui `status`, `categoryName` e `photoIds[]` |
+| PATCH | `/catalog/products/{id}/status` | ✅ `{status: ACTIVE/UNAVAILABLE/INACTIVE, version}` — nada é apagado |
+| POST | `/catalog/products/{id}/photos` | ✅ Multipart `photo` (JPG/PNG/WEBP, 5 MB, conteúdo verificado); até 6 fotos; a primeira é a capa |
+| DELETE · GET | `/catalog/products/{id}/photos/{fileId}` | ✅ Remove a foto (exclusão lógica) · baixa a foto (também de produtos inativos) |
 
 Regras do catálogo: nome único por lista sem diferenciar maiúsculas (409 `DUPLICATE_NAME`); edição e ativação exigem `version` (409 `CONCURRENT_MODIFICATION` se o item mudou em outra tela); itens não são excluídos, só desativados (`{active, version}`).
 
@@ -119,6 +126,8 @@ Datas `from`/`to` no formato `AAAA-MM-DD`, no fuso da confeitaria (America/Sao_P
 | GET/POST | `/finance/categories` · PUT `/finance/categories/{id}` | ✅ `{name, version?}`; nome único sem diferenciar maiúsculas (409 `DUPLICATE_NAME`) |
 | PATCH | `/finance/categories/{id}/active` | ✅ `{active, version}` — desativar tira a categoria só das despesas novas |
 | GET | `/dashboard` | ✅ `{today, actions {newOrders, proofsToReview, awaitingClientResponse, awaitingDeposit, overduePickups}, production {notStarted, inProduction, ready, pickupsToday}, upcomingPickups[] (até 8, próximos 7 dias), expiringQuotes[] (dentro do aviso configurado), month {forecastRevenue, received, pending, expenses}, unreadNotifications}` — mesmas regras do financeiro e da produção |
+| GET | `/customers?q=&page=&size=` | ✅ Clientes derivadas dos pedidos (cada WhatsApp é uma cliente): `{name (do pedido mais recente), whatsapp, whatsappDigits, whatsappLink, orders, confirmedOrders, completedOrders, totalPaid (confirmados − reembolsos), firstOrderAt, lastOrderAt, lastPickupDate}`; busca por nome ou dígitos do WhatsApp |
+| GET | `/reports?from=&to=` | ✅ Padrão: mês atual; até 366 dias. Por data agendada: `statusCounts`, `totals {orders, sold, lost, soldRevenue, averageTicket, received}`, `topProducts[]`, `categories[]`, `cakeSizes[]`, `flavors[]`, `fillings[]` (`{name, group, quantity, orders}`, só pedidos confirmados/concluídos, nomes da cópia guardada no pedido), `customCakes`, `toppers`, `fulfillment {pickup, delivery}` |
 | GET | `/notifications?unread=&limit=` | ✅ Avisos mais recentes (padrão 30, máx. 100) |
 | GET | `/notifications/unread-count` | ✅ `{count}` |
 | POST | `/notifications/{id}/read` · `/notifications/read-all` | ✅ Marca como lido |

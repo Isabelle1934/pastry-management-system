@@ -75,7 +75,8 @@ public class OrderFixtures {
 
     public OrderRequest request(Catalog catalog, LocalDate date) {
         return new OrderRequest("Ana Souza", WHATSAPP, date, TWO_PM, catalog.sizeId(), List.of(catalog.flavorId()),
-                List.of(catalog.fillingId()), "Flores", "Parabéns!", null, false, null, null, null, null);
+                List.of(catalog.fillingId()), "Flores", "Parabéns!", null, false, null, null, null, null, null, null, null,
+                null, null, null);
     }
 
     public CreatedOrder create(Catalog catalog) {

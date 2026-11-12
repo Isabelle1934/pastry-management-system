@@ -6,10 +6,14 @@ import { TextAreaField } from '../../../components/TextAreaField'
 import { TextField } from '../../../components/TextField'
 import { useLoader } from '../../../hooks/useLoader'
 import { listOptions, listSizes } from '../../../services/catalog'
+import { listProducts } from '../../../services/products'
 import { updateOrder } from '../../../services/orders'
 import { listSlots } from '../../../services/schedule'
 import type { CatalogOption } from '../../../types/catalog'
 import type { OrderDetail } from '../../../types/order'
+import type { FulfillmentType, OrderItemInput } from '../../../types/product'
+import { setQuantity } from '../../../utils/cart'
+import { FULFILLMENT_LABELS } from '../../../utils/productRules'
 import { isoWeekday } from '../../../utils/date'
 import panel from '../panel.module.css'
 import { describeSaveError } from '../saveErrors'
@@ -17,13 +21,14 @@ import styles from './orders.module.css'
 import { Loading } from '../../../components/Loading'
 
 async function loadEditData() {
-  const [sizes, flavors, fillings, slots] = await Promise.all([
+  const [sizes, flavors, fillings, slots, products] = await Promise.all([
     listSizes(),
     listOptions('flavors'),
     listOptions('fillings'),
     listSlots(),
+    listProducts(),
   ])
-  return { sizes, flavors, fillings, slots }
+  return { sizes, flavors, fillings, slots, products }
 }
 
 interface OptionChecksProps {
@@ -83,6 +88,12 @@ export function OrderEditForm({ order, onSaved, onCancel, onStale }: Props) {
     customerWhatsapp: order.customerWhatsapp,
     pickupDate: order.pickupDate,
     pickupTime: order.pickupTime,
+    customCake: order.customCake,
+    items: order.items.map((i) => ({ productId: i.productId, quantity: i.quantity, notes: i.notes ?? '' })) as OrderItemInput[],
+    fulfillmentType: order.fulfillmentType as FulfillmentType,
+    deliveryAddress: order.deliveryAddress ?? '',
+    deliveryDistrict: order.deliveryDistrict ?? '',
+    deliveryReference: order.deliveryReference ?? '',
     sizeId: order.sizeId,
     flavorIds: order.flavors.map((f) => f.id),
     fillingIds: order.fillings.map((f) => f.id),
@@ -97,6 +108,7 @@ export function OrderEditForm({ order, onSaved, onCancel, onStale }: Props) {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [formError, setFormError] = useState<string>()
   const [saving, setSaving] = useState(false)
+  const [productToAdd, setProductToAdd] = useState('')
 
   const set = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) =>
     setForm((current) => ({ ...current, [key]: value }))
@@ -115,21 +127,30 @@ export function OrderEditForm({ order, onSaved, onCancel, onStale }: Props) {
     setFormError(undefined)
     setSaving(true)
     try {
+      const cake = form.customCake
+      const topper = cake && form.topperRequested
+      const delivery = form.fulfillmentType === 'DELIVERY'
       const saved = await updateOrder(order.id, {
         customerName: form.customerName,
         customerWhatsapp: form.customerWhatsapp,
         pickupDate: form.pickupDate,
         pickupTime: form.pickupTime,
-        sizeId: form.sizeId,
-        flavorIds: form.flavorIds,
-        fillingIds: form.fillingIds,
-        decoration: form.decoration,
-        cakeText: form.cakeText,
+        customCake: cake,
+        sizeId: cake ? form.sizeId : null,
+        flavorIds: cake ? form.flavorIds : [],
+        fillingIds: cake ? form.fillingIds : [],
+        decoration: cake ? form.decoration : '',
+        cakeText: cake ? form.cakeText : '',
         notes: form.notes,
-        topperRequested: form.topperRequested,
-        topperTheme: form.topperRequested ? form.topperTheme : '',
-        topperName: form.topperRequested ? form.topperName : '',
-        topperAge: form.topperRequested && form.topperAge.trim() ? Number(form.topperAge) : null,
+        topperRequested: topper,
+        topperTheme: topper ? form.topperTheme : '',
+        topperName: topper ? form.topperName : '',
+        topperAge: topper && form.topperAge.trim() ? Number(form.topperAge) : null,
+        items: form.items,
+        fulfillmentType: form.fulfillmentType,
+        deliveryAddress: delivery ? form.deliveryAddress : '',
+        deliveryDistrict: delivery ? form.deliveryDistrict : '',
+        deliveryReference: delivery ? form.deliveryReference : '',
         version: order.version,
       })
       onSaved(saved)
@@ -158,14 +179,65 @@ export function OrderEditForm({ order, onSaved, onCancel, onStale }: Props) {
             onChange={(e) => set('customerWhatsapp', e.target.value)} error={errors.customerWhatsapp} />
         </div>
         <div className={panel.row}>
-          <TextField label="Data de retirada" type="date" value={form.pickupDate}
+          <SelectField label="Atendimento" value={form.fulfillmentType} error={errors.fulfillmentType}
+            onChange={(e) => set('fulfillmentType', e.target.value as FulfillmentType)}
+            options={(['PICKUP', 'DELIVERY'] as const).map((v) => ({ value: v, label: FULFILLMENT_LABELS[v] }))} />
+        </div>
+        {form.fulfillmentType === 'DELIVERY' && (
+          <div className={panel.row}>
+            <TextField label="Endereço de entrega" value={form.deliveryAddress} maxLength={300}
+              onChange={(e) => set('deliveryAddress', e.target.value)} error={errors.deliveryAddress} />
+            <TextField label="Bairro" value={form.deliveryDistrict} maxLength={100}
+              onChange={(e) => set('deliveryDistrict', e.target.value)} />
+            <TextField label="Referência" value={form.deliveryReference} maxLength={200}
+              onChange={(e) => set('deliveryReference', e.target.value)} />
+          </div>
+        )}
+        <div className={panel.row}>
+          <TextField label="Data agendada" type="date" value={form.pickupDate}
             onChange={(e) => set('pickupDate', e.target.value)} error={errors.pickupDate} />
           <SelectField label="Horário" value={form.pickupTime} onChange={(e) => set('pickupTime', e.target.value)}
             error={errors.pickupTime}
             options={timeOptions.length ? timeOptions.map((t) => ({ value: t, label: t }))
               : [{ value: '', label: 'Sem horários neste dia' }]} />
         </div>
-        <SelectField label="Tamanho" value={String(form.sizeId)} error={errors.sizeId}
+        <fieldset style={{ border: 'none', margin: 0, padding: 0 }}>
+          <legend style={{ fontWeight: 600, padding: 0 }}>Produtos do catálogo</legend>
+          {form.items.length === 0 && <p className={panel.description}>Nenhum produto do catálogo.</p>}
+          {form.items.map((item) => {
+            const original = order.items.find((i) => i.productId === item.productId)
+            const product = data.products.find((p) => p.id === item.productId)
+            return (
+              <div key={item.productId} className={panel.row}>
+                <TextField label={original?.name ?? product?.name ?? 'Produto'} inputMode="numeric"
+                  value={String(item.quantity)}
+                  onChange={(e) => set('items', setQuantity(form.items, item.productId,
+                    Number(e.target.value.replace(/\D/g, '').slice(0, 4)) || 1))} />
+                <Button variant="secondary" onClick={() => set('items', form.items.filter((i) => i.productId !== item.productId))}>
+                  Remover
+                </Button>
+              </div>
+            )
+          })}
+          <div className={panel.row}>
+            <SelectField label="Adicionar produto" value={productToAdd} onChange={(e) => setProductToAdd(e.target.value)}
+              options={[{ value: '', label: 'Escolha um produto' },
+                ...data.products.filter((p) => p.status !== 'INACTIVE' && !form.items.some((i) => i.productId === p.id))
+                  .map((p) => ({ value: String(p.id), label: `${p.name} (${p.categoryName})` }))]} />
+            <Button variant="secondary" disabled={!productToAdd} onClick={() => {
+              const product = data.products.find((p) => p.id === Number(productToAdd))
+              if (product) set('items', setQuantity(form.items, product.id, product.minQuantity))
+              setProductToAdd('')
+            }}>Adicionar</Button>
+          </div>
+          {errors.items && <p role="alert" style={{ margin: 0, color: 'var(--color-danger)', fontSize: '0.9rem' }}>{errors.items}</p>}
+        </fieldset>
+        <label className={styles.check}>
+          <input type="checkbox" checked={form.customCake} onChange={(e) => set('customCake', e.target.checked)} />
+          Bolo personalizado
+        </label>
+        {form.customCake && (<>
+        <SelectField label="Tamanho" value={String(form.sizeId ?? '')} error={errors.sizeId}
           onChange={(e) => {
             const next = data.sizes.find((s) => s.id === Number(e.target.value))
             setForm((current) => ({
@@ -175,8 +247,9 @@ export function OrderEditForm({ order, onSaved, onCancel, onStale }: Props) {
               fillingIds: next ? current.fillingIds.slice(0, next.maxFillings) : current.fillingIds,
             }))
           }}
-          options={data.sizes.filter((s) => s.active || s.id === order.sizeId)
-            .map((s) => ({ value: String(s.id), label: s.active ? s.name : `${s.name} (inativo)` }))} />
+          options={[...(form.sizeId == null ? [{ value: '', label: 'Escolha o tamanho' }] : []),
+            ...data.sizes.filter((s) => s.active || s.id === order.sizeId)
+            .map((s) => ({ value: String(s.id), label: s.active ? s.name : `${s.name} (inativo)` }))]} />
         <OptionChecks legend="Massas" options={data.flavors} selected={form.flavorIds} max={size?.maxFlavors ?? 1}
           error={errors.flavorIds} onChange={(ids) => set('flavorIds', ids)} />
         <OptionChecks legend="Recheios" options={data.fillings} selected={form.fillingIds} max={size?.maxFillings ?? 1}
@@ -185,13 +258,16 @@ export function OrderEditForm({ order, onSaved, onCancel, onStale }: Props) {
           error={errors.decoration} maxLength={1000} />
         <TextField label="Nome ou frase no bolo" value={form.cakeText} onChange={(e) => set('cakeText', e.target.value)}
           error={errors.cakeText} maxLength={100} />
+        </>)}
         <TextAreaField label="Observações" value={form.notes} onChange={(e) => set('notes', e.target.value)}
           error={errors.notes} maxLength={1000} />
-        <label className={styles.check}>
-          <input type="checkbox" checked={form.topperRequested} onChange={(e) => set('topperRequested', e.target.checked)} />
-          Topo de bolo
-        </label>
-        {form.topperRequested && (
+        {form.customCake && (
+          <label className={styles.check}>
+            <input type="checkbox" checked={form.topperRequested} onChange={(e) => set('topperRequested', e.target.checked)} />
+            Topo de bolo (cobrado à parte)
+          </label>
+        )}
+        {form.customCake && form.topperRequested && (
           <div className={panel.row}>
             <TextField label="Tema do topo" value={form.topperTheme} onChange={(e) => set('topperTheme', e.target.value)}
               error={errors.topperTheme} maxLength={100} />

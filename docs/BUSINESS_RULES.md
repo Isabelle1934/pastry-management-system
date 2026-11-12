@@ -142,10 +142,24 @@ Cancelamento, remarcação ou expiração de pedido com reserva ativa: decrement
 - Preço-base é referência ("a partir de"); o valor final vem sempre do orçamento.
 - Itens não são excluídos, apenas desativados: somem do formulário público e permanecem nos pedidos antigos.
 
+## 10.1 Catálogo de produtos e atendimento
+
+- A proprietária cria **categorias** e **produtos** pelo painel, sem mudar código. Nomes únicos (sem diferenciar maiúsculas).
+- Situação do produto: **Ativo** (aparece e pode ser escolhido), **Indisponível no momento** (aparece, mas não pode ser escolhido), **Inativo** (fora do catálogo público). Nenhuma situação apaga dados; categoria desativada esconde seus produtos.
+- Preço vazio = **sob orçamento**. Todo pedido continua passando por orçamento: o preço do catálogo é referência para a proprietária montar o orçamento.
+- Disponibilidade por produto: aceita ou não encomendas pelo site, quantidade mínima, período (de/até — depois do fim o produto sai do catálogo sozinho), dias da semana e formas de atendimento (retirada e/ou delivery). "Especial" apenas destaca o produto.
+- **Pedido** = bolo personalizado (opcional) + itens do catálogo com quantidade (opcional), com pelo menos um dos dois. O topo de bolo só existe junto com bolo personalizado e é **cobrado à parte** (o aviso aparece para a cliente e o item entra separado no orçamento).
+- Cada item guarda **cópia de nome, categoria, preço e unidade** no momento da encomenda. Editar, desativar ou mudar o preço do produto não altera pedidos registrados; na edição de um pedido, itens que já estavam nele mantêm a cópia original.
+- Um produto aparece no máximo uma vez por pedido (a quantidade é somada no item).
+- **Modalidade de atendimento** por pedido: retirada na confeitaria ou delivery. A proprietária liga/desliga cada forma nas Configurações (ao menos uma ativa) e define se bolos personalizados podem ser entregues. A cliente só vê as formas permitidas para todos os itens escolhidos; com delivery, o endereço é obrigatório e a taxa entra no orçamento.
+- A data/horário agendado vale para retirada ou entrega e segue as mesmas regras da agenda (vaga só após o sinal de 50%). A cliente só vê datas aceitas por todos os produtos escolhidos.
+- A proprietária pode editar o pedido sem as restrições de disponibilidade do site (como já acontecia com a agenda).
+
 ## 11. Validações principais
 
 - Nome: 2–120 caracteres. WhatsApp: número brasileiro válido (DDD + 8/9 dígitos), normalizado.
 - Data/horário: existente na disponibilidade no momento do envio.
-- Massas/recheios: ativos e dentro dos limites do tamanho.
+- Massas/recheios: ativos e dentro dos limites do tamanho (somente com bolo personalizado).
+- Itens do catálogo: produto ativo que aceita encomendas, quantidade entre o mínimo do produto e 9999, data aceita pelo produto, forma de atendimento permitida.
 - Textos livres com limite de tamanho; conteúdo tratado como texto (sem HTML).
 - Fotos: até 3 de referência do bolo + 1 do topo **[PENDENTE: quantidade]**.

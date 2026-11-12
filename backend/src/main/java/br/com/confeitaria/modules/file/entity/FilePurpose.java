@@ -6,7 +6,8 @@ import java.util.Set;
 public enum FilePurpose {
     ORDER_REFERENCE(Set.of(FileType.JPEG, FileType.PNG, FileType.WEBP), "Envie fotos em JPG, PNG ou WEBP."),
     TOPPER_REFERENCE(Set.of(FileType.JPEG, FileType.PNG, FileType.WEBP), "Envie fotos em JPG, PNG ou WEBP."),
-    PAYMENT_PROOF(Set.of(FileType.JPEG, FileType.PNG, FileType.PDF), "Envie o comprovante em JPG, PNG ou PDF.");
+    PAYMENT_PROOF(Set.of(FileType.JPEG, FileType.PNG, FileType.PDF), "Envie o comprovante em JPG, PNG ou PDF."),
+    PRODUCT_PHOTO(Set.of(FileType.JPEG, FileType.PNG, FileType.WEBP), "Envie fotos em JPG, PNG ou WEBP.");
 
     private final Set<FileType> allowedTypes;
     private final String allowedMessage;

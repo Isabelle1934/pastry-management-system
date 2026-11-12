@@ -36,6 +36,33 @@ function toItemForm(item: QuoteItem): ItemForm {
   }
 }
 
+/**
+ * Sugestão de itens a partir do pedido: produtos do catálogo com o preço da encomenda e, sem valor
+ * definido, o bolo personalizado, o topo (cobrado à parte) e a taxa de entrega.
+ */
+function itemsFromOrder(order: OrderDetail): ItemForm[] {
+  const items: ItemForm[] = order.items.map((item) => ({
+    key: nextKey++,
+    name: item.name,
+    description: item.notes ?? '',
+    quantity: String(item.quantity),
+    unitPrice: item.unitPrice == null ? '' : toMoneyInput(item.unitPrice),
+  }))
+  if (order.customCake) {
+    const flavors = [...order.flavors, ...order.fillings].map((o) => o.name).join(', ')
+    items.push({ key: nextKey++, name: `Bolo personalizado – ${order.sizeName ?? ''}`.trim(), description: flavors,
+      quantity: '1', unitPrice: '' })
+  }
+  if (order.customCake && order.topperRequested) {
+    items.push({ key: nextKey++, name: 'Topo de bolo', description: order.topperTheme ?? '', quantity: '1', unitPrice: '' })
+  }
+  if (order.fulfillmentType === 'DELIVERY') {
+    items.push({ key: nextKey++, name: 'Taxa de entrega', description: order.deliveryDistrict ?? '', quantity: '1',
+      unitPrice: '' })
+  }
+  return items
+}
+
 function QuoteTable({ quote }: { quote: Pick<Quote, 'items' | 'total' | 'depositAmount' | 'balanceAmount'> }) {
   return (
     <>
@@ -67,7 +94,7 @@ function QuoteTable({ quote }: { quote: Pick<Quote, 'items' | 'total' | 'deposit
       <div className={styles.totals}>
         <strong>Total: {formatBRL(quote.total)}</strong>
         <span>Sinal (50%): {formatBRL(quote.depositAmount)}</span>
-        <span>Restante na retirada: {formatBRL(quote.balanceAmount)}</span>
+        <span>Restante na retirada/entrega: {formatBRL(quote.balanceAmount)}</span>
       </div>
     </>
   )
@@ -199,10 +226,14 @@ function QuoteEditor({ order, initialItems, initialNotes, initialValidity, hasDr
         <Button variant="secondary" onClick={() => setItems((current) => [...current, emptyItem()])}>
           Adicionar item
         </Button>
+        <Button variant="secondary" onClick={() => setItems((current) => [
+          ...current.filter((i) => i.name.trim() || i.unitPrice.trim()), ...itemsFromOrder(order)])}>
+          Incluir itens do pedido
+        </Button>
         <div className={styles.totals} aria-live="polite">
           <strong>Total: {formatBRL(total)}</strong>
           <span>Sinal (50%): {formatBRL(deposit)}</span>
-          <span>Restante na retirada: {formatBRL(balance)}</span>
+          <span>Restante na retirada/entrega: {formatBRL(balance)}</span>
         </div>
         <TextAreaField label="Observações para a cliente (opcional)" value={notes}
           onChange={(e) => setNotes(e.target.value)} maxLength={1000} rows={2} />
@@ -260,7 +291,7 @@ export function QuotePanel({ order, onChanged }: { order: OrderDetail; onChanged
       {editing && (
         <QuoteEditor
           order={order}
-          initialItems={base ? base.items.map(toItemForm) : []}
+          initialItems={base ? base.items.map(toItemForm) : itemsFromOrder(order)}
           initialNotes={base?.notes ?? ''}
           initialValidity={draft ? String(draft.validityHours) : ''}
           hasDraft={!!draft}

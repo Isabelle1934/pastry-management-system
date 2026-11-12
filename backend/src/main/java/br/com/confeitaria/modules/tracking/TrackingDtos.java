@@ -6,6 +6,8 @@ import java.time.LocalDate;
 import java.util.List;
 
 import br.com.confeitaria.modules.order.dto.OrderAdminDtos.Choice;
+import br.com.confeitaria.modules.order.dto.OrderAdminDtos.OrderItemView;
+import br.com.confeitaria.modules.order.entity.FulfillmentType;
 import br.com.confeitaria.modules.order.entity.CommercialStatus;
 import br.com.confeitaria.modules.order.entity.PaymentStatus;
 import br.com.confeitaria.modules.order.entity.ProductionStatus;
@@ -47,7 +49,8 @@ public final class TrackingDtos {
      * O WhatsApp aparece mascarado.
      */
     public record TrackingView(String trackingCode, String customerName, String whatsappMasked, LocalDate pickupDate,
-            String pickupTime, Long sizeId, String sizeName, List<Choice> flavors, List<Choice> fillings,
+            String pickupTime, boolean customCake, List<OrderItemView> items, FulfillmentType fulfillmentType,
+            String deliveryAddress, String deliveryDistrict, String deliveryReference, Long sizeId, String sizeName, List<Choice> flavors, List<Choice> fillings,
             String decoration, String cakeText, String notes, boolean topperRequested, String topperTheme,
             String topperName, Short topperAge, int photoCount, CommercialStatus commercialStatus,
             PaymentStatus paymentStatus, ProductionStatus productionStatus, boolean editable, long version,

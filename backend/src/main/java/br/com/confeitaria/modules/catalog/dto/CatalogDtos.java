@@ -86,6 +86,9 @@ public final class CatalogDtos {
         }
     }
 
-    public record PublicCatalog(List<PublicSize> sizes, List<PublicOption> flavors, List<PublicOption> fillings) {
+    /** {@code customCakeEnabled} = o formulário aceita novas encomendas de bolo personalizado. */
+    public record PublicCatalog(List<PublicSize> sizes, List<PublicOption> flavors, List<PublicOption> fillings,
+            List<ProductDtos.PublicCategory> categories, List<ProductDtos.PublicProduct> products,
+            boolean customCakeEnabled) {
     }
 }

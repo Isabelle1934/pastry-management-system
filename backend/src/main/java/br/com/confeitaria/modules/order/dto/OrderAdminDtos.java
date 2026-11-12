@@ -12,6 +12,7 @@ import br.com.confeitaria.modules.file.entity.FilePurpose;
 import br.com.confeitaria.modules.file.entity.StoredFile;
 import br.com.confeitaria.modules.order.entity.CakeOrder;
 import br.com.confeitaria.modules.order.entity.CommercialStatus;
+import br.com.confeitaria.modules.order.entity.FulfillmentType;
 import br.com.confeitaria.modules.order.entity.OrderHistory;
 import br.com.confeitaria.modules.order.entity.PaymentStatus;
 import br.com.confeitaria.modules.order.entity.ProductionStatus;
@@ -29,16 +30,32 @@ public final class OrderAdminDtos {
     private OrderAdminDtos() {
     }
 
+    /** {@code sizeName} vazio = pedido sem bolo personalizado; {@code summary} resume bolo e itens. */
     public record OrderSummary(Long id, String trackingCode, String customerName, String customerWhatsapp,
-            LocalDate pickupDate, String pickupTime, String sizeName, CommercialStatus commercialStatus,
-            PaymentStatus paymentStatus, ProductionStatus productionStatus, BigDecimal quoteTotal, Instant createdAt) {
+            LocalDate pickupDate, String pickupTime, String sizeName, String summary, FulfillmentType fulfillmentType,
+            CommercialStatus commercialStatus, PaymentStatus paymentStatus, ProductionStatus productionStatus,
+            BigDecimal quoteTotal, Instant createdAt) {
 
         public static OrderSummary from(CakeOrder order, Quote currentQuote) {
             return new OrderSummary(order.getId(), TrackingCodes.format(order.getTrackingCode()), order.getCustomerName(),
                     WhatsAppNumber.format(order.getCustomerWhatsapp()), order.getPickupDate(),
-                    order.getPickupTime().toString(), order.getSizeNameSnapshot(), order.getCommercialStatus(),
-                    order.getPaymentStatus(), order.getProductionStatus(),
-                    currentQuote == null ? null : currentQuote.getTotal(), order.getCreatedAt());
+                    order.getPickupTime().toString(), order.getSizeNameSnapshot(), order.summary(),
+                    order.getFulfillmentType(), order.getCommercialStatus(), order.getPaymentStatus(),
+                    order.getProductionStatus(), currentQuote == null ? null : currentQuote.getTotal(),
+                    order.getCreatedAt());
+        }
+    }
+
+    /** Item do catálogo como foi pedido (dados copiados no momento da encomenda). */
+    public record OrderItemView(Long productId, String name, String category, BigDecimal unitPrice, String unitLabel,
+            int quantity, String notes) {
+
+        public static List<OrderItemView> of(CakeOrder order) {
+            return order.getItemEntries().stream()
+                    .map(e -> new OrderItemView(e.getKey(), e.getValue().getNameSnapshot(),
+                            e.getValue().getCategorySnapshot(), e.getValue().getUnitPriceSnapshot(),
+                            e.getValue().getUnitLabelSnapshot(), e.getValue().getQuantity(), e.getValue().getNotes()))
+                    .toList();
         }
     }
 
@@ -68,7 +85,9 @@ public final class OrderAdminDtos {
 
     /** Detalhe completo do pedido para a proprietária. */
     public record OrderDetail(Long id, String trackingCode, long version, String customerName, String customerWhatsapp,
-            String whatsappLink, LocalDate pickupDate, String pickupTime, Long sizeId, String sizeName,
+            String whatsappLink, LocalDate pickupDate, String pickupTime, boolean customCake, List<OrderItemView> items,
+            FulfillmentType fulfillmentType, String deliveryAddress, String deliveryDistrict, String deliveryReference,
+            Long sizeId, String sizeName,
             List<Choice> flavors, List<Choice> fillings, String decoration, String cakeText, String notes,
             boolean topperRequested, String topperTheme, String topperName, Short topperAge,
             CommercialStatus commercialStatus, PaymentStatus paymentStatus, ProductionStatus productionStatus,

@@ -60,6 +60,19 @@ public class SettingsService {
                     "O aviso precisa acontecer antes do vencimento (menos horas que a validade).");
         }
 
+        boolean pickup = request.pickupEnabled() == null ? settings.isPickupEnabled() : request.pickupEnabled();
+        boolean delivery = request.deliveryEnabled() == null ? settings.isDeliveryEnabled() : request.deliveryEnabled();
+        if (!pickup && !delivery) {
+            throw new FieldValidationException("pickupEnabled",
+                    "Mantenha pelo menos uma forma de atendimento: retirada ou delivery.");
+        }
+        String deliveryInfo = request.deliveryInfo() == null ? settings.getDeliveryInfo()
+                : blankToNull(request.deliveryInfo());
+        boolean customCake = request.customCakeEnabled() == null ? settings.isCustomCakeEnabled()
+                : request.customCakeEnabled();
+        boolean customCakeDelivery = request.customCakeDelivery() == null ? settings.isCustomCakeDelivery()
+                : request.customCakeDelivery();
+
         Changes changes = new Changes()
                 .track("name", settings.getName(), blankToNull(request.name()))
                 .track("aboutText", settings.getAboutText(), blankToNull(request.aboutText()))
@@ -73,13 +86,19 @@ public class SettingsService {
                 .track("quoteExpiryWarningHours", settings.getQuoteExpiryWarningHours(), request.quoteExpiryWarningHours())
                 .track("depositDeadlineHours", settings.getDepositDeadlineHours(), request.depositDeadlineHours())
                 .trackWithoutValues("ownerNotificationEmail", settings.getOwnerNotificationEmail(),
-                        blankToNull(request.ownerNotificationEmail()));
+                        blankToNull(request.ownerNotificationEmail()))
+                .track("pickupEnabled", settings.isPickupEnabled(), pickup)
+                .track("deliveryEnabled", settings.isDeliveryEnabled(), delivery)
+                .track("deliveryInfo", settings.getDeliveryInfo(), deliveryInfo)
+                .track("customCakeEnabled", settings.isCustomCakeEnabled(), customCake)
+                .track("customCakeDelivery", settings.isCustomCakeDelivery(), customCakeDelivery);
 
         settings.updateProfile(blankToNull(request.name()), blankToNull(request.aboutText()), whatsapp, instagram,
                 blankToNull(request.address()), blankToNull(request.pickupInstructions()));
         settings.updatePayment(blankToNull(request.pixKey()), blankToNull(request.pixHolderName()));
         settings.updateQuotes(request.quoteValidityHours(), request.quoteExpiryWarningHours(),
                 request.depositDeadlineHours());
+        settings.updateFulfillment(pickup, delivery, deliveryInfo, customCake, customCakeDelivery);
         settings.updateNotifications(blankToNull(request.ownerNotificationEmail()) == null
                 ? null : request.ownerNotificationEmail().trim().toLowerCase());
         repository.flush();

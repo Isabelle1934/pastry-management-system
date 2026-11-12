@@ -50,7 +50,7 @@ function PickupList({ items, showDay }: { items: PickupItem[]; showDay: boolean 
             </span>
             <span className={styles.listMain}>
               <strong>{item.customerName}</strong>
-              <span className={styles.muted}>{item.sizeName} · {PRODUCTION_STATUS[item.productionStatus]}</span>
+              <span className={styles.muted}>{item.summary}{item.fulfillmentType === 'DELIVERY' ? ' · delivery' : ''} · {PRODUCTION_STATUS[item.productionStatus]}</span>
             </span>
             {item.balanceDue != null && toCents(item.balanceDue) > 0 && (
               <span className={styles.due}>Falta {formatBRL(item.balanceDue)}</span>

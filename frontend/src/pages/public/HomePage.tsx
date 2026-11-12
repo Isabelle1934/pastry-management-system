@@ -9,10 +9,10 @@ import motion from '../../styles/motion.module.css'
 import styles from './public.module.css'
 
 const STEPS: { icon: IconName; title: string; text: string }[] = [
-  { icon: 'calendar', title: 'Escolha a data', text: 'Veja os dias livres e personalize seu bolo em poucos passos.' },
+  { icon: 'calendar', title: 'Escolha e agende', text: 'Escolha no cardápio ou personalize seu bolo e veja os dias livres.' },
   { icon: 'receipt', title: 'Receba o orçamento', text: 'Analisamos seu pedido e enviamos um orçamento personalizado.' },
   { icon: 'check', title: 'Confirme com o sinal', text: 'Com o orçamento aceito, o pedido é confirmado com 50% de sinal.' },
-  { icon: 'bag', title: 'Retire seu bolo', text: 'O restante é pago na retirada, no dia e horário combinados.' },
+  { icon: 'bag', title: 'Retire ou receba', text: 'O restante é pago na retirada ou na entrega, no dia e horário combinados.' },
 ]
 
 /** Página inicial: apresentação, como funciona, galeria e informações de retirada e contato. */
@@ -31,6 +31,7 @@ export function HomePage() {
             <Link to="/encomendar" className={styles.cta}>
               Fazer encomenda <Icon name="arrowRight" size={18} />
             </Link>
+            <Link to="/cardapio" className={styles.ctaGhost}>Ver cardápio</Link>
             <Link to="/acompanhar" className={styles.ctaGhost}>Já fez uma encomenda? Acompanhe</Link>
           </div>
         </div>

@@ -15,6 +15,7 @@ import br.com.confeitaria.modules.file.repository.StoredFileRepository;
 import br.com.confeitaria.modules.notification.entity.NotificationType;
 import br.com.confeitaria.modules.notification.service.NotificationService;
 import br.com.confeitaria.modules.order.dto.OrderAdminDtos.Choice;
+import br.com.confeitaria.modules.order.dto.OrderAdminDtos.OrderItemView;
 import br.com.confeitaria.modules.order.dto.PublicOrderDtos.ClientEditRequest;
 import br.com.confeitaria.modules.order.entity.CakeOrder;
 import br.com.confeitaria.modules.order.entity.CommercialStatus;
@@ -71,7 +72,9 @@ public class TrackingService {
                 .orElse(null);
         return new TrackingView(TrackingCodes.format(order.getTrackingCode()), order.getCustomerName(),
                 mask(order.getCustomerWhatsapp()), order.getPickupDate(), order.getPickupTime().toString(),
-                order.getSize().getId(), order.getSizeNameSnapshot(), choices(order.getFlavorChoices()),
+                order.isCustomCake(), OrderItemView.of(order), order.getFulfillmentType(), order.getDeliveryAddress(),
+                order.getDeliveryDistrict(), order.getDeliveryReference(),
+                order.getSize() == null ? null : order.getSize().getId(), order.getSizeNameSnapshot(), choices(order.getFlavorChoices()),
                 choices(order.getFillingChoices()), order.getDecoration(), order.getCakeText(), order.getNotes(),
                 order.isTopperRequested(), order.getTopperTheme(), order.getTopperName(), order.getTopperAge(),
                 files.findByOrderIdAndDeletedAtIsNullOrderByIdAsc(orderId).size(), order.getCommercialStatus(),

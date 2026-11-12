@@ -1,4 +1,5 @@
 import type { Money } from './catalog'
+import type { FulfillmentType, OrderItemView } from './product'
 
 export type CommercialStatus =
   | 'PENDING_REVIEW'
@@ -53,7 +54,11 @@ export interface OrderSummary {
   customerWhatsapp: string
   pickupDate: string
   pickupTime: string
-  sizeName: string
+  /** Vazio = pedido sem bolo personalizado. */
+  sizeName: string | null
+  /** Resumo de bolo e itens, ex.: "Bolo Médio + Brigadeiro ×50". */
+  summary: string
+  fulfillmentType: FulfillmentType
   commercialStatus: CommercialStatus
   paymentStatus: PaymentStatus
   productionStatus: ProductionStatus
@@ -71,7 +76,7 @@ export interface Page<T> {
 
 export interface FileInfo {
   id: number
-  purpose: 'ORDER_REFERENCE' | 'TOPPER_REFERENCE' | 'PAYMENT_PROOF'
+  purpose: 'ORDER_REFERENCE' | 'TOPPER_REFERENCE' | 'PAYMENT_PROOF' | 'PRODUCT_PHOTO'
   originalName: string
   contentType: string
   sizeBytes: number
@@ -124,8 +129,14 @@ export interface OrderDetail {
   whatsappLink: string
   pickupDate: string
   pickupTime: string
-  sizeId: number
-  sizeName: string
+  customCake: boolean
+  items: OrderItemView[]
+  fulfillmentType: FulfillmentType
+  deliveryAddress: string | null
+  deliveryDistrict: string | null
+  deliveryReference: string | null
+  sizeId: number | null
+  sizeName: string | null
   flavors: Choice[]
   fillings: Choice[]
   decoration: string | null
@@ -196,8 +207,14 @@ export interface TrackingView {
   whatsappMasked: string
   pickupDate: string
   pickupTime: string
-  sizeId: number
-  sizeName: string
+  customCake: boolean
+  items: OrderItemView[]
+  fulfillmentType: FulfillmentType
+  deliveryAddress: string | null
+  deliveryDistrict: string | null
+  deliveryReference: string | null
+  sizeId: number | null
+  sizeName: string | null
   flavors: Choice[]
   fillings: Choice[]
   decoration: string | null
@@ -226,7 +243,11 @@ export interface PickupItem {
   whatsappLink: string
   pickupDate: string
   pickupTime: string
-  sizeName: string
+  sizeName: string | null
+  summary: string
+  fulfillmentType: FulfillmentType
+  deliveryAddress: string | null
+  deliveryDistrict: string | null
   cakeText: string | null
   topperRequested: boolean
   productionStatus: ProductionStatus

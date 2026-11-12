@@ -90,7 +90,7 @@ export function OrdersPage() {
                 </div>
                 <div className={styles.row}>
                   <span>
-                    Retirada: {formatShortDay(order.pickupDate)} às {order.pickupTime} · {order.sizeName}
+                    {order.fulfillmentType === 'DELIVERY' ? 'Entrega' : 'Retirada'}: {formatShortDay(order.pickupDate)} às {order.pickupTime} · {order.summary}
                   </span>
                   {order.quoteTotal && <span>{formatBRL(order.quoteTotal)}</span>}
                 </div>
