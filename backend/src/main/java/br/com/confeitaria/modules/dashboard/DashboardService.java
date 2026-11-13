@@ -17,6 +17,7 @@ import br.com.confeitaria.modules.dashboard.DashboardDtos.ActionCounts;
 import br.com.confeitaria.modules.dashboard.DashboardDtos.Dashboard;
 import br.com.confeitaria.modules.dashboard.DashboardDtos.ExpiringQuote;
 import br.com.confeitaria.modules.dashboard.DashboardDtos.MonthFinance;
+import br.com.confeitaria.modules.dashboard.DashboardDtos.MonthOrders;
 import br.com.confeitaria.modules.dashboard.DashboardDtos.ProductionCounts;
 import br.com.confeitaria.modules.finance.dto.FinanceDtos.FinanceSummary;
 import br.com.confeitaria.modules.finance.service.FinanceSummaryService;
@@ -91,9 +92,16 @@ public class DashboardService {
 
         FinanceSummary summary = finance.summary(null, null);
         MonthFinance month = new MonthFinance(summary.from(), summary.to(), summary.forecastRevenue(),
-                summary.received(), summary.pending(), summary.expenses());
+                summary.received(), summary.pending(), summary.profit());
+        MonthOrders monthOrders = jdbc.queryForObject("""
+                select count(*) filter (where commercial_status not in ('REJECTED', 'DECLINED_BY_CLIENT', 'CANCELLED')),
+                       count(*) filter (where commercial_status in ('PENDING_REVIEW', 'QUOTE_SENT', 'AWAITING_DEPOSIT')),
+                       count(*) filter (where commercial_status in ('CONFIRMED', 'COMPLETED'))
+                from cake_order where pickup_date between ? and ?
+                """, (rs, n) -> new MonthOrders(rs.getLong(1), rs.getLong(2), rs.getLong(3)),
+                Date.valueOf(summary.from()), Date.valueOf(summary.to()));
 
-        return new Dashboard(today, actions, productionCounts, upcoming, expiring, month,
+        return new Dashboard(today, actions, productionCounts, upcoming, expiring, month, monthOrders,
                 notifications.unreadCount());
     }
 }

@@ -29,7 +29,8 @@ public class Quote extends BaseEntity {
     /** Sinal de 50% (regra fixa do negócio). */
     public static final BigDecimal DEPOSIT_RATE = new BigDecimal("0.50");
 
-    public record ItemData(String name, String description, BigDecimal quantity, BigDecimal unitPrice) {
+    public record ItemData(QuoteItemKind kind, String name, String description, BigDecimal quantity,
+            BigDecimal unitPrice) {
     }
 
     @Column(name = "order_id", nullable = false, updatable = false)
@@ -87,7 +88,8 @@ public class Quote extends BaseEntity {
         items.clear();
         int position = 0;
         for (ItemData item : newItems) {
-            items.add(new QuoteItem(this, position++, item.name(), item.description(), item.quantity(), item.unitPrice()));
+            items.add(new QuoteItem(this, position++, item.kind(), item.name(), item.description(), item.quantity(),
+                    item.unitPrice()));
         }
         this.notes = notes;
         this.validityHours = validityHours;

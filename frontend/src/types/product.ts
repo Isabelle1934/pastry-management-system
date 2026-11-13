@@ -3,6 +3,9 @@ import type { Money } from './catalog'
 export type ProductStatus = 'ACTIVE' | 'UNAVAILABLE' | 'INACTIVE'
 export type FulfillmentType = 'PICKUP' | 'DELIVERY'
 
+/** Modalidade da entrega: na cidade, no local da festa ou fora da cidade (valor combinado). */
+export type DeliveryZone = 'CITY' | 'PARTY_VENUE' | 'OUTSIDE_CITY'
+
 export interface ProductCategory {
   id: number
   name: string
@@ -99,6 +102,8 @@ export interface OrderItemView {
   unitLabel: string | null
   quantity: number
   notes: string | null
+  /** Preço copiado × quantidade (vazio quando o produto é sob orçamento). */
+  subtotal: Money | null
 }
 
 export interface OrderItemInput {

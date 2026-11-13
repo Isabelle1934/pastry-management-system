@@ -1,5 +1,6 @@
 import { useSearchParams } from 'react-router'
 import styles from '../panel.module.css'
+import { CakeCategoriesSection } from './CakeCategoriesSection'
 import { CategoriesSection } from './CategoriesSection'
 import { OptionsSection, type OptionLabels } from './OptionsSection'
 import { ProductsSection } from './ProductsSection'
@@ -8,6 +9,7 @@ import { SizesSection } from './SizesSection'
 const TABS = [
   { id: 'produtos', label: 'Produtos' },
   { id: 'categorias', label: 'Categorias' },
+  { id: 'tipos', label: 'Bolo: tipos' },
   { id: 'tamanhos', label: 'Bolo: tamanhos' },
   { id: 'massas', label: 'Bolo: massas' },
   { id: 'recheios', label: 'Bolo: recheios' },
@@ -37,8 +39,8 @@ export function CatalogPage() {
     <div className={styles.page}>
       <h1>Catálogo</h1>
       <p className={styles.intro}>
-        Produtos e categorias aparecem no cardápio do site; tamanhos, massas e recheios são as opções do bolo
-        personalizado. Nada é apagado: itens desativados saem do site, mas os pedidos antigos continuam com os dados
+        Produtos e categorias aparecem no cardápio do site; tipos de bolo, tamanhos, massas e recheios são as opções do
+        bolo personalizado. Todos os preços podem ser editados aqui. Nada é apagado: itens desativados saem do site, mas os pedidos antigos continuam com os dados
         originais.
       </p>
       <div className={styles.tabs} role="tablist" aria-label="Parte do catálogo">
@@ -60,6 +62,7 @@ export function CatalogPage() {
       <div role="tabpanel" id={`panel-${current}`} aria-labelledby={`tab-${current}`}>
         {current === 'produtos' && <ProductsSection />}
         {current === 'categorias' && <CategoriesSection />}
+        {current === 'tipos' && <CakeCategoriesSection />}
         {current === 'tamanhos' && <SizesSection />}
         {current === 'massas' && <OptionsSection key="flavors" kind="flavors" labels={FLAVOR_LABELS} />}
         {current === 'recheios' && <OptionsSection key="fillings" kind="fillings" labels={FILLING_LABELS} />}

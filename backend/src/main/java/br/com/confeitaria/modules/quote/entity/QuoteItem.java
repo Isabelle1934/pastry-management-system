@@ -5,6 +5,8 @@ import java.math.RoundingMode;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -44,11 +46,17 @@ public class QuoteItem {
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal subtotal;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private QuoteItemKind kind = QuoteItemKind.PRODUCT;
+
     protected QuoteItem() {
     }
 
-    QuoteItem(Quote quote, int position, String name, String description, BigDecimal quantity, BigDecimal unitPrice) {
+    QuoteItem(Quote quote, int position, QuoteItemKind kind, String name, String description, BigDecimal quantity,
+            BigDecimal unitPrice) {
         this.quote = quote;
+        this.kind = kind == null ? QuoteItemKind.PRODUCT : kind;
         this.position = (short) position;
         this.name = name;
         this.description = description;
@@ -63,6 +71,10 @@ public class QuoteItem {
 
     public int getPosition() {
         return position;
+    }
+
+    public QuoteItemKind getKind() {
+        return kind;
     }
 
     public String getName() {

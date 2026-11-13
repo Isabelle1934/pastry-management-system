@@ -13,7 +13,7 @@ const PAGE_DAYS = 14
 
 function slotStatus(slot: CalendarSlot): { label: string; tone: 'ok' | 'warn' | 'neutral' } {
   if (slot.blocked) return { label: 'Bloqueado', tone: 'warn' }
-  if (slot.reserved >= slot.capacity) return { label: 'Lotado', tone: 'warn' }
+  if (slot.capacity != null && slot.reserved >= slot.capacity) return { label: 'Lotado', tone: 'warn' }
   if (slot.tooSoon) return { label: 'Prazo encerrado', tone: 'neutral' }
   if (slot.beyondLimit) return { label: 'Ainda não aberto', tone: 'neutral' }
   return { label: 'Disponível', tone: 'ok' }
@@ -76,7 +76,8 @@ export function CalendarSection() {
                         <span className={styles.slotTime}>{slot.time}</span>
                         <span className={styles.slotInfo}>
                           <span>
-                            {slot.reserved} de {slot.capacity} {slot.capacity === 1 ? 'vaga' : 'vagas'}
+                            {slot.capacity == null ? `${slot.reserved} confirmado(s) · sem limite`
+                              : `${slot.reserved} de ${slot.capacity} ${slot.capacity === 1 ? 'vaga' : 'vagas'}`}
                           </span>
                           <span
                             className={`${styles.chip} ${status.tone === 'ok' ? styles.chipOk : status.tone === 'warn' ? styles.chipWarn : ''}`}

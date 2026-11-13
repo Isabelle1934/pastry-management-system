@@ -1,8 +1,11 @@
 package br.com.confeitaria.modules.order.service;
 
+import java.time.Clock;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -20,6 +23,7 @@ import br.com.confeitaria.modules.order.dto.PublicOrderDtos.OrderCreatedResponse
 import br.com.confeitaria.modules.order.dto.PublicOrderDtos.OrderRequest;
 import br.com.confeitaria.modules.order.entity.CakeOrder;
 import br.com.confeitaria.modules.order.repository.CakeOrderRepository;
+import br.com.confeitaria.common.exception.ConflictException;
 
 /**
  * Recebe a solicitação de encomenda do formulário público. Toda regra é revalidada aqui,
@@ -37,10 +41,20 @@ public class OrderCreationService {
     private final OrderHistoryService history;
     private final OrderRateLimiter rateLimiter;
     private final NotificationService notifications;
+    private final Clock clock;
+
+    /**
+     * Janela em que uma solicitação igual (mesma cliente, data, horário e itens) é tratada como envio repetido
+     * ({@code app.orders.duplicate-window}, padrão 30 min; zero desliga).
+     */
+    private Duration duplicateWindow;
 
     public OrderCreationService(CakeOrderRepository orders, OrderDetailsApplier detailsApplier,
             FileStorageService files, OrderHistoryService history, OrderRateLimiter rateLimiter,
-            NotificationService notifications) {
+            NotificationService notifications, Clock clock,
+            @Value("${app.orders.duplicate-window:PT30M}") Duration duplicateWindow) {
+        this.clock = clock;
+        this.duplicateWindow = duplicateWindow;
         this.orders = orders;
         this.detailsApplier = detailsApplier;
         this.files = files;
@@ -58,6 +72,8 @@ public class OrderCreationService {
         String whatsapp = normalizeWhatsApp(request.customerWhatsapp());
         CakeOrder order = new CakeOrder(newTrackingCode(), name, whatsapp);
         detailsApplier.apply(order, request.details(), OrderDetailsApplier.Actor.CLIENT);
+        order.setCustomerEmail(normalizeEmail(request.customerEmail()));
+        rejectDuplicate(order);
 
         if (!request.details().topperRequested() && topperPhoto != null && !topperPhoto.isEmpty()) {
             throw new FieldValidationException("topperPhoto", "A foto do topo só pode ser enviada ao solicitar o topo.");
@@ -88,6 +104,32 @@ public class OrderCreationService {
                         + order.getPickupTime() + ".",
                 "NEW_ORDER:" + order.getId());
         return new OrderCreatedResponse(TrackingCodes.format(order.getTrackingCode()));
+    }
+
+    /**
+     * Evita solicitações duplicadas (ex.: duplo clique ou reenvio): mesma cliente, mesma data/horário e mesmo
+     * conteúdo há pouco tempo. Não informa o código da outra solicitação (só quem a enviou o conhece).
+     */
+    private void rejectDuplicate(CakeOrder order) {
+        if (duplicateWindow.isZero()) {
+            return;
+        }
+        boolean duplicate = orders.findRecentSameSchedule(order.getCustomerWhatsapp(), order.getPickupDate(),
+                        order.getPickupTime(), clock.instant().minus(duplicateWindow)).stream()
+                .anyMatch(existing -> existing.summary().equals(order.summary()));
+        if (duplicate) {
+            throw new ConflictException("DUPLICATE_ORDER", "Já recebemos uma solicitação igual a esta há poucos minutos. "
+                    + "Use o código que apareceu na confirmação para acompanhar, ou fale com a confeitaria pelo WhatsApp.");
+        }
+    }
+
+    /** Só para testes: liga/desliga a detecção de envio repetido. */
+    public void setDuplicateWindow(Duration duplicateWindow) {
+        this.duplicateWindow = duplicateWindow;
+    }
+
+    static String normalizeEmail(String email) {
+        return email == null || email.isBlank() ? null : email.strip().toLowerCase();
     }
 
     static String normalizeName(String name) {

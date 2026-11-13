@@ -2,6 +2,7 @@ package br.com.confeitaria.modules.payment.service;
 
 import java.math.BigDecimal;
 import java.time.Clock;
+import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,6 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 import br.com.confeitaria.common.audit.ActorType;
 import br.com.confeitaria.common.exception.ConflictException;
 import br.com.confeitaria.common.exception.FieldValidationException;
+import br.com.confeitaria.config.AppProperties;
 import br.com.confeitaria.common.exception.NotFoundException;
 import br.com.confeitaria.common.text.Texts;
 import br.com.confeitaria.modules.file.entity.FilePurpose;
@@ -29,6 +31,7 @@ import br.com.confeitaria.modules.payment.dto.PaymentDtos.PaymentSummary;
 import br.com.confeitaria.modules.payment.dto.PaymentDtos.PaymentView;
 import br.com.confeitaria.modules.payment.dto.PaymentDtos.RegisterRequest;
 import br.com.confeitaria.modules.payment.entity.Payment;
+import br.com.confeitaria.modules.settings.service.SettingsService;
 import br.com.confeitaria.modules.payment.repository.PaymentRepository;
 import br.com.confeitaria.modules.quote.entity.Quote;
 import br.com.confeitaria.modules.quote.entity.QuoteStatus;
@@ -50,11 +53,15 @@ public class PaymentService {
     private final FileStorageService files;
     private final OrderHistoryService history;
     private final NotificationService notifications;
+    private final SettingsService settings;
+    private final AppProperties properties;
     private final Clock clock;
 
     public PaymentService(PaymentRepository payments, CakeOrderRepository orders, QuoteRepository quotes,
             ReservationService reservations, FileStorageService files, OrderHistoryService history,
-            NotificationService notifications, Clock clock) {
+            NotificationService notifications, SettingsService settings, AppProperties properties, Clock clock) {
+        this.settings = settings;
+        this.properties = properties;
         this.payments = payments;
         this.orders = orders;
         this.quotes = quotes;
@@ -72,14 +79,35 @@ public class PaymentService {
         BigDecimal received = received(list);
         BigDecimal total = accepted.map(Quote::getTotal).orElse(null);
         BigDecimal balanceDue = total == null ? null : total.subtract(received).max(BigDecimal.ZERO);
+        Instant depositDueAt = orders.findById(orderId)
+                .filter(order -> order.getCommercialStatus() == CommercialStatus.AWAITING_DEPOSIT)
+                .flatMap(order -> accepted.map(quote -> depositDueAt(order, quote)))
+                .orElse(null);
         return new PaymentSummary(total, accepted.map(Quote::getDepositAmount).orElse(null), received, balanceDue,
                 statusFor(accepted.orElse(null), list), list.stream().anyMatch(p -> p.getStatus() == Payment.Status.PENDING_REVIEW),
-                list.stream().map(PaymentView::from).toList());
+                depositDueAt, list.stream().map(PaymentView::from).toList());
+    }
+
+    /** Fim do prazo do sinal para o orçamento aceito (regras em {@link DepositDeadlines}). */
+    public Instant depositDueAt(CakeOrder order, Quote acceptedQuote) {
+        var config = settings.current();
+        return DepositDeadlines.dueAt(acceptedQuote.getRespondedAt(), config.getDepositDeadlineHours(),
+                config.getDepositCutoffHours(), order.getPickupDate(), order.getPickupTime(), properties.timezone());
     }
 
     /** Comprovante do sinal enviado pela cliente pelo acompanhamento. */
     @Transactional
     public PaymentSummary submitProof(Long orderId, MultipartFile file, BigDecimal amount) {
+        return submitProof(orderId, file, amount, null);
+    }
+
+    /** {@code method}: Pix (padrão) ou link de pagamento no cartão. Dinheiro só é registrado pela proprietária. */
+    @Transactional
+    public PaymentSummary submitProof(Long orderId, MultipartFile file, BigDecimal amount, Payment.Method method) {
+        Payment.Method paidWith = method == null ? Payment.Method.PIX : method;
+        if (paidWith == Payment.Method.CASH) {
+            throw new FieldValidationException("method", "Envie o comprovante do Pix ou do pagamento no cartão.");
+        }
         CakeOrder order = lockOrder(orderId);
         if (order.getCommercialStatus() != CommercialStatus.AWAITING_DEPOSIT) {
             throw new ConflictException("PROOF_NOT_EXPECTED", "Este pedido não está aguardando o pagamento do sinal.");
@@ -97,13 +125,14 @@ public class PaymentService {
 
         var validated = files.validate(file, FilePurpose.PAYMENT_PROOF, "proof");
         Long fileId = files.store(validated, orderId, FilePurpose.PAYMENT_PROOF, ActorType.CLIENT).getId();
-        Payment payment = payments.saveAndFlush(Payment.proofFromClient(orderId, value, fileId));
+        Payment payment = payments.saveAndFlush(Payment.proofFromClient(orderId, paidWith, value, fileId));
 
         refreshStatus(order);
         history.record(orderId, "PROOF_SUBMITTED", ActorType.CLIENT, "Comprovante do sinal enviado pela cliente.",
-                Map.of("amount", value.toPlainString(), "paymentId", payment.getId()));
+                Map.of("amount", value.toPlainString(), "paymentId", payment.getId(), "method", paidWith.name()));
         notifications.notify(NotificationType.PROOF_SUBMITTED, orderId,
-                firstName(order) + " enviou o comprovante do sinal (" + Texts.brl(value) + "). Confira e confirme no painel.",
+                firstName(order) + " enviou o comprovante do sinal (" + Texts.brl(value) + ", " + paidWith.label()
+                        + "). Confira e confirme no painel.",
                 "PROOF_SUBMITTED:" + payment.getId());
         return summary(orderId);
     }
@@ -161,7 +190,7 @@ public class PaymentService {
         };
         history.record(orderId, "PAYMENT_REGISTERED", ActorType.OWNER,
                 label + " de " + Texts.brl(payment.getAmount()) + " registrado ("
-                        + (request.method() == Payment.Method.PIX ? "Pix" : "dinheiro") + ").",
+                        + request.method().label() + ").",
                 withActor(Map.of("paymentId", payment.getId(), "kind", request.kind().name()), actorId));
         if (request.kind() != Payment.Kind.REFUND) {
             confirmOrderIfDepositReached(order, request.acceptsAsDeposit(), actorId);

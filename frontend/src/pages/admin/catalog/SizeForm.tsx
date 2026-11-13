@@ -1,22 +1,25 @@
 import { useState, type FormEvent } from 'react'
 import { Alert } from '../../../components/Alert'
 import { Button } from '../../../components/Button'
+import { SelectField } from '../../../components/SelectField'
 import { TextAreaField } from '../../../components/TextAreaField'
 import { TextField } from '../../../components/TextField'
 import { saveSize } from '../../../services/catalog'
-import type { CakeSize } from '../../../types/catalog'
+import type { CakeCategory, CakeSize } from '../../../types/catalog'
 import { parseMoneyInput, toMoneyInput } from '../../../utils/money'
 import styles from '../panel.module.css'
 import { describeSaveError } from '../saveErrors'
 
 interface SizeFormProps {
   size?: CakeSize
+  categories: CakeCategory[]
   onSaved: (size: CakeSize) => void
   onCancel: () => void
   onStale: () => void
 }
 
-type Errors = Partial<Record<'name' | 'description' | 'servings' | 'basePrice' | 'maxFlavors' | 'maxFillings' | 'displayOrder', string>>
+type Errors = Partial<Record<'name' | 'description' | 'servings' | 'basePrice' | 'maxFlavors' | 'maxFillings' | 'displayOrder'
+  | 'categoryId' | 'weightKg' | 'diameterCm', string>>
 
 function parseInteger(value: string, min: number, max: number): number | null {
   if (!/^\d+$/.test(value.trim())) return null
@@ -24,7 +27,10 @@ function parseInteger(value: string, min: number, max: number): number | null {
   return number >= min && number <= max ? number : null
 }
 
-export function SizeForm({ size, onSaved, onCancel, onStale }: SizeFormProps) {
+export function SizeForm({ size, categories, onSaved, onCancel, onStale }: SizeFormProps) {
+  const [categoryId, setCategoryId] = useState(size?.categoryId == null ? '' : String(size.categoryId))
+  const [weight, setWeight] = useState(size?.weightKg ? toMoneyInput(size.weightKg).replace(/,00$/, '') : '')
+  const [diameter, setDiameter] = useState(size?.diameterCm?.toString() ?? '')
   const [name, setName] = useState(size?.name ?? '')
   const [description, setDescription] = useState(size?.description ?? '')
   const [servings, setServings] = useState(size?.servings?.toString() ?? '')
@@ -43,6 +49,8 @@ export function SizeForm({ size, onSaved, onCancel, onStale }: SizeFormProps) {
     const flavors = parseInteger(maxFlavors, 1, 10)
     const fillings = parseInteger(maxFillings, 1, 10)
     const order = parseInteger(displayOrder, 0, 9999)
+    const weightValue = weight.trim() === '' ? null : parseMoneyInput(weight)
+    const diameterValue = diameter.trim() === '' ? null : parseInteger(diameter, 1, 200)
 
     const nextErrors: Errors = {
       name: name.trim() ? undefined : 'Informe o nome.',
@@ -51,6 +59,8 @@ export function SizeForm({ size, onSaved, onCancel, onStale }: SizeFormProps) {
       maxFlavors: flavors == null ? 'Use um número entre 1 e 10.' : undefined,
       maxFillings: fillings == null ? 'Use um número entre 1 e 10.' : undefined,
       displayOrder: order == null ? 'Use um número de 0 a 9999.' : undefined,
+      weightKg: weight.trim() !== '' && (weightValue == null || weightValue === '0.00') ? 'Informe o peso, ex.: 1,5.' : undefined,
+      diameterCm: diameter.trim() !== '' && diameterValue == null ? 'Use um número entre 1 e 200.' : undefined,
     }
     setErrors(nextErrors)
     setFormError(undefined)
@@ -68,6 +78,9 @@ export function SizeForm({ size, onSaved, onCancel, onStale }: SizeFormProps) {
           maxFillings: fillings!,
           displayOrder: order!,
           version: size?.version,
+          categoryId: categoryId ? Number(categoryId) : null,
+          weightKg: weightValue,
+          diameterCm: diameterValue,
         },
         size?.id,
       )
@@ -87,7 +100,19 @@ export function SizeForm({ size, onSaved, onCancel, onStale }: SizeFormProps) {
       <h3>{size ? `Editar tamanho "${size.name}"` : 'Novo tamanho'}</h3>
       <form className={styles.form} onSubmit={handleSubmit} noValidate>
         {formError && <Alert tone="error">{formError}</Alert>}
-        <TextField label="Nome" value={name} onChange={(e) => setName(e.target.value)} error={errors.name} maxLength={80} autoFocus />
+        <TextField label="Nome" value={name} onChange={(e) => setName(e.target.value)} error={errors.name} maxLength={80} autoFocus
+          placeholder="Ex.: Alto 15 cm · 2 kg" />
+        <SelectField label="Tipo de bolo" value={categoryId} onChange={(e) => setCategoryId(e.target.value)}
+          error={errors.categoryId}
+          options={[{ value: '', label: 'Sem tipo (aparece em "Outros tamanhos")' },
+            ...categories.filter((c) => !c.consultOnly && (c.active || String(c.id) === categoryId))
+              .map((c) => ({ value: String(c.id), label: c.active ? c.name : `${c.name} (inativo)` }))]} />
+        <div className={styles.row}>
+          <TextField label="Peso (kg, opcional)" inputMode="decimal" value={weight} onChange={(e) => setWeight(e.target.value)}
+            error={errors.weightKg} placeholder="1,5" />
+          <TextField label="Diâmetro (cm, opcional)" inputMode="numeric" value={diameter}
+            onChange={(e) => setDiameter(e.target.value)} error={errors.diameterCm} />
+        </div>
         <TextAreaField
           label="Descrição (opcional)"
           value={description}
@@ -98,16 +123,16 @@ export function SizeForm({ size, onSaved, onCancel, onStale }: SizeFormProps) {
         />
         <div className={styles.row}>
           <TextField
-            label="Preço-base (R$)"
+            label="Preço da tabela (R$)"
             inputMode="decimal"
             value={basePrice}
             onChange={(e) => setBasePrice(e.target.value)}
             error={errors.basePrice}
-            hint="Valor de referência. O preço final é definido no orçamento."
+            hint="Preço inicial mostrado à cliente. O valor final é definido no orçamento."
             placeholder="0,00"
           />
           <TextField
-            label="Serve quantas pessoas (opcional)"
+            label="Fatias (opcional)"
             inputMode="numeric"
             value={servings}
             onChange={(e) => setServings(e.target.value)}

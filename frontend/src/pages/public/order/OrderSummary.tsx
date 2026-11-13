@@ -15,7 +15,12 @@ export function OrderSummary({ form, catalog }: { form: OrderFormState; catalog:
     .map((item) => ({ item, product: catalog.products.find((p) => p.id === item.productId) }))
     .filter((entry) => entry.product)
   const rows = [
-    ...chosen.map(({ item, product }) => ({ label: `${item.quantity} ×`, value: product?.name })),
+    ...chosen.map(({ item, product }) => ({
+      label: `${item.quantity} ×`,
+      value: product?.price != null
+        ? `${product.name} — ${formatBRL(fromCents(toCents(product.price) * item.quantity))}`
+        : product?.name,
+    })),
     { label: 'Bolo', value: size && `${size.name}${size.servings != null ? ` · serve ${size.servings}` : ''}` },
     { label: 'Massa', value: form.customCake ? names(form.flavorIds, catalog.flavors) : '' },
     { label: 'Recheio', value: form.customCake ? names(form.fillingIds, catalog.fillings) : '' },

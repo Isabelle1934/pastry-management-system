@@ -14,6 +14,8 @@ import { formatDateTime } from '../../../utils/orderStatus'
 import styles from '../order/order.module.css'
 import { PaymentCard } from './PaymentCard'
 import { Loading } from '../../../components/Loading'
+import { BREAKDOWN_ROWS } from '../../../utils/quote'
+import { DELIVERY_ZONE_LABELS } from '../../../utils/productRules'
 
 function statusMessage(view: TrackingView): { title: string; text: string; tone: 'info' | 'success' | 'error' } {
   const deposit = view.quote ? formatBRL(view.quote.depositAmount) : ''
@@ -131,11 +133,17 @@ function QuoteCard({ view, onChange }: { view: TrackingView; onChange: (view: Tr
             <dd style={{ textAlign: 'right' }}>{formatBRL(item.subtotal)}</dd>
           </div>
         ))}
+        {BREAKDOWN_ROWS.filter((row) => row.key !== 'products' && quote.breakdown[row.key] !== '0.00').map((row) => (
+          <div key={row.key} style={{ display: 'contents' }}>
+            <dt>{row.label}</dt>
+            <dd style={{ textAlign: 'right' }}>{formatBRL(quote.breakdown[row.key])}</dd>
+          </div>
+        ))}
         <dt><strong>Total</strong></dt>
         <dd style={{ textAlign: 'right' }}><strong>{formatBRL(quote.total)}</strong></dd>
         <dt>Sinal (50%) para confirmar</dt>
         <dd style={{ textAlign: 'right' }}>{formatBRL(quote.depositAmount)}</dd>
-        <dt>Restante na retirada</dt>
+        <dt>Restante (50%) na retirada ou entrega</dt>
         <dd style={{ textAlign: 'right' }}>{formatBRL(quote.balanceAmount)}</dd>
       </dl>
       {quote.notes && <p className={styles.hint}>{quote.notes}</p>}
@@ -192,6 +200,11 @@ function OrderView({ view, onChange, onLeave }: { view: TrackingView; onChange: 
       <Alert tone={status.tone}>
         <strong>{status.title}.</strong> {status.text}
       </Alert>
+      {bakery?.punctualityNotice && !['CANCELLED', 'REJECTED', 'DECLINED_BY_CLIENT', 'COMPLETED'].includes(view.commercialStatus) && (
+        <Alert tone="info">
+          <strong>Pontualidade.</strong> {bakery.punctualityNotice}
+        </Alert>
+      )}
       {view.quote && <QuoteCard view={view} onChange={onChange} />}
       {view.payment && <PaymentCard view={view} onChange={onChange} />}
       <section className={styles.card} aria-labelledby="order-title">
@@ -203,7 +216,10 @@ function OrderView({ view, onChange, onLeave }: { view: TrackingView; onChange: 
           <dt>{view.fulfillmentType === 'DELIVERY' ? 'Entrega' : 'Retirada'}</dt>
           <dd>{formatLongDay(view.pickupDate)} às {view.pickupTime}</dd>
           {view.fulfillmentType === 'DELIVERY' && (
-            <><dt>Endereço</dt><dd>{[view.deliveryAddress, view.deliveryDistrict].filter(Boolean).join(' – ')}</dd></>
+            <>
+              {view.deliveryZone && <><dt>Modalidade</dt><dd>{DELIVERY_ZONE_LABELS[view.deliveryZone]}</dd></>}
+              <dt>Endereço</dt><dd>{[view.deliveryAddress, view.deliveryDistrict].filter(Boolean).join(' – ')}</dd>
+            </>
           )}
           {view.items.map((item) => (
             <Fragment key={item.productId}>
@@ -212,7 +228,9 @@ function OrderView({ view, onChange, onLeave }: { view: TrackingView; onChange: 
           ))}
           {view.customCake && (
             <>
-              <dt>Bolo</dt><dd>{view.sizeName}</dd>
+              <dt>Bolo</dt>
+              <dd>{[view.cakeCategoryName, view.sizeName ?? (view.cakeCategoryName ? 'consulte valores' : null)]
+                .filter(Boolean).join(' · ')}</dd>
               <dt>Massa</dt><dd>{view.flavors.map((f) => f.name).join(', ')}</dd>
               <dt>Recheio</dt><dd>{view.fillings.map((f) => f.name).join(', ')}</dd>
               {view.decoration && (<><dt>Decoração</dt><dd>{view.decoration}</dd></>)}

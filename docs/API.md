@@ -23,11 +23,11 @@
 |---|---|---|
 | GET | `/health` | ✅ Fase 1 — `{"status":"UP"}` (Actuator, sem detalhes) |
 | GET | `/csrf` | ✅ Fase 3 — 204; emite o cookie `XSRF-TOKEN` (o frontend o envia de volta no header `X-XSRF-TOKEN`) |
-| GET | `/bakery` | ✅ Fase 4 — `{name, aboutText, whatsappContact, whatsappLink, instagram, address, pickupInstructions, pickupEnabled, deliveryEnabled, deliveryInfo, customCakeEnabled, customCakeDelivery}`. `deliveryInfo` só vem com o delivery ativo. Não expõe chave Pix, e-mail de avisos nem regras de orçamento |
-| GET | `/catalog` | ✅ Fase 4 / catálogo — opções ativas do bolo personalizado: `sizes[{id, name, description, servings, basePrice, maxFlavors, maxFillings}]`, `flavors[{id, name, description}]`, `fillings[...]`; produtos visíveis (ativos ou temporariamente indisponíveis, em categoria ativa e dentro do período): `categories[{id, name, description}]` (só as que têm produto), `products[{id, categoryId, name, description, price (null = sob orçamento), unitLabel, minQuantity, available, orderable, seasonal, availableFrom, availableUntil, availableDays[1–7], pickupAllowed, deliveryAllowed, photoIds[]}]`; `customCakeEnabled` |
+| GET | `/bakery` | ✅ Fase 4 — `{name, aboutText, whatsappContact, whatsappLink, instagram, address, pickupInstructions, pickupEnabled, deliveryEnabled, deliveryInfo, customCakeEnabled, customCakeDelivery, deliveryFee, deliveryFeeSweets, partyVenueFee, punctualityNotice}`. `deliveryInfo` e as taxas só vêm com o delivery ativo; `partyVenueFee` só depois de confirmada pela proprietária. Não expõe chave Pix, e-mail de avisos nem regras de orçamento |
+| GET | `/catalog` | ✅ Fase 4 / catálogo — opções ativas do bolo personalizado: `cakeCategories[{id, name, description, notice, consultOnly, maxFlavors, maxFillings}]` (tipos de bolo ativos), `sizes[{id, name, description, servings, basePrice, maxFlavors, maxFillings, categoryId, weightKg, diameterCm}]` (só tamanhos ativos em tipo ativo ou sem tipo), `flavors[{id, name, description}]`, `fillings[...]`; produtos visíveis (ativos ou temporariamente indisponíveis, em categoria ativa e dentro do período): `categories[{id, name, description}]` (só as que têm produto), `products[{id, categoryId, name, description, price (null = sob orçamento), unitLabel, minQuantity, available, orderable, seasonal, availableFrom, availableUntil, availableDays[1–7], pickupAllowed, deliveryAllowed, photoIds[]}]`; `customCakeEnabled` |
 | GET | `/products/{productId}/photos/{fileId}` | ✅ Foto de produto visível no catálogo (404 para produto inativo ou foto de outro produto). Cache público de 7 dias — o conteúdo de um id nunca muda |
 | GET | `/availability?from=&to=` | ✅ Fase 5 — `{from, to, days:[{date, times:["14:00"]}]}`: só horários que podem ser escolhidos agora (sem contagens). Sem parâmetros: de hoje até 62 dias ou o limite configurado |
-| POST | `/orders` | ✅ Fase 6 — multipart: parte `order` (JSON: `customerName, customerWhatsapp, pickupDate, pickupTime, customCake (padrão true), sizeId, flavorIds[], fillingIds[], decoration, cakeText, notes, topperRequested, topperTheme, topperName, topperAge, items[{productId, quantity, notes?}], fulfillmentType (PICKUP/DELIVERY, padrão PICKUP), deliveryAddress, deliveryDistrict, deliveryReference`). Tamanho/massa/recheio só são exigidos com `customCake`; sem bolo é preciso ao menos 1 item; topo só com bolo; com `DELIVERY` o endereço é obrigatório. O mesmo corpo (sem nome/WhatsApp) é usado em `PUT /api/tracking/order`; até 3 `referencePhotos` e 1 `topperPhoto` (JPG/PNG/WEBP, 5 MB cada). 201 `{trackingCode: "XXXX-XXXX-XXXX-XXXX"}`. Erros por campo (400), 413 acima do limite do servidor, 429 após 5 envios/h por IP. Não ocupa vaga na agenda |
+| POST | `/orders` | ✅ Fase 6 — multipart: parte `order` (JSON: `customerName, customerWhatsapp, pickupDate, pickupTime, customCake (padrão true), sizeId, flavorIds[], fillingIds[], decoration, cakeText, notes, topperRequested, topperTheme, topperName, topperAge, items[{productId, quantity, notes?}], fulfillmentType (PICKUP/DELIVERY, padrão PICKUP), deliveryAddress, deliveryDistrict, deliveryReference, cakeCategoryId, deliveryZone (CITY/PARTY_VENUE/OUTSIDE_CITY, padrão CITY com delivery), customerEmail?`). Tamanho/massa/recheio só são exigidos com `customCake`; sem tamanho, só com `cakeCategoryId` de um tipo "consulte valores" e com `decoration` preenchida; com delivery a cliente informa também o bairro; envio igual (mesma cliente, data/horário e itens) em até 30 min → 409 `DUPLICATE_ORDER` (`app.orders.duplicate-window`); sem bolo é preciso ao menos 1 item; topo só com bolo; com `DELIVERY` o endereço é obrigatório. O mesmo corpo (sem nome/WhatsApp) é usado em `PUT /api/tracking/order`; até 3 `referencePhotos` e 1 `topperPhoto` (JPG/PNG/WEBP, 5 MB cada). 201 `{trackingCode: "XXXX-XXXX-XXXX-XXXX"}`. Erros por campo (400), 413 acima do limite do servidor, 429 após 5 envios/h por IP. Não ocupa vaga na agenda |
 
 ## Acompanhamento — `/api/tracking`
 
@@ -38,7 +38,7 @@
 | PUT | `/order` | ✅ Edição (agendamento, personalização, topo; sem fotos) com `version`. Só em `PENDING_REVIEW`/`QUOTE_SENT` (409 `ORDER_NOT_EDITABLE`); se havia orçamento enviado, ele vira `SUPERSEDED` e o pedido volta a `PENDING_REVIEW` |
 | POST | `/order/quotes/{quoteId}/accept` | ✅ Aceita a versão vigente → pedido `AWAITING_DEPOSIT` (não ocupa vaga). 409 `QUOTE_EXPIRED` após a validade |
 | POST | `/order/quotes/{quoteId}/decline` | ✅ `{reason?}` → pedido `DECLINED_BY_CLIENT` |
-| POST | `/order/payments/deposit-proof` | ✅ Multipart `proof` (JPG/PNG/PDF, conteúdo real validado, até 5 MB) e `amount?` (padrão: valor do sinal). Só em `AWAITING_DEPOSIT` e sem outro comprovante em análise (409 `PROOF_ALREADY_SUBMITTED`); cria pagamento `PENDING_REVIEW` e aviso à proprietária |
+| POST | `/order/payments/deposit-proof` | ✅ Multipart `proof` (JPG/PNG/PDF, conteúdo real validado, até 5 MB), `amount?` (padrão: valor do sinal) e `method?` (`PIX` padrão ou `CARD_LINK`; `CASH` → 400). Só em `AWAITING_DEPOSIT` e sem outro comprovante em análise (409 `PROOF_ALREADY_SUBMITTED`); cria pagamento `PENDING_REVIEW` e aviso à proprietária |
 | GET | `/order/files/{fileId}` | ✅ Download de comprovantes do próprio pedido (`no-store`); 404 para arquivos de outro pedido ou fotos internas |
 | POST | `/logout` | ✅ Encerra o acesso ao pedido |
 
@@ -59,8 +59,9 @@ Enquanto a senha for provisória, qualquer `/api/admin/**` fora de `/api/admin/a
 ### Configurações e catálogo
 | Método | Rota | Descrição |
 |---|---|---|
-| GET/PUT | `/settings` | ✅ Configurações. PUT exige `version`; WhatsApp normalizado (E.164 no banco, exibido como `(11) 99999-8888`); Instagram aceita `@usuario` ou link; `quoteExpiryWarningHours < quoteValidityHours` |
-| GET/POST | `/catalog/sizes` · PUT `/catalog/sizes/{id}` · PATCH `/catalog/sizes/{id}/active` | ✅ Tamanhos |
+| GET/PUT | `/settings` | ✅ Configurações. PUT exige `version`; `deliveryFee` (taxa dentro da cidade, padrão 20.00), `cardPaymentLink` (só `https://`; `""` remove) e `depositCutoffHours` (0–720, padrão 24; 0 = sem limite), `deliveryFeeSweets` (padrão 5.00), `partyVenueFee` (padrão 30.00) + `partyVenueFeeConfirmed`, `punctualityNotice` (obrigatório), `depositReminderHours` (1–720, padrão 12) — vazios mantêm o valor atual; `deliveryFee` passa a ser a taxa de entrega de bolos; WhatsApp normalizado (E.164 no banco, exibido como `(11) 99999-8888`); Instagram aceita `@usuario` ou link; `quoteExpiryWarningHours < quoteValidityHours` |
+| GET/POST | `/catalog/cake-categories` · PUT `/catalog/cake-categories/{id}` · PATCH `/catalog/cake-categories/{id}/active` | ✅ Tipos de bolo `{name, description?, notice?, consultOnly?, maxFlavors?, maxFillings?, displayOrder?, version?}`; resposta com `sizeCount`. Tipo com tamanhos não vira "consulte valores" (400 `consultOnly`) |
+| GET/POST | `/catalog/sizes` · PUT `/catalog/sizes/{id}` · PATCH `/catalog/sizes/{id}/active` | ✅ Tamanhos (+ `categoryId?`, `weightKg?`, `diameterCm?`; tipo "consulte valores" não aceita tamanhos) |
 | GET/POST | `/catalog/flavors` · PUT `/catalog/flavors/{id}` · PATCH `/catalog/flavors/{id}/active` | ✅ Massas |
 | GET/POST | `/catalog/fillings` · PUT `/catalog/fillings/{id}` · PATCH `/catalog/fillings/{id}/active` | ✅ Recheios |
 
@@ -76,7 +77,7 @@ Regras do catálogo: nome único por lista sem diferenciar maiúsculas (409 `DUP
 | Método | Rota | Descrição |
 |---|---|---|
 | GET/PUT | `/schedule/rules` | ✅ `{minLeadTimeHours, maxBookingDaysAhead, version}` |
-| GET/POST | `/schedule/slots` · PUT/DELETE `/schedule/slots/{id}` | ✅ Modelo semanal `{dayOfWeek (1=seg…7=dom), startTime "HH:mm", capacity}`; PUT `{capacity, active, version}`. 409 `DUPLICATE_SLOT` |
+| GET/POST | `/schedule/slots` · PUT/DELETE `/schedule/slots/{id}` | ✅ Modelo semanal `{dayOfWeek (1=seg…7=dom), startTime "HH:mm", capacity?}` (vazio = sem limite de pedidos confirmados); PUT `{capacity?, active, version}`. 409 `DUPLICATE_SLOT` |
 | GET/POST | `/schedule/blocks` · DELETE `/schedule/blocks/{id}` | ✅ `{date, startTime \| null (dia inteiro), reason}`. Resposta traz `confirmedOrders` (pedidos confirmados no período, que não são cancelados). 409 `DUPLICATE_BLOCK` |
 | GET | `/schedule/calendar?from=&to=` | ✅ Até 62 dias: por dia, `blockedAllDay` e `slots[{time, capacity, reserved, blocked, tooSoon, beyondLimit, bookable}]`. A contagem de solicitações sem sinal entra na Fase 6 |
 
@@ -85,7 +86,7 @@ Regras do catálogo: nome único por lista sem diferenciar maiúsculas (409 `DUP
 |---|---|---|
 | GET | `/orders?status=&q=&from=&to=&page=&size=` | ✅ Paginada (`{content, page, size, totalElements, totalPages}`); busca por nome, código (com/sem hífens) ou dígitos do WhatsApp |
 | GET | `/orders/counts` | ✅ Quantidade por situação comercial |
-| GET | `/orders/{id}` | ✅ Detalhe: dados, escolhas, topo, situações, `slotReserved`, arquivos, todas as versões de orçamento e histórico |
+| GET | `/orders/{id}` | ✅ Detalhe: dados, escolhas, topo, situações, `slotReserved`, arquivos, todas as versões de orçamento e histórico; `items[].subtotal`, `customerEmail`, `deliveryZone`, `cakeCategoryId/Name`, `sizePrice` (preço da tabela copiado no pedido) e `suggestedDeliveryFee` (taxa da modalidade; vazio = informar manualmente) |
 | PUT | `/orders/{id}` | ✅ Edição pela proprietária (corpo do formulário + `version`); horário precisa existir na agenda; se o pedido ocupa vaga, ela é remarcada (409 `SLOT_FULL` se lotado). 409 `ORDER_CLOSED` em pedidos encerrados |
 | POST | `/orders/{id}/reject` | ✅ `{reason, version}` — só antes do aceite; orçamento pendente vira `SUPERSEDED` |
 | POST | `/orders/{id}/cancel` | ✅ `{reason, version}` — libera a vaga; pagamentos não são apagados |
@@ -95,7 +96,7 @@ Regras do catálogo: nome único por lista sem diferenciar maiúsculas (409 `DUP
 ### Orçamentos
 | Método | Rota | Descrição |
 |---|---|---|
-| PUT | `/orders/{id}/quotes/draft` | ✅ Cria/atualiza o rascunho `{items:[{name, description, quantity, unitPrice}], notes, validityHours?}`; subtotais, total, sinal (50%, HALF_UP) e saldo calculados no servidor |
+| PUT | `/orders/{id}/quotes/draft` | ✅ Cria/atualiza o rascunho `{items:[{kind?, name, description, quantity, unitPrice}], notes, validityHours?}` — `kind`: `PRODUCT` (padrão), `EXTRA`, `TOPPER` ou `DELIVERY`; subtotais, total, sinal (50%, HALF_UP) e saldo calculados no servidor. As respostas de orçamento trazem `breakdown {products, extras, topper, delivery}` |
 | DELETE | `/orders/{id}/quotes/draft` | ✅ Descarta o rascunho |
 | POST | `/orders/{id}/quotes/send` | ✅ Envia: nova versão `SENT` com `validUntil`; a vigente anterior vira `SUPERSEDED`; pedido → `QUOTE_SENT`. 409 `QUOTE_EMPTY` sem itens/valor |
 | GET | `/orders/{id}/quotes` | ✅ Todas as versões (mais recente primeiro) |
@@ -103,8 +104,8 @@ Regras do catálogo: nome único por lista sem diferenciar maiúsculas (409 `DUP
 ### Pagamentos
 | Método | Rota | Descrição |
 |---|---|---|
-| GET | `/orders/{id}/payments` | ✅ `{total, depositAmount, received, balanceDue, status, proofUnderReview, payments[]}` (o mesmo resumo vem em `GET /orders/{id}` → `payments`). Valores em string decimal |
-| POST | `/orders/{id}/payments` | ✅ `{kind: DEPOSIT\|BALANCE\|REFUND, method: PIX\|CASH, amount, notes?, acceptAsDeposit?}` — registrado já `CONFIRMED`. Se o recebido atingir o sinal (ou `acceptAsDeposit`), o pedido em `AWAITING_DEPOSIT` vai a `CONFIRMED` e reserva a vaga (409 `SLOT_FULL` se lotado). Reembolso não pode passar do recebido |
+| GET | `/orders/{id}/payments` | ✅ `{total, depositAmount, received, balanceDue, status, proofUnderReview, depositDueAt, payments[]}` (o mesmo resumo vem em `GET /orders/{id}` → `payments`). Valores em string decimal |
+| POST | `/orders/{id}/payments` | ✅ `{kind: DEPOSIT\|BALANCE\|REFUND, method: PIX\|CASH\|CARD_LINK, amount, notes?, acceptAsDeposit?}` — registrado já `CONFIRMED`. Se o recebido atingir o sinal (ou `acceptAsDeposit`), o pedido em `AWAITING_DEPOSIT` vai a `CONFIRMED` e reserva a vaga (409 `SLOT_FULL` se lotado). Reembolso não pode passar do recebido |
 | POST | `/payments/{paymentId}/confirm` | ✅ `{note?, acceptAsDeposit?}` — confirma comprovante em análise; mesma regra de confirmação do pedido |
 | POST | `/payments/{paymentId}/reject` | ✅ `{reason}` — rejeita comprovante; a cliente pode enviar outro |
 
@@ -118,14 +119,8 @@ Regras do catálogo: nome único por lista sem diferenciar maiúsculas (409 `DUP
 Datas `from`/`to` no formato `AAAA-MM-DD`, no fuso da confeitaria (America/Sao_Paulo).
 | Método | Rota | Descrição |
 |---|---|---|
-| GET | `/finance/summary?from=&to=` | ✅ Padrão: mês atual; até 366 dias (400 fora disso). `forecastRevenue`/`forecastOrders` (orçamentos aceitos de pedidos `CONFIRMED`/`COMPLETED`, por data de retirada), `awaitingDepositRevenue`/`awaitingDepositOrders` (à parte), `received` = `receivedDeposits` + `receivedBalances` − `refunds` (pagamentos confirmados, por data de confirmação), `pending` (total − recebido dos confirmados/entregues do período), `expenses`, `orderExpenses`, `expensesByCategory[]`, `estimatedProfit` (previsto − despesas), `cashResult` (recebido − despesas) |
-| GET | `/finance/expenses?from=&to=&categoryId=&orderId=&page=&size=` | ✅ Paginada, mais recentes primeiro; cada item traz `order {id, trackingCode, customerName}` quando vinculada |
-| POST | `/finance/expenses` | ✅ `{description, amount, expenseDate, categoryId, orderCode?, notes?}` → 201. `orderCode` = código de acompanhamento (aceita minúsculas/espaços); categoria desativada recusada (400 `categoryId`) |
-| PUT | `/finance/expenses/{id}` | ✅ Mesmo corpo + `version`; pode manter a categoria já desativada |
-| DELETE | `/finance/expenses/{id}?version=` | ✅ 204 — exclusão lógica, auditada; some dos totais e da lista |
-| GET/POST | `/finance/categories` · PUT `/finance/categories/{id}` | ✅ `{name, version?}`; nome único sem diferenciar maiúsculas (409 `DUPLICATE_NAME`) |
-| PATCH | `/finance/categories/{id}/active` | ✅ `{active, version}` — desativar tira a categoria só das despesas novas |
-| GET | `/dashboard` | ✅ `{today, actions {newOrders, proofsToReview, awaitingClientResponse, awaitingDeposit, overduePickups}, production {notStarted, inProduction, ready, pickupsToday}, upcomingPickups[] (até 8, próximos 7 dias), expiringQuotes[] (dentro do aviso configurado), month {forecastRevenue, received, pending, expenses}, unreadNotifications}` — mesmas regras do financeiro e da produção |
+| GET | `/finance/summary?from=&to=` | ✅ Padrão: mês atual; até 366 dias (400 fora disso). `forecastRevenue`/`forecastOrders` (orçamentos aceitos de pedidos `CONFIRMED`/`COMPLETED`, por data de retirada), `awaitingDepositRevenue`/`awaitingDepositOrders` (à parte), `received` = `receivedDeposits` + `receivedBalances` − `refunds` (pagamentos confirmados, por data de confirmação), `pending` (a receber: total − recebido dos confirmados/concluídos do período), `profit` (lucro = recebido líquido no período; sem cadastro de custos — P18). Os endpoints de despesas e categorias de despesas foram retirados a pedido da proprietária (404); as tabelas antigas continuam no banco |
+| GET | `/dashboard` | ✅ `{today, actions {newOrders, proofsToReview, awaitingClientResponse, awaitingDeposit, overduePickups}, production {notStarted, inProduction, ready, pickupsToday}, upcomingPickups[] (até 8, próximos 7 dias), expiringQuotes[] (dentro do aviso configurado), month {forecastRevenue, received, pending, profit}, monthOrders {total, pending, confirmed} (por data agendada no mês; total sem recusados/cancelados), unreadNotifications}` — mesmas regras do financeiro e da produção |
 | GET | `/customers?q=&page=&size=` | ✅ Clientes derivadas dos pedidos (cada WhatsApp é uma cliente): `{name (do pedido mais recente), whatsapp, whatsappDigits, whatsappLink, orders, confirmedOrders, completedOrders, totalPaid (confirmados − reembolsos), firstOrderAt, lastOrderAt, lastPickupDate}`; busca por nome ou dígitos do WhatsApp |
 | GET | `/reports?from=&to=` | ✅ Padrão: mês atual; até 366 dias. Por data agendada: `statusCounts`, `totals {orders, sold, lost, soldRevenue, averageTicket, received}`, `topProducts[]`, `categories[]`, `cakeSizes[]`, `flavors[]`, `fillings[]` (`{name, group, quantity, orders}`, só pedidos confirmados/concluídos, nomes da cópia guardada no pedido), `customCakes`, `toppers`, `fulfillment {pickup, delivery}` |
 | GET | `/notifications?unread=&limit=` | ✅ Avisos mais recentes (padrão 30, máx. 100) |

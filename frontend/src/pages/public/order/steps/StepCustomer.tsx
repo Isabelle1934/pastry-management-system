@@ -28,6 +28,17 @@ export function StepCustomer({ form, errors, update }: StepProps) {
         error={errors.customerWhatsapp}
         maxLength={30}
       />
+      <TextField
+        label="E-mail (opcional)"
+        type="email"
+        inputMode="email"
+        autoComplete="email"
+        hint="Se informar, enviamos um lembrete antes do prazo de pagamento do sinal."
+        value={form.customerEmail}
+        onChange={(e) => update({ customerEmail: e.target.value })}
+        error={errors.customerEmail}
+        maxLength={254}
+      />
     </section>
   )
 }

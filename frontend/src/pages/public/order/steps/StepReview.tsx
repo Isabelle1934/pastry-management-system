@@ -1,6 +1,7 @@
 import { useId, type ReactNode } from 'react'
 import { formatLongDay } from '../../../../utils/date'
-import { FULFILLMENT_LABELS, priceLabel } from '../../../../utils/productRules'
+import { formatBRL } from '../../../../utils/money'
+import { DELIVERY_ZONE_LABELS, deliveryZoneFee, FULFILLMENT_LABELS, priceLabel } from '../../../../utils/productRules'
 import type { StepKey } from '../orderForm'
 import type { StepProps } from './stepProps'
 import styles from '../order.module.css'
@@ -34,7 +35,7 @@ function Item({ label, value }: { label: string; value: ReactNode }) {
   )
 }
 
-export function StepReview({ form, catalog, goTo, steps }: ReviewProps) {
+export function StepReview({ form, catalog, bakery, goTo, steps }: ReviewProps) {
   const titleId = useId()
   const size = catalog.sizes.find((s) => s.id === form.sizeId)
   const names = (ids: number[], options: { id: number; name: string }[]) =>
@@ -50,6 +51,7 @@ export function StepReview({ form, catalog, goTo, steps }: ReviewProps) {
         <Section title="Seus dados" step="customer" goTo={goTo}>
           <Item label="Nome" value={form.customerName.trim()} />
           <Item label="WhatsApp" value={form.customerWhatsapp.trim()} />
+          <Item label="E-mail" value={form.customerEmail.trim()} />
         </Section>
         {steps.includes('items') && form.items.length > 0 && (
           <Section title="Produtos" step="items" goTo={goTo}>
@@ -68,7 +70,8 @@ export function StepReview({ form, catalog, goTo, steps }: ReviewProps) {
         )}
         {form.customCake && (
           <Section title="Bolo personalizado" step="cake" goTo={goTo}>
-            <Item label="Tamanho" value={size?.name} />
+            <Item label="Tipo" value={catalog.cakeCategories.find((c) => c.id === (size?.categoryId ?? form.cakeCategoryId))?.name} />
+            <Item label="Tamanho" value={size?.name ?? (form.cakeCategoryId ? 'Consulte valores (valor no orçamento)' : undefined)} />
             <Item label="Massa" value={names(form.flavorIds, catalog.flavors)} />
             <Item label="Recheio" value={names(form.fillingIds, catalog.fillings)} />
             <Item label="Decoração" value={form.decoration.trim()} />
@@ -97,9 +100,24 @@ export function StepReview({ form, catalog, goTo, steps }: ReviewProps) {
           <Item label="Horário" value={form.pickupTime} />
           {delivery && <Item label="Endereço" value={[form.deliveryAddress.trim(), form.deliveryDistrict.trim()].filter(Boolean).join(' – ')} />}
           {delivery && <Item label="Referência" value={form.deliveryReference.trim()} />}
+          {delivery && <Item label="Modalidade" value={DELIVERY_ZONE_LABELS[form.deliveryZone]} />}
+          {delivery && (
+            <Item label="Taxa de entrega" value={(() => {
+              const fee = deliveryZoneFee(bakery, form.deliveryZone, form.customCake)
+              return fee ? `${formatBRL(fee)} (entra separada no orçamento)`
+                : form.deliveryZone === 'OUTSIDE_CITY' ? 'Combinada conforme a localização, no orçamento'
+                  : 'Informada no orçamento'
+            })()} />
+          )}
           <Item label="Observações" value={form.notes.trim()} />
         </Section>
       </div>
+      {bakery.punctualityNotice && (
+        <div className={styles.notice} role="note" aria-label="Aviso de pontualidade">
+          <strong>Pontualidade</strong>
+          <p style={{ margin: 0 }}>{bakery.punctualityNotice}</p>
+        </div>
+      )}
       <p className={styles.hint}>
         Ao enviar, você recebe um código de acompanhamento. Sua solicitação será analisada e você receberá um orçamento
         com o valor final. Para confirmar, é pedido um sinal de 50%; o restante é pago na retirada ou na entrega.

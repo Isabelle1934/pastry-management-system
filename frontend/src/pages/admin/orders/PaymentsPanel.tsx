@@ -13,7 +13,7 @@ import styles from './orders.module.css'
 import { StatusChip } from './StatusChip'
 
 const KIND_LABEL: Record<PaymentKind, string> = { DEPOSIT: 'Sinal', BALANCE: 'Saldo', REFUND: 'Reembolso' }
-const METHOD_LABEL: Record<PaymentMethod, string> = { PIX: 'Pix', CASH: 'Dinheiro' }
+const METHOD_LABEL: Record<PaymentMethod, string> = { PIX: 'Pix', CASH: 'Dinheiro', CARD_LINK: 'Cartão (link)' }
 const RECORD_STATUS = {
   PENDING_REVIEW: { label: 'Aguardando conferência', tone: 'info' as const },
   CONFIRMED: { label: 'Confirmado', tone: 'ok' as const },
@@ -53,6 +53,10 @@ function PendingReview({ order, payment, onChanged }: Props & { payment: Payment
     <div className={panel.formCard}>
       <h3>Comprovante para conferir: {formatBRL(payment.amount)}</h3>
       <div className={panel.form}>
+        <p className={styles.muted}>
+          Valor informado {formatBRL(payment.amount)} · {METHOD_LABEL[payment.method]} · enviado em{' '}
+          {formatDateTime(payment.createdAt)} · aguardando sua conferência
+        </p>
         {payment.proofFileId && (
           <p>
             <a href={orderFileUrl(order.id, payment.proofFileId)} target="_blank" rel="noreferrer">
@@ -142,7 +146,7 @@ function RegisterForm({ order, onChanged, onClose }: Props & { onClose: () => vo
           <SelectField label="Tipo" value={kind} onChange={(e) => setKind(e.target.value as PaymentKind)}
             options={(['DEPOSIT', 'BALANCE', 'REFUND'] as PaymentKind[]).map((k) => ({ value: k, label: KIND_LABEL[k] }))} />
           <SelectField label="Forma" value={method} onChange={(e) => setMethod(e.target.value as PaymentMethod)}
-            options={(['PIX', 'CASH'] as PaymentMethod[]).map((m) => ({ value: m, label: METHOD_LABEL[m] }))} />
+            options={(['PIX', 'CASH', 'CARD_LINK'] as PaymentMethod[]).map((m) => ({ value: m, label: METHOD_LABEL[m] }))} />
         </div>
         <TextField label="Valor (R$)" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)}
           error={errors.amount} placeholder="0,00" />
@@ -163,6 +167,17 @@ function RegisterForm({ order, onChanged, onClose }: Props & { onClose: () => vo
       </form>
     </div>
   )
+}
+
+/** Mensagem de lembrete do sinal, pronta para a proprietária enviar pelo WhatsApp da cliente. */
+function reminderLink(order: OrderDetail): string {
+  const summary = order.payments
+  const firstName = order.customerName.split(' ')[0]
+  const due = summary.depositDueAt ? ` até ${formatDateTime(summary.depositDueAt)}` : ''
+  const text = `Olá, ${firstName}! Passando para lembrar do sinal de ${formatBRL(summary.depositAmount)} da sua encomenda`
+    + ` (código ${order.trackingCode}). Para garantir a data, o pagamento precisa ser feito${due}. Se já pagou, é só`
+    + ' enviar o comprovante pelo acompanhamento do pedido. Obrigada!'
+  return `${order.whatsappLink}?text=${encodeURIComponent(text)}`
 }
 
 export function PaymentsPanel({ order, onChanged }: Props) {
@@ -186,8 +201,23 @@ export function PaymentsPanel({ order, onChanged }: Props) {
           <dt>Recebido</dt><dd>{formatBRL(summary.received)}</dd>
           <dt>Falta receber</dt><dd><strong>{formatBRL(summary.balanceDue)}</strong></dd>
           <dt>Situação</dt><dd>{PAYMENT_STATUS[summary.status]}</dd>
+          {summary.depositDueAt && (
+            <>
+              <dt>Prazo do sinal</dt><dd>{formatDateTime(summary.depositDueAt)}</dd>
+            </>
+          )}
         </dl>
-      ) : (
+      ) : null}
+      {summary.total && order.commercialStatus === 'AWAITING_DEPOSIT' && !summary.proofUnderReview ? (
+        <div className={panel.actions}>
+          <a className={styles.filter} style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}
+            href={reminderLink(order)} target="_blank" rel="noopener noreferrer">
+            Lembrar a cliente pelo WhatsApp
+          </a>
+          <span className={styles.muted}>Abre o WhatsApp com a mensagem pronta; você confere e envia.</span>
+        </div>
+      ) : null}
+      {summary.total ? null : (
         <p className={styles.muted}>Os pagamentos ficam disponíveis depois que a cliente aceitar o orçamento.</p>
       )}
 

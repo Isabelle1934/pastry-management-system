@@ -72,7 +72,8 @@ public class QuoteService {
         int validity = request.validityHours() != null ? request.validityHours()
                 : settings.current().getQuoteValidityHours();
         draft.editDraft(request.items().stream()
-                .map(i -> new Quote.ItemData(i.name().strip(), blankToNull(i.description()), i.quantity(), i.unitPrice()))
+                .map(i -> new Quote.ItemData(i.kind(), i.name().strip(), blankToNull(i.description()), i.quantity(),
+                        i.unitPrice()))
                 .toList(), blankToNull(request.notes()), validity);
         return QuoteView.from(quotes.saveAndFlush(draft));
     }

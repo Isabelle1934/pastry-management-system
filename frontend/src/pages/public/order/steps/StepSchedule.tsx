@@ -2,7 +2,8 @@ import { useEffect, useId, useMemo } from 'react'
 import { TextAreaField } from '../../../../components/TextAreaField'
 import { TextField } from '../../../../components/TextField'
 import { formatLongDay, formatShortDay } from '../../../../utils/date'
-import { acceptsDate, allowedFulfillment, FULFILLMENT_LABELS } from '../../../../utils/productRules'
+import { formatBRL } from '../../../../utils/money'
+import { acceptsDate, allowedFulfillment, DELIVERY_ZONE_LABELS, deliveryZoneFee, FULFILLMENT_LABELS } from '../../../../utils/productRules'
 import type { StepProps } from './stepProps'
 import styles from '../order.module.css'
 
@@ -47,12 +48,38 @@ export function StepSchedule({ form, errors, update, availability, catalog, bake
                     onChange={() => update({ fulfillmentType: mode })}
                   />
                   <span className={styles.choiceTitle}>{FULFILLMENT_LABELS[mode]}</span>
+
                   {!modes.includes(mode) && (
                     <span className={styles.choiceMeta}>Indisponível para este pedido</span>
                   )}
                 </label>
               ))}
             </div>
+          )}
+          {delivery && (
+            <fieldset className={styles.fieldset}>
+              <legend className={styles.legend}>Onde vamos entregar?</legend>
+              <div className={styles.choiceGrid}>
+                {(['CITY', 'PARTY_VENUE', 'OUTSIDE_CITY'] as const).map((zone) => {
+                  const fee = deliveryZoneFee(bakery, zone, form.customCake)
+                  return (
+                    <label key={zone} className={styles.choice}>
+                      <input type="radio" name="deliveryZone" checked={form.deliveryZone === zone}
+                        onChange={() => update({ deliveryZone: zone })} />
+                      <span className={styles.choiceTitle}>{DELIVERY_ZONE_LABELS[zone]}</span>
+                      <span className={styles.choiceMeta}>
+                        {fee ? `Taxa: ${formatBRL(fee)}`
+                          : zone === 'OUTSIDE_CITY' ? 'Taxa combinada conforme a localização'
+                            : 'Taxa informada no orçamento'}
+                      </span>
+                    </label>
+                  )
+                })}
+              </div>
+              <p className={styles.hint}>
+                Entregas precisam ser agendadas com antecedência. A taxa entra separada no orçamento.
+              </p>
+            </fieldset>
           )}
           {delivery && bakery.deliveryInfo && <p className={styles.hint}>{bakery.deliveryInfo}</p>}
           {errors.fulfillmentType && (
@@ -66,7 +93,7 @@ export function StepSchedule({ form, errors, update, availability, catalog, bake
       {delivery && (
         <>
           <TextField
-            label="Endereço de entrega"
+            label="Endereço completo"
             autoComplete="street-address"
             placeholder="Rua, número e complemento"
             value={form.deliveryAddress}
@@ -75,7 +102,7 @@ export function StepSchedule({ form, errors, update, availability, catalog, bake
             maxLength={300}
           />
           <TextField
-            label="Bairro (opcional)"
+            label="Bairro"
             value={form.deliveryDistrict}
             onChange={(e) => update({ deliveryDistrict: e.target.value })}
             error={errors.deliveryDistrict}

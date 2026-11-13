@@ -67,7 +67,7 @@ public class TrackingService {
     public TrackingView view(Long orderId) {
         CakeOrder order = orders.findById(orderId).orElseThrow(() -> new NotFoundException("Pedido não encontrado."));
         ClientQuote quote = quotes.findCurrent(orderId).map(QuoteView::from)
-                .map(q -> new ClientQuote(q.id(), q.versionNumber(), q.status(), q.items(), q.total(), q.depositAmount(),
+                .map(q -> new ClientQuote(q.id(), q.versionNumber(), q.status(), q.items(), q.breakdown(), q.total(), q.depositAmount(),
                         q.balanceAmount(), q.notes(), q.validUntil()))
                 .orElse(null);
         return new TrackingView(TrackingCodes.format(order.getTrackingCode()), order.getCustomerName(),
@@ -79,7 +79,9 @@ public class TrackingService {
                 order.isTopperRequested(), order.getTopperTheme(), order.getTopperName(), order.getTopperAge(),
                 files.findByOrderIdAndDeletedAtIsNullOrderByIdAsc(orderId).size(), order.getCommercialStatus(),
                 order.getPaymentStatus(), order.getProductionStatus(), order.isEditableByClient(), order.getVersion(),
-                quote, payment(order));
+                quote, payment(order), order.getDeliveryZone(),
+                order.getCakeCategory() == null ? null : order.getCakeCategory().getId(), order.getCakeCategorySnapshot(),
+                order.getCustomerEmail() != null);
     }
 
     /** Dados de pagamento para a cliente: valores, situação, chave Pix (quando há algo a pagar) e comprovantes. */
@@ -95,11 +97,12 @@ public class TrackingService {
         return new ClientPayment(summary.total(), summary.depositAmount(), summary.received(), summary.balanceDue(),
                 summary.status(), somethingToPay ? bakery.getPixKey() : null,
                 somethingToPay ? bakery.getPixHolderName() : null,
+                awaitingDeposit ? bakery.getCardPaymentLink() : null, summary.depositDueAt(),
                 awaitingDeposit && !summary.proofUnderReview(),
                 summary.payments().stream()
                         .filter(p -> p.kind() != Payment.Kind.REFUND || p.status() == Payment.Status.CONFIRMED)
-                        .map(p -> new ClientPaymentEntry(p.kind(), p.amount(), p.status(), p.reviewNote(), p.createdAt(),
-                                p.proofFileId()))
+                        .map(p -> new ClientPaymentEntry(p.kind(), p.method(), p.amount(), p.status(), p.reviewNote(),
+                                p.createdAt(), p.proofFileId()))
                         .toList());
     }
 

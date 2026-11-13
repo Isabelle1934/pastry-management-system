@@ -25,6 +25,9 @@ import br.com.confeitaria.modules.catalog.repository.ProductRepository;
 import br.com.confeitaria.modules.file.entity.StoredFile;
 import br.com.confeitaria.modules.file.service.FileStorageService;
 import br.com.confeitaria.modules.settings.service.SettingsService;
+import br.com.confeitaria.modules.catalog.dto.CatalogDtos.PublicCakeCategory;
+import br.com.confeitaria.modules.catalog.entity.CakeSize;
+import br.com.confeitaria.modules.catalog.repository.CakeCategoryRepository;
 
 /**
  * Catálogo público: produtos ativos ou temporariamente indisponíveis (categorias ativas, período vigente)
@@ -34,6 +37,7 @@ import br.com.confeitaria.modules.settings.service.SettingsService;
 public class PublicCatalogService {
 
     private final CakeSizeRepository sizes;
+    private final CakeCategoryRepository cakeCategories;
     private final CakeFlavorRepository flavors;
     private final CakeFillingRepository fillings;
     private final ProductCategoryRepository categories;
@@ -44,10 +48,11 @@ public class PublicCatalogService {
     private final Clock clock;
     private final AppProperties properties;
 
-    public PublicCatalogService(CakeSizeRepository sizes, CakeFlavorRepository flavors, CakeFillingRepository fillings,
+    public PublicCatalogService(CakeSizeRepository sizes, CakeCategoryRepository cakeCategories, CakeFlavorRepository flavors, CakeFillingRepository fillings,
             ProductCategoryRepository categories, ProductRepository products, ProductService productService,
             FileStorageService storage, SettingsService settings, Clock clock, AppProperties properties) {
         this.sizes = sizes;
+        this.cakeCategories = cakeCategories;
         this.flavors = flavors;
         this.fillings = fillings;
         this.categories = categories;
@@ -68,14 +73,17 @@ public class PublicCatalogService {
         Map<Long, List<Long>> photos = productService.photoIdsByProduct(visible.stream().map(Product::getId).toList());
         List<Long> usedCategories = visible.stream().map(p -> p.getCategory().getId()).distinct().toList();
         return new PublicCatalog(
-                sizes.findAllByActiveTrueOrderByDisplayOrderAscNameAsc().stream().map(PublicSize::from).toList(),
+                sizes.findAllByActiveTrueOrderByDisplayOrderAscNameAsc().stream()
+                        .filter(CakeSize::isPubliclyVisible).map(PublicSize::from).toList(),
                 flavors.findAllByActiveTrueOrderByDisplayOrderAscNameAsc().stream().map(PublicOption::from).toList(),
                 fillings.findAllByActiveTrueOrderByDisplayOrderAscNameAsc().stream().map(PublicOption::from).toList(),
                 categories.findAllByActiveTrueOrderByDisplayOrderAscNameAsc().stream()
                         .filter(c -> usedCategories.contains(c.getId()))
                         .map(PublicCategory::from).toList(),
                 visible.stream().map(p -> PublicProduct.from(p, photos.getOrDefault(p.getId(), List.of()))).toList(),
-                settings.current().isCustomCakeEnabled());
+                settings.current().isCustomCakeEnabled(),
+                cakeCategories.findAllByActiveTrueOrderByDisplayOrderAscNameAsc().stream()
+                        .map(PublicCakeCategory::from).toList());
     }
 
     @Transactional(readOnly = true)

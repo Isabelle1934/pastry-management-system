@@ -27,7 +27,7 @@ cake_order 1──* order_flavor      order_filling *──1 cake_order
    │ 1──* payment ──0..1 stored_file (comprovante)
    │ 1──0..1 slot_reservation ──* slot_occupancy (data+horário)
    │ 1──* order_history
-   │ 1──* expense (opcional)
+   │ 1──* expense (opcional; tabela mantida sem uso desde a retirada do módulo de despesas)
    │ 1──* notification
 
 weekly_slot (modelo semanal de horários)   schedule_block (bloqueios)
@@ -96,6 +96,7 @@ Nunca apagado; correções são feitas por novo registro ou rejeição com motiv
 **stored_file** — `id`, `storage_key` (UUID, único), `order_id` FK, `purpose` (`ORDER_REFERENCE`, `TOPPER_REFERENCE`, `PAYMENT_PROOF`), `original_name` (saneado), `content_type` (detectado), `size_bytes`, `sha256`, `uploaded_by`, `created_at`, `deleted_at`.
 
 ### Financeiro
+O resumo financeiro é calculado sobre `quote` e `payment`. As tabelas abaixo continuam no banco (dados preservados), mas não são mais usadas pela aplicação desde a V9:
 **expense_category** — `id`, `name` (único), `active`.
 **expense** — `id`, `description`, `amount > 0`, `expense_date`, `category_id` FK, `order_id` FK nullable, `created_at`, `updated_at`, `deleted_at` (exclusão lógica com registro em `audit_log`).
 Uma despesa é um único registro: o vínculo com pedido é apenas um atributo — por isso nunca é somada duas vezes.
@@ -126,5 +127,7 @@ Uma despesa é um único registro: o vínculo com pedido é apenas um atributo �
 | V6 ✅ | payment, notification, prazo do sinal em bakery_settings |
 | V7 ✅ | expense_category, expense |
 | V8 ✅ | catálogo e atendimento: product_category, product (situação ACTIVE/UNAVAILABLE/INACTIVE, preço opcional, período, dias da semana em máscara de bits, retirada/delivery), order_item (cópia de nome/categoria/preço/unidade; PK pedido+produto), stored_file passa a aceitar fotos de produto (`product_id`, finalidade `PRODUCT_PHOTO`), cake_order ganha `custom_cake`, `fulfillment_type` e endereço de entrega (tamanho passa a ser opcional), bakery_settings ganha `pickup_enabled`, `delivery_enabled`, `delivery_info`, `custom_cake_enabled`, `custom_cake_delivery`. Pedidos existentes ficam como bolo personalizado com retirada |
+| V9 ✅ | bakery_settings ganha `delivery_fee` (padrão 20.00), `card_payment_link` (só https) e `deposit_cutoff_hours` (padrão 24); `payment.method` aceita `CARD_LINK`; `quote_item.kind` (`PRODUCT`/`EXTRA`/`TOPPER`/`DELIVERY`, itens existentes ficam `PRODUCT`); massas confirmadas Baunilha, Chocolate e Red Velvet inseridas se ainda não existirem. Só acréscimos |
+| V10 ✅ | `cake_category` (tipos de bolo: características, aviso, `consult_only`, limites de massa/recheio); `cake_size` ganha `category_id`, `weight_kg`, `diameter_cm`; tabela da proprietária (5 baixos, 6 altos, 5 de 2 andares e o tipo "3 andares ou mais — consulte valores") inserida só se não existir; `cake_order` ganha `cake_category_id`, `cake_category_snapshot`, `size_price_snapshot`, `customer_email`, `delivery_zone` (entregas antigas ficam `CITY`) e índice para detectar envio repetido; `weekly_slot.capacity` passa a aceitar vazio (= sem limite); `bakery_settings` ganha `delivery_fee_sweets` (5.00), `party_venue_fee` (30.00) + `party_venue_fee_confirmed`, `punctuality_notice` e `deposit_reminder_hours` (12). Nenhum dado existente apagado |
 
 Migrations são criadas na fase de cada módulo (não todas de uma vez) e nunca editadas depois de aplicadas. Nenhum dado fictício é inserido por migration; dados de demonstração existirão apenas em perfil `dev`.

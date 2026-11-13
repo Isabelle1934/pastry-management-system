@@ -6,20 +6,17 @@ import java.sql.Timestamp;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.util.List;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import br.com.confeitaria.config.AppProperties;
-import br.com.confeitaria.modules.finance.dto.FinanceDtos.CategoryTotal;
 import br.com.confeitaria.modules.finance.dto.FinanceDtos.FinanceSummary;
 
 /**
  * Indicadores financeiros do período (BUSINESS_RULES.md §9). Faturamento e pendências seguem a
- * data de retirada; recebimentos, a data de confirmação do pagamento; despesas, a data da despesa.
- * Cada despesa é um único registro, então entra uma única vez, vinculada ou não a um pedido.
+ * data agendada; recebimentos, a data de confirmação do pagamento.
  */
 @Service
 public class FinanceSummaryService {
@@ -77,25 +74,10 @@ public class FinanceSummaryService {
                 """, (rs, n) -> new BigDecimal[] {rs.getBigDecimal(1), rs.getBigDecimal(2), rs.getBigDecimal(3)},
                 receivedFrom, receivedTo);
 
-        List<CategoryTotal> byCategory = jdbc.query("""
-                select c.id, c.name, sum(e.amount) as total
-                from expense e join expense_category c on c.id = e.category_id
-                where e.deleted_at is null and e.expense_date between ? and ?
-                group by c.id, c.name
-                order by total desc, c.name
-                """, (rs, n) -> new CategoryTotal(rs.getLong("id"), rs.getString("name"), rs.getBigDecimal("total")),
-                start, end);
-        BigDecimal orderExpenses = jdbc.queryForObject("""
-                select coalesce(sum(amount), 0) from expense
-                where deleted_at is null and order_id is not null and expense_date between ? and ?
-                """, BigDecimal.class, start, end);
-
-        BigDecimal expenses = byCategory.stream().map(CategoryTotal::total).reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal receivedTotal = received[0].add(received[1]).subtract(received[2]);
         return new FinanceSummary(range.from(), range.to(), money(forecast[0]), counts[0], money(forecast[1]),
                 counts[1], money(receivedTotal), money(received[0]), money(received[1]), money(received[2]),
-                money(forecast[2]), money(expenses), money(orderExpenses), byCategory,
-                money(forecast[0].subtract(expenses)), money(receivedTotal.subtract(expenses)));
+                money(forecast[2]), money(receivedTotal));
     }
 
     private static BigDecimal money(BigDecimal value) {

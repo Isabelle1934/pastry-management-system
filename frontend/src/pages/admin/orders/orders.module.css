@@ -280,7 +280,7 @@
 
 @media (min-width: 700px) {
   .itemRow {
-    grid-template-columns: 2fr 2fr 0.8fr 1fr auto;
+    grid-template-columns: 1.1fr 2fr 2fr 0.8fr 1fr auto;
     align-items: end;
   }
 }

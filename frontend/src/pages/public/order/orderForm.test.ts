@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import type { PublicSize } from '../../../types/public'
+import type { PublicCakeCategory, PublicSize } from '../../../types/public'
 import {
+  applyCategory,
   applySize,
+  OTHER_SIZES,
   initialOrderForm,
   looksLikeBrazilianPhone,
   toggleChoice,
@@ -20,6 +22,9 @@ const size: PublicSize = {
   servings: 20,
   basePrice: '150.00',
   maxFlavors: 2,
+  categoryId: null,
+  weightKg: null,
+  diameterCm: null,
   maxFillings: 1,
 }
 
@@ -50,14 +55,16 @@ describe('validateStep', () => {
     expect(validateStep('schedule', initialOrderForm)).toHaveProperty('pickupDate')
     expect(validateStep('schedule', { ...initialOrderForm, pickupDate: '2026-11-03' })).toHaveProperty('pickupTime')
     const delivery = { ...initialOrderForm, pickupDate: '2026-11-03', pickupTime: '14:00', fulfillmentType: 'DELIVERY' as const }
-    expect(validateStep('schedule', delivery)).toEqual({ deliveryAddress: 'Informe o endereço de entrega.' })
-    expect(validateStep('schedule', { ...delivery, deliveryAddress: 'Rua A, 1' })).toEqual({})
+    expect(validateStep('schedule', delivery)).toEqual({ deliveryAddress: 'Informe o endereço de entrega.',
+      deliveryDistrict: 'Informe o bairro.' })
+    expect(validateStep('schedule', { ...delivery, deliveryAddress: 'Rua A, 1' })).toEqual({ deliveryDistrict: 'Informe o bairro.' })
+    expect(validateStep('schedule', { ...delivery, deliveryAddress: 'Rua A, 1', deliveryDistrict: 'Centro' })).toEqual({})
   })
 
   it('enforces the size limits on the cake step', () => {
     const form: OrderFormState = { ...initialOrderForm, sizeId: 7, flavorIds: [1, 2, 3], fillingIds: [] }
     const errors = validateStep('cake', form, { size })
-    expect(errors.flavorIds).toBe('Este tamanho permite até 2 massas.')
+    expect(errors.flavorIds).toBe('Escolha até 2 massas.')
     expect(errors.fillingIds).toBe('Escolha pelo menos um recheio.')
   })
 
@@ -132,5 +139,50 @@ describe('toPayload', () => {
       topperTheme: 'Jardim',
       topperAge: 5,
     })
+  })
+})
+
+describe('categorias de bolo, e-mail e entrega', () => {
+  const consult: PublicCakeCategory = {
+    id: 9, name: 'Bolos de 3 andares ou mais', description: null, notice: 'Consulte valores.', consultOnly: true,
+    maxFlavors: 1, maxFillings: 2,
+  }
+  const tall: PublicCakeCategory = { ...consult, id: 2, name: 'Bolos altos', notice: null, consultOnly: false }
+  const tallSize: PublicSize = { ...size, id: 21, categoryId: 2, maxFlavors: 1, maxFillings: 2 }
+  const cakeForm = { ...initialOrderForm, flavorIds: [1], fillingIds: [3, 4] }
+
+  it('accepts a consult-only cake without size, but requires the description', () => {
+    const form = applyCategory(cakeForm, consult, [tallSize])
+    expect(form.sizeId).toBeNull()
+    expect(validateStep('cake', form, { category: consult })).toEqual({
+      decoration: 'Descreva o bolo que você imagina (andares, decoração, tamanho aproximado).',
+    })
+    expect(validateStep('cake', { ...form, decoration: '3 andares, flores' }, { category: consult })).toEqual({})
+  })
+
+  it('requires a size in a table category and allows up to 2 fillings', () => {
+    const form = applyCategory(cakeForm, tall, [tallSize])
+    expect(validateStep('cake', form, { category: tall })).toHaveProperty('sizeId')
+    const sized = applySize(form, tallSize)
+    expect(sized.cakeCategoryId).toBe(2)
+    expect(validateStep('cake', sized, { size: tallSize, category: tall })).toEqual({})
+    expect(validateStep('cake', { ...sized, fillingIds: [3, 4, 5] }, { size: tallSize })).toEqual({
+      fillingIds: 'Escolha até 2 recheios.',
+    })
+  })
+
+  it('validates the optional e-mail', () => {
+    const base = { ...initialOrderForm, customerName: 'Ana', customerWhatsapp: '11999998888' }
+    expect(validateStep('customer', base)).toEqual({})
+    expect(validateStep('customer', { ...base, customerEmail: 'ana@' })).toHaveProperty('customerEmail')
+    expect(validateStep('customer', { ...base, customerEmail: 'ana@exemplo.com' })).toEqual({})
+  })
+
+  it('sends the delivery zone only for delivery and never the "other sizes" marker', () => {
+    const delivery = toPayload({ ...initialOrderForm, fulfillmentType: 'DELIVERY', deliveryZone: 'PARTY_VENUE',
+      cakeCategoryId: OTHER_SIZES, sizeId: 7 })
+    expect(delivery.deliveryZone).toBe('PARTY_VENUE')
+    expect(delivery.cakeCategoryId).toBeNull()
+    expect(toPayload({ ...initialOrderForm, deliveryZone: 'CITY' }).deliveryZone).toBeNull()
   })
 })

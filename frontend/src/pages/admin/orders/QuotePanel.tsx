@@ -1,22 +1,26 @@
 import { useState } from 'react'
 import { Alert } from '../../../components/Alert'
 import { Button } from '../../../components/Button'
+import { SelectField } from '../../../components/SelectField'
 import { TextAreaField } from '../../../components/TextAreaField'
 import { TextField } from '../../../components/TextField'
 import { deleteQuoteDraft, saveQuoteDraft, sendQuote } from '../../../services/orders'
-import type { CommercialStatus, OrderDetail, Quote, QuoteItem } from '../../../types/order'
+import type { CommercialStatus, OrderDetail, Quote, QuoteBreakdown, QuoteItem, QuoteItemKind } from '../../../types/order'
 import { depositOf, formatBRL, fromCents, lineTotal, parseMoneyInput, toCents, toMoneyInput } from '../../../utils/money'
+import { BREAKDOWN_ROWS, breakdownOf, QUOTE_ITEM_KINDS, QUOTE_KIND_LABELS } from '../../../utils/quote'
 import { formatDateTime, QUOTE_STATUS } from '../../../utils/orderStatus'
 import panel from '../panel.module.css'
 import { describeSaveError } from '../saveErrors'
 import styles from './orders.module.css'
 import { StatusChip } from './StatusChip'
+import { DELIVERY_ZONE_LABELS } from '../../../utils/productRules'
 
 /** Situações em que a proprietária pode montar/enviar orçamento (mesma regra do servidor). */
 const QUOTABLE: CommercialStatus[] = ['PENDING_REVIEW', 'QUOTE_SENT', 'AWAITING_DEPOSIT', 'DECLINED_BY_CLIENT']
 
 interface ItemForm {
   key: number
+  kind: QuoteItemKind
   name: string
   description: string
   quantity: string
@@ -24,11 +28,12 @@ interface ItemForm {
 }
 
 let nextKey = 1
-const emptyItem = (): ItemForm => ({ key: nextKey++, name: '', description: '', quantity: '1', unitPrice: '' })
+const emptyItem = (): ItemForm => ({ key: nextKey++, kind: 'EXTRA', name: '', description: '', quantity: '1', unitPrice: '' })
 
 function toItemForm(item: QuoteItem): ItemForm {
   return {
     key: nextKey++,
+    kind: item.kind,
     name: item.name,
     description: item.description ?? '',
     quantity: toMoneyInput(item.quantity).replace(/,00$/, ''),
@@ -37,12 +42,14 @@ function toItemForm(item: QuoteItem): ItemForm {
 }
 
 /**
- * Sugestão de itens a partir do pedido: produtos do catálogo com o preço da encomenda e, sem valor
- * definido, o bolo personalizado, o topo (cobrado à parte) e a taxa de entrega.
+ * Sugestão de itens a partir do pedido: produtos do catálogo com o preço da encomenda, a taxa de entrega
+ * das Configurações e, sem valor definido, o bolo personalizado e o topo (cobrado à parte).
  */
 function itemsFromOrder(order: OrderDetail): ItemForm[] {
+  const deliveryFee = order.suggestedDeliveryFee
   const items: ItemForm[] = order.items.map((item) => ({
     key: nextKey++,
+    kind: 'PRODUCT' as const,
     name: item.name,
     description: item.notes ?? '',
     quantity: String(item.quantity),
@@ -50,20 +57,46 @@ function itemsFromOrder(order: OrderDetail): ItemForm[] {
   }))
   if (order.customCake) {
     const flavors = [...order.flavors, ...order.fillings].map((o) => o.name).join(', ')
-    items.push({ key: nextKey++, name: `Bolo personalizado – ${order.sizeName ?? ''}`.trim(), description: flavors,
-      quantity: '1', unitPrice: '' })
+    const cake = order.sizeName ?? order.cakeCategoryName ?? ''
+    // Preço inicial = tabela (cópia do pedido); "consulte valores" fica em branco para a proprietária avaliar.
+    items.push({ key: nextKey++, kind: 'PRODUCT', name: `Bolo personalizado – ${cake}`.trim(),
+      description: flavors, quantity: '1', unitPrice: order.sizePrice ? toMoneyInput(order.sizePrice) : '' })
+    if (order.decoration) {
+      items.push({ key: nextKey++, kind: 'EXTRA', name: 'Decoração personalizada', description: order.decoration.slice(0, 300),
+        quantity: '1', unitPrice: '' })
+    }
   }
   if (order.customCake && order.topperRequested) {
-    items.push({ key: nextKey++, name: 'Topo de bolo', description: order.topperTheme ?? '', quantity: '1', unitPrice: '' })
+    items.push({ key: nextKey++, kind: 'TOPPER', name: 'Topo de bolo', description: order.topperTheme ?? '', quantity: '1',
+      unitPrice: '' })
   }
   if (order.fulfillmentType === 'DELIVERY') {
-    items.push({ key: nextKey++, name: 'Taxa de entrega', description: order.deliveryDistrict ?? '', quantity: '1',
-      unitPrice: '' })
+    const zone = order.deliveryZone ? DELIVERY_ZONE_LABELS[order.deliveryZone] : 'Entrega'
+    items.push({ key: nextKey++, kind: 'DELIVERY', name: `Taxa de entrega – ${zone}`.slice(0, 120),
+      description: order.deliveryDistrict ?? '',
+      quantity: '1', unitPrice: deliveryFee ? toMoneyInput(deliveryFee) : '' })
   }
   return items
 }
 
-function QuoteTable({ quote }: { quote: Pick<Quote, 'items' | 'total' | 'depositAmount' | 'balanceAmount'> }) {
+/** Subtotais por grupo, total, sinal de 50% e saldo restante. */
+function Totals({ breakdown, total, deposit, balance }: { breakdown: QuoteBreakdown; total: string; deposit: string;
+  balance: string }) {
+  return (
+    <div className={styles.totals} aria-live="polite">
+      {BREAKDOWN_ROWS.filter((row) => row.key === 'products' || breakdown[row.key] !== '0.00').map((row) => (
+        <span key={row.key}>{row.label}: {formatBRL(breakdown[row.key])}</span>
+      ))}
+      <strong>Total: {formatBRL(total)}</strong>
+      <span>Sinal (50%): {formatBRL(deposit)}</span>
+      <span>Restante na retirada/entrega (50%): {formatBRL(balance)}</span>
+    </div>
+  )
+}
+
+function QuoteTable({ quote }: {
+  quote: Pick<Quote, 'items' | 'breakdown' | 'total' | 'depositAmount' | 'balanceAmount'>
+}) {
   return (
     <>
       <div style={{ overflowX: 'auto' }}>
@@ -81,7 +114,9 @@ function QuoteTable({ quote }: { quote: Pick<Quote, 'items' | 'total' | 'deposit
               <tr key={index}>
                 <td>
                   {item.name}
-                  {item.description && <div className={styles.muted}>{item.description}</div>}
+                  <div className={styles.muted}>
+                    {QUOTE_KIND_LABELS[item.kind]}{item.description ? ` · ${item.description}` : ''}
+                  </div>
                 </td>
                 <td className={styles.number}>{toMoneyInput(item.quantity).replace(/,00$/, '')}</td>
                 <td className={styles.number}>{formatBRL(item.unitPrice)}</td>
@@ -91,11 +126,8 @@ function QuoteTable({ quote }: { quote: Pick<Quote, 'items' | 'total' | 'deposit
           </tbody>
         </table>
       </div>
-      <div className={styles.totals}>
-        <strong>Total: {formatBRL(quote.total)}</strong>
-        <span>Sinal (50%): {formatBRL(quote.depositAmount)}</span>
-        <span>Restante na retirada/entrega: {formatBRL(quote.balanceAmount)}</span>
-      </div>
+      <Totals breakdown={quote.breakdown} total={quote.total} deposit={quote.depositAmount}
+        balance={quote.balanceAmount} />
     </>
   )
 }
@@ -110,7 +142,8 @@ interface EditorProps {
   onClose: () => void
 }
 
-function QuoteEditor({ order, initialItems, initialNotes, initialValidity, hasDraft, onChanged, onClose }: EditorProps) {
+function QuoteEditor({ order, initialItems, initialNotes, initialValidity, hasDraft, onChanged, onClose }:
+  EditorProps) {
   const [items, setItems] = useState<ItemForm[]>(initialItems.length ? initialItems : [emptyItem()])
   const [notes, setNotes] = useState(initialNotes)
   const [validity, setValidity] = useState(initialValidity)
@@ -123,10 +156,9 @@ function QuoteEditor({ order, initialItems, initialNotes, initialValidity, hasDr
     quantity: /^\d{1,4}(,\d{1,2})?$/.test(item.quantity.trim()) ? item.quantity.trim().replace(',', '.') : null,
     unitPrice: parseMoneyInput(item.unitPrice),
   }))
-  const totalCents = parsed.reduce(
-    (sum, p) => (p.quantity && p.unitPrice ? sum + toCents(lineTotal(p.quantity, p.unitPrice)) : sum),
-    0,
-  )
+  const lineCents = parsed.map((p) => (p.quantity && p.unitPrice ? toCents(lineTotal(p.quantity, p.unitPrice)) : 0))
+  const totalCents = lineCents.reduce((sum, cents) => sum + cents, 0)
+  const breakdown = breakdownOf(items.map((item, index) => ({ kind: item.kind, cents: lineCents[index] })))
   const total = fromCents(totalCents)
   const { deposit, balance } = depositOf(total)
 
@@ -152,6 +184,7 @@ function QuoteEditor({ order, initialItems, initialNotes, initialValidity, hasDr
     try {
       await saveQuoteDraft(order.id, {
         items: items.map((item, index) => ({
+          kind: item.kind,
           name: item.name.trim(),
           description: item.description.trim(),
           quantity: parsed[index].quantity!,
@@ -208,6 +241,9 @@ function QuoteEditor({ order, initialItems, initialNotes, initialValidity, hasDr
       <div className={panel.form}>
         {items.map((item, index) => (
           <div key={item.key} className={styles.itemRow}>
+            <SelectField label="Tipo" value={item.kind}
+              onChange={(e) => change(item.key, { kind: e.target.value as QuoteItemKind })}
+              options={QUOTE_ITEM_KINDS.map((kind) => ({ value: kind, label: QUOTE_KIND_LABELS[kind] }))} />
             <TextField label="Item" value={item.name} onChange={(e) => change(item.key, { name: e.target.value })}
               error={errors[`name-${index}`]} maxLength={120} />
             <TextField label="Descrição (opcional)" value={item.description}
@@ -230,11 +266,12 @@ function QuoteEditor({ order, initialItems, initialNotes, initialValidity, hasDr
           ...current.filter((i) => i.name.trim() || i.unitPrice.trim()), ...itemsFromOrder(order)])}>
           Incluir itens do pedido
         </Button>
-        <div className={styles.totals} aria-live="polite">
-          <strong>Total: {formatBRL(total)}</strong>
-          <span>Sinal (50%): {formatBRL(deposit)}</span>
-          <span>Restante na retirada/entrega: {formatBRL(balance)}</span>
-        </div>
+        <Totals breakdown={breakdown} total={total} deposit={deposit} balance={balance} />
+        <p className={styles.muted}>
+          Os valores são calculados automaticamente (preço da tabela, produtos e taxa da modalidade de entrega), mas
+          a palavra final é sua: ajuste qualquer item antes de enviar. Decoração, adicionais e topo (fornecedor externo)
+          entram separados. Entrega fora da cidade: informe a taxa combinada.
+        </p>
         <TextAreaField label="Observações para a cliente (opcional)" value={notes}
           onChange={(e) => setNotes(e.target.value)} maxLength={1000} rows={2} />
         <TextField label="Validade (horas)" inputMode="numeric" value={validity}

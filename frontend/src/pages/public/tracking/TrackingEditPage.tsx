@@ -30,6 +30,8 @@ function toForm(view: TrackingView): OrderFormState {
     deliveryAddress: view.deliveryAddress ?? '',
     deliveryDistrict: view.deliveryDistrict ?? '',
     deliveryReference: view.deliveryReference ?? '',
+    deliveryZone: view.deliveryZone ?? 'CITY',
+    cakeCategoryId: view.cakeCategoryId,
     sizeId: view.sizeId,
     flavorIds: view.flavors.map((f) => f.id),
     fillingIds: view.fillings.map((f) => f.id),
@@ -75,7 +77,15 @@ function withCurrentChoices(view: TrackingView, catalog: PublicCatalog, availabi
   const sizes = view.sizeId == null || catalog.sizes.some((s) => s.id === view.sizeId)
     ? catalog.sizes
     : [...catalog.sizes, { id: view.sizeId, name: view.sizeName ?? '', description: null, servings: null, basePrice: '0.00',
-        maxFlavors: Math.max(view.flavors.length, 1), maxFillings: Math.max(view.fillings.length, 1) }]
+        maxFlavors: Math.max(view.flavors.length, 1), maxFillings: Math.max(view.fillings.length, 1),
+        categoryId: null, weightKg: null, diameterCm: null }]
+  // Bolo "consulte valores" de uma categoria que saiu do site: continua disponível para manter.
+  const cakeCategories = view.cakeCategoryId == null || view.sizeId != null
+    || catalog.cakeCategories.some((c) => c.id === view.cakeCategoryId)
+    ? catalog.cakeCategories
+    : [...catalog.cakeCategories, { id: view.cakeCategoryId, name: view.cakeCategoryName ?? 'Seu bolo', description: null,
+        notice: null, consultOnly: true, maxFlavors: Math.max(view.flavors.length, 1),
+        maxFillings: Math.max(view.fillings.length, 1) }]
 
   return {
     availability: { ...availability, days },
@@ -83,6 +93,7 @@ function withCurrentChoices(view: TrackingView, catalog: PublicCatalog, availabi
       ...catalog,
       customCakeEnabled: catalog.customCakeEnabled || view.customCake,
       sizes,
+      cakeCategories,
       flavors: missing(catalog.flavors, view.flavors, (c) => ({ ...c, description: null })),
       fillings: missing(catalog.fillings, view.fillings, (c) => ({ ...c, description: null })),
       products,
@@ -116,7 +127,11 @@ function EditForm({ view, catalog, availability, bakery }: EditFormProps) {
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
-    const context = { size: catalog.sizes.find((s) => s.id === form.sizeId), products: catalog.products }
+    const context = {
+      size: catalog.sizes.find((s) => s.id === form.sizeId),
+      category: catalog.cakeCategories.find((c) => c.id === form.cakeCategoryId),
+      products: catalog.products,
+    }
     const stepErrors = {
       ...(showItems ? validateStep('items', form, context) : {}),
       ...(form.customCake ? validateStep('cake', form, context) : {}),

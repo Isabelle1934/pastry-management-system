@@ -16,6 +16,8 @@ import br.com.confeitaria.modules.catalog.dto.CatalogDtos.SizeRequest;
 import br.com.confeitaria.modules.catalog.dto.CatalogDtos.SizeResponse;
 import br.com.confeitaria.modules.catalog.entity.CakeSize;
 import br.com.confeitaria.modules.catalog.repository.CakeSizeRepository;
+import br.com.confeitaria.modules.catalog.entity.CakeCategory;
+import br.com.confeitaria.modules.catalog.repository.CakeCategoryRepository;
 
 @Service
 public class CakeSizeService {
@@ -23,11 +25,27 @@ public class CakeSizeService {
     static final String ENTITY = "cake_size";
 
     private final CakeSizeRepository repository;
+    private final CakeCategoryRepository categories;
     private final AuditService audit;
 
-    public CakeSizeService(CakeSizeRepository repository, AuditService audit) {
+    public CakeSizeService(CakeSizeRepository repository, CakeCategoryRepository categories, AuditService audit) {
         this.repository = repository;
+        this.categories = categories;
         this.audit = audit;
+    }
+
+    /** Categoria escolhida no cadastro do tamanho (pode estar inativa: o tamanho só não aparece no site). */
+    private CakeCategory categoryOf(SizeRequest request) {
+        if (request.categoryId() == null) {
+            return null;
+        }
+        CakeCategory category = categories.findById(request.categoryId())
+                .orElseThrow(() -> new FieldValidationException("categoryId", "Categoria não encontrada."));
+        if (category.isConsultOnly()) {
+            throw new FieldValidationException("categoryId",
+                    "Esta categoria é \"consulte valores\" e não tem tabela de tamanhos.");
+        }
+        return category;
     }
 
     @Transactional(readOnly = true)
@@ -41,8 +59,11 @@ public class CakeSizeService {
         if (repository.existsByNameIgnoreCase(name)) {
             throw duplicateName();
         }
-        CakeSize size = repository.save(new CakeSize(name, request.description(), request.servings(),
-                request.basePrice(), request.maxFlavors(), request.maxFillings(), orderOf(request)));
+        CakeCategory category = categoryOf(request);
+        CakeSize size = new CakeSize(name, request.description(), request.servings(),
+                request.basePrice(), request.maxFlavors(), request.maxFillings(), orderOf(request));
+        size.classify(category, request.weightKg(), request.diameterCm());
+        size = repository.save(size);
         audit.record(ActorType.OWNER, actorId, "SIZE_CREATED", ENTITY, size.getId(), null);
         return SizeResponse.from(size);
     }
@@ -59,8 +80,13 @@ public class CakeSizeService {
             throw duplicateName();
         }
 
+        CakeCategory category = categoryOf(request);
         Changes changes = new Changes()
                 .track("name", size.getName(), name)
+                .track("category", size.getCategory() == null ? null : size.getCategory().getName(),
+                        category == null ? null : category.getName())
+                .track("weightKg", size.getWeightKg(), request.weightKg())
+                .track("diameterCm", size.getDiameterCm(), request.diameterCm())
                 .track("basePrice", size.getBasePrice(), request.basePrice())
                 .track("maxFlavors", size.getMaxFlavors(), request.maxFlavors())
                 .track("maxFillings", size.getMaxFillings(), request.maxFillings())
@@ -68,6 +94,7 @@ public class CakeSizeService {
                 .track("displayOrder", size.getDisplayOrder(), orderOf(request));
         size.update(name, request.description(), request.servings(), request.basePrice(), request.maxFlavors(),
                 request.maxFillings(), orderOf(request));
+        size.classify(category, request.weightKg(), request.diameterCm());
         repository.flush();
         if (!changes.isEmpty()) {
             audit.record(ActorType.OWNER, actorId, "SIZE_UPDATED", ENTITY, id, changes.asMap());

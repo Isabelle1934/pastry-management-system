@@ -15,10 +15,13 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import br.com.confeitaria.modules.catalog.dto.CatalogDtos.ActiveRequest;
+import br.com.confeitaria.modules.catalog.dto.CatalogDtos.CakeCategoryRequest;
+import br.com.confeitaria.modules.catalog.dto.CatalogDtos.CakeCategoryResponse;
 import br.com.confeitaria.modules.catalog.dto.CatalogDtos.OptionRequest;
 import br.com.confeitaria.modules.catalog.dto.CatalogDtos.OptionResponse;
 import br.com.confeitaria.modules.catalog.dto.CatalogDtos.SizeRequest;
 import br.com.confeitaria.modules.catalog.dto.CatalogDtos.SizeResponse;
+import br.com.confeitaria.modules.catalog.service.CakeCategoryService;
 import br.com.confeitaria.modules.catalog.service.CakeFillingService;
 import br.com.confeitaria.modules.catalog.service.CakeFlavorService;
 import br.com.confeitaria.modules.catalog.service.CakeSizeService;
@@ -26,19 +29,48 @@ import br.com.confeitaria.modules.catalog.service.CatalogOptionService;
 import br.com.confeitaria.security.AdminPrincipal;
 import jakarta.validation.Valid;
 
-/** Cadastro de tamanhos, massas e recheios pela proprietária. */
+/** Cadastro de categorias de bolo, tamanhos, massas e recheios pela proprietária. */
 @RestController
 @RequestMapping("/api/admin/catalog")
 public class CatalogAdminController {
 
     private final CakeSizeService sizes;
+    private final CakeCategoryService cakeCategories;
     private final CakeFlavorService flavors;
     private final CakeFillingService fillings;
 
-    public CatalogAdminController(CakeSizeService sizes, CakeFlavorService flavors, CakeFillingService fillings) {
+    public CatalogAdminController(CakeSizeService sizes, CakeCategoryService cakeCategories, CakeFlavorService flavors,
+            CakeFillingService fillings) {
         this.sizes = sizes;
+        this.cakeCategories = cakeCategories;
         this.flavors = flavors;
         this.fillings = fillings;
+    }
+
+    // --- Categorias de bolo ---
+
+    @GetMapping("/cake-categories")
+    public List<CakeCategoryResponse> listCakeCategories() {
+        return cakeCategories.list();
+    }
+
+    @PostMapping("/cake-categories")
+    @ResponseStatus(HttpStatus.CREATED)
+    public CakeCategoryResponse createCakeCategory(@Valid @RequestBody CakeCategoryRequest body,
+            @AuthenticationPrincipal AdminPrincipal admin) {
+        return cakeCategories.create(body, admin.getId());
+    }
+
+    @PutMapping("/cake-categories/{id}")
+    public CakeCategoryResponse updateCakeCategory(@PathVariable Long id, @Valid @RequestBody CakeCategoryRequest body,
+            @AuthenticationPrincipal AdminPrincipal admin) {
+        return cakeCategories.update(id, body, admin.getId());
+    }
+
+    @PatchMapping("/cake-categories/{id}/active")
+    public CakeCategoryResponse setCakeCategoryActive(@PathVariable Long id, @Valid @RequestBody ActiveRequest body,
+            @AuthenticationPrincipal AdminPrincipal admin) {
+        return cakeCategories.setActive(id, body.active(), body.version(), admin.getId());
     }
 
     // --- Tamanhos ---

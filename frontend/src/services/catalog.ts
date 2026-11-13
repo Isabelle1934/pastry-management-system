@@ -1,7 +1,26 @@
-import type { CakeSize, CakeSizeInput, CatalogOption, CatalogOptionInput, OptionKind } from '../types/catalog'
+import type {
+  CakeCategory, CakeCategoryInput, CakeSize, CakeSizeInput, CatalogOption, CatalogOptionInput, OptionKind,
+} from '../types/catalog'
 import { apiFetch } from './api'
 
 const BASE = '/admin/catalog'
+
+export function listCakeCategories(): Promise<CakeCategory[]> {
+  return apiFetch<CakeCategory[]>(`${BASE}/cake-categories`)
+}
+
+export function saveCakeCategory(input: CakeCategoryInput, id?: number): Promise<CakeCategory> {
+  return id == null
+    ? apiFetch<CakeCategory>(`${BASE}/cake-categories`, { json: input })
+    : apiFetch<CakeCategory>(`${BASE}/cake-categories/${id}`, { method: 'PUT', json: input })
+}
+
+export function setCakeCategoryActive(category: CakeCategory, active: boolean): Promise<CakeCategory> {
+  return apiFetch<CakeCategory>(`${BASE}/cake-categories/${category.id}/active`, {
+    method: 'PATCH',
+    json: { active, version: category.version },
+  })
+}
 
 export function listSizes(): Promise<CakeSize[]> {
   return apiFetch<CakeSize[]>(`${BASE}/sizes`)

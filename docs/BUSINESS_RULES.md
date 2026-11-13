@@ -50,6 +50,7 @@ Cada pagamento individual tem seu próprio status: `PENDING_REVIEW`, `CONFIRMED`
 
 - Horários oferecidos = modelo semanal ativo do dia − bloqueios (dia inteiro ou horário) − horários antes da antecedência mínima − horários além do limite máximo de dias (se configurado) − horários com `reserved_count >= capacity`.
 - **Uma solicitação não reserva capacidade.** Vários pedidos podem solicitar o mesmo horário; o painel mostra quantas solicitações existem por horário.
+- **Limite por horário é opcional** (V10): sem limite, o horário aceita quantos pedidos confirmados forem necessários (a decoração é feita com antecedência). A proprietária só define limite se quiser. Dias de funcionamento = dias com horários cadastrados; feriados e folgas = bloqueio do dia inteiro; horários específicos também podem ser bloqueados. Antecedência mínima de 24 h (configurável).
 - A capacidade só é ocupada na **confirmação do sinal**.
 - Bloquear data/horário não cancela pedidos já confirmados; o painel avisa sobre conflitos.
 - Reduzir a capacidade abaixo do já reservado é permitido, mas não remove reservas existentes (o horário apenas deixa de aceitar novas confirmações).
@@ -100,8 +101,8 @@ Cancelamento, remarcação ou expiração de pedido com reserva ativa: decrement
 
 ## 6. Pagamentos
 
-- Regra: 50% de sinal, 50% na retirada. Métodos: Pix e dinheiro. Sem integração bancária.
-- Cliente pode enviar comprovante do sinal (JPG, PNG, PDF) somente com pedido em `AWAITING_DEPOSIT`.
+- Regra: 50% de sinal para confirmar, 50% na retirada ou entrega. Sinal por **Pix** ou **link de pagamento no cartão de crédito** (link informado pela proprietária nas Configurações); a proprietária também registra pagamentos em dinheiro. Sem integração bancária: nada é confirmado automaticamente.
+- Cliente pode enviar comprovante do sinal (JPG, PNG, PDF) somente com pedido em `AWAITING_DEPOSIT`, informando se pagou por Pix ou cartão. O comprovante fica "em conferência" até a proprietária confirmar ou recusar (com motivo); só pagamentos confirmados contam como recebidos.
 - Proprietária pode registrar pagamento diretamente (ex.: sinal em dinheiro), já como `CONFIRMED`.
 - Confirmação de sinal com valor menor que o sinal: **[PENDENTE]** padrão = permitido apenas se a proprietária marcar explicitamente "aceitar como sinal".
 - Resumo exibido: total, sinal, recebido (Σ confirmados), saldo restante (total − recebido), situação.
@@ -115,7 +116,8 @@ Cancelamento, remarcação ou expiração de pedido com reserva ativa: decrement
   1. **Aviso:** orçamentos `SENT` com `valid_until − aviso ≤ now() < valid_until` → cria `notification` com `dedup_key = QUOTE_EXPIRING:<quoteId>` (índice único — nunca duplica) e envia e-mail para a proprietária. Falha de e-mail é registrada e reenviada nas execuções seguintes (com limite de tentativas).
   2. **Vencimento:** orçamentos `SENT` com `valid_until ≤ now()` → em transação por orçamento, com `UPDATE ... WHERE status = 'SENT'` (se outra execução já processou, nada acontece): orçamento `EXPIRED`, pedido `CANCELLED` com `cancelled_by = SYSTEM`, motivo "Orçamento vencido sem resposta" e horário registrados; histórico e aviso gerados.
   3. Capacidade: se não há sinal confirmado, não há reserva — nada a liberar; o horário volta a aparecer como disponível naturalmente.
-- **[PENDENTE]** Prazo para pagamento do sinal após o aceite (pedido em `AWAITING_DEPOSIT` sem sinal confirmado): padrão proposto = prazo configurável (`deposit_deadline_hours`), com aviso e cancelamento automático pelas mesmas regras, **exceto** se houver comprovante em análise (nesse caso só avisa a proprietária).
+- **Prazo do sinal** (pedido em `AWAITING_DEPOSIT`): vale o limite que vencer primeiro entre `deposit_deadline_hours` após o aceite (em branco = sem esse limite) e `deposit_cutoff_hours` antes da data/horário agendado (padrão 24 h, confirmado pela proprietária; 0 = sem esse limite). Se o aceite acontecer quando o limite pela data já passou, a cliente ainda tem 2 horas. O prazo aparece para a cliente e no painel. Aviso antes do fim (antecedência do aviso de orçamento, no máximo metade do prazo) e cancelamento automático no fim, **exceto** se houver comprovante em análise ou valor recebido (nesse caso só avisa a proprietária). Como a vaga só é ocupada com o sinal, o horário volta a ficar disponível.
+- **Lembrete de pagamento** (V10): `deposit_reminder_hours` antes do fim do prazo do sinal (padrão 12 h; se o prazo for menor, na metade dele), uma vez por orçamento e só sem comprovante em análise: aviso no painel (e e-mail à proprietária), e-mail à cliente se ela informou e-mail no pedido, e registro no histórico. No pedido, o botão "Lembrar a cliente pelo WhatsApp" abre a conversa com a mensagem pronta. Comprovante enviado nunca confirma o pagamento sozinho.
 - O processo usa o relógio do servidor em UTC; exibição em `America/Sao_Paulo`.
 
 ## 8. Acompanhamento pela cliente
@@ -129,11 +131,10 @@ Cancelamento, remarcação ou expiração de pedido com reserva ativa: decrement
 
 - **Faturamento previsto:** soma dos totais dos orçamentos aceitos de pedidos `CONFIRMED`/`COMPLETED` (e, separadamente, `AWAITING_DEPOSIT`), pela data de retirada no período.
 - **Recebimentos efetivos:** soma dos pagamentos `CONFIRMED`, pela data de confirmação.
-- **Valores pendentes:** total − recebido dos pedidos ativos.
-- **Despesas:** gerais e vinculadas a pedidos; cada despesa é um registro único e entra uma única vez nos totais.
-- **Lucro estimado (P9, proposta padrão):** faturamento previsto − despesas do período; exibido também o resultado de caixa (recebido − despesas). Rotulado sempre como "estimado".
+- **A receber:** total − recebido dos pedidos confirmados/concluídos do período.
+- **Lucro:** recebido líquido no período (pagamentos confirmados − reembolsos). O sistema não tem cadastro de custos, por isso o valor coincide com o recebido (pendência P18).
+- O financeiro mostra só esses quatro indicadores (a receber, recebido, lucro, faturamento previsto). O módulo de despesas foi retirado do painel a pedido da proprietária; registros antigos ficam guardados no banco, sem uso.
 - Pedido cancelado sai do previsto; o sinal já recebido continua em "recebido" até que um reembolso seja registrado.
-- Categorias não são apagadas, só desativadas; despesas são excluídas apenas logicamente, com auditoria.
 - Sem contabilidade fiscal.
 
 ## 10. Catálogo (Fase 4)
@@ -151,6 +152,18 @@ Cancelamento, remarcação ou expiração de pedido com reserva ativa: decrement
 - **Pedido** = bolo personalizado (opcional) + itens do catálogo com quantidade (opcional), com pelo menos um dos dois. O topo de bolo só existe junto com bolo personalizado e é **cobrado à parte** (o aviso aparece para a cliente e o item entra separado no orçamento).
 - Cada item guarda **cópia de nome, categoria, preço e unidade** no momento da encomenda. Editar, desativar ou mudar o preço do produto não altera pedidos registrados; na edição de um pedido, itens que já estavam nele mantêm a cópia original.
 - Um produto aparece no máximo uma vez por pedido (a quantidade é somada no item).
+- **Modalidades de entrega** (V10), cada uma com sua taxa nas Configurações — nenhuma taxa vale para as outras:
+  - **na cidade, com bolo personalizado:** taxa de entrega de bolos (R$ 20,00);
+  - **na cidade, só outros doces:** taxa de delivery de doces (R$ 5,00);
+  - **no local da festa:** R$ 30,00 na tabela, mas só aparece para a cliente e entra sozinha no orçamento depois que a proprietária marcar "Confirmo a taxa" (até lá, "taxa informada no orçamento");
+  - **fora da cidade:** sem taxa automática; valor combinado conforme a localização e digitado no orçamento.
+  A taxa sugerida entra no rascunho do orçamento como item "Taxa de entrega", editável. Com delivery, a cliente informa endereço completo, bairro e modalidade.
+- **Tipos de bolo** (V10): bolos baixos, altos e de 2 andares com a tabela da proprietária (diâmetro, peso, fatias e preço); massa única (Baunilha, Chocolate ou Red Velvet) e até 2 sabores de recheio; bolos de 3 andares ou mais são "consulte valores" (sem tamanho; a cliente descreve o bolo e o valor vem no orçamento). Tudo editável no painel. A decoração é sempre personalizada (descrição + foto), sem modelos obrigatórios.
+- **Preços históricos:** o pedido copia o nome, o tipo e o preço da tabela do tamanho (e nome/preço dos produtos). Mudar a tabela não altera pedidos feitos; editar o pedido mantendo o mesmo tamanho mantém a cópia original.
+- **Orçamento de bolo:** parte do preço da tabela; decoração e adicionais, topo e entrega entram como linhas separadas. O sistema calcula, a proprietária tem a palavra final (ajusta qualquer valor).
+- **Aviso de pontualidade** (texto editável): aparece antes de enviar a encomenda, na confirmação e no acompanhamento. Não há multa nem cobrança por atraso.
+- **Solicitação repetida:** mesma cliente, mesma data/horário e mesmo conteúdo em até 30 minutos é recusada (evita duplo clique/reenvio).
+- **Orçamento:** cada item tem um tipo — produto, adicional, topo de bolo ou taxa de entrega — e o sistema calcula os subtotais por tipo, o total, o sinal (50%) e o saldo (50%). A proprietária pode ajustar qualquer valor antes de enviar. O topo de bolo é de fornecedor externo e tem o valor informado pela proprietária; a cliente vê o aviso "Topo de bolo cobrado à parte. O valor será incluído no orçamento final."
 - **Modalidade de atendimento** por pedido: retirada na confeitaria ou delivery. A proprietária liga/desliga cada forma nas Configurações (ao menos uma ativa) e define se bolos personalizados podem ser entregues. A cliente só vê as formas permitidas para todos os itens escolhidos; com delivery, o endereço é obrigatório e a taxa entra no orçamento.
 - A data/horário agendado vale para retirada ou entrega e segue as mesmas regras da agenda (vaga só após o sinal de 50%). A cliente só vê datas aceitas por todos os produtos escolhidos.
 - A proprietária pode editar o pedido sem as restrições de disponibilidade do site (como já acontecia com a agenda).

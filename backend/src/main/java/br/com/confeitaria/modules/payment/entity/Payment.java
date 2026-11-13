@@ -31,8 +31,20 @@ public class Payment extends BaseEntity {
     }
 
     public enum Method {
-        PIX,
-        CASH
+        PIX("Pix"),
+        CASH("dinheiro"),
+        /** Link de pagamento no cartão de crédito informado pela proprietária (sem integração automática). */
+        CARD_LINK("cartão de crédito (link)");
+
+        private final String label;
+
+        Method(String label) {
+            this.label = label;
+        }
+
+        public String label() {
+            return label;
+        }
     }
 
     public enum Status {
@@ -79,8 +91,8 @@ public class Payment extends BaseEntity {
     }
 
     /** Comprovante enviado pela cliente, aguardando conferência. */
-    public static Payment proofFromClient(Long orderId, BigDecimal amount, Long proofFileId) {
-        Payment payment = new Payment(orderId, Kind.DEPOSIT, Method.PIX, amount, ActorType.CLIENT, null);
+    public static Payment proofFromClient(Long orderId, Method method, BigDecimal amount, Long proofFileId) {
+        Payment payment = new Payment(orderId, Kind.DEPOSIT, method, amount, ActorType.CLIENT, null);
         payment.status = Status.PENDING_REVIEW;
         payment.proofFileId = proofFileId;
         return payment;

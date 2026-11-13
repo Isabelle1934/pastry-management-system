@@ -6,6 +6,9 @@ import java.math.RoundingMode;
 import br.com.confeitaria.common.persistence.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 /**
@@ -39,7 +42,41 @@ public class CakeSize extends BaseEntity {
     @Column(name = "display_order", nullable = false)
     private int displayOrder;
 
+    /** Categoria (baixo, alto, 2 andares...). Opcional: tamanhos antigos podem não ter. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id")
+    private CakeCategory category;
+
+    @Column(name = "weight_kg", precision = 5, scale = 2)
+    private BigDecimal weightKg;
+
+    @Column(name = "diameter_cm")
+    private Integer diameterCm;
+
     protected CakeSize() {
+    }
+
+    public void classify(CakeCategory category, BigDecimal weightKg, Integer diameterCm) {
+        this.category = category;
+        this.weightKg = weightKg == null ? null : weightKg.setScale(2, RoundingMode.HALF_UP);
+        this.diameterCm = diameterCm;
+    }
+
+    public CakeCategory getCategory() {
+        return category;
+    }
+
+    public BigDecimal getWeightKg() {
+        return weightKg;
+    }
+
+    public Integer getDiameterCm() {
+        return diameterCm;
+    }
+
+    /** Visível no site: ativo e, se tiver categoria, com a categoria ativa. */
+    public boolean isPubliclyVisible() {
+        return active && (category == null || category.isActive());
     }
 
     public CakeSize(String name, String description, Integer servings, BigDecimal basePrice, int maxFlavors,

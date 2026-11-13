@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Alert } from '../../../components/Alert'
 import { Button } from '../../../components/Button'
 import { useLoader } from '../../../hooks/useLoader'
-import { listSizes, setSizeActive } from '../../../services/catalog'
+import { listCakeCategories, listSizes, setSizeActive } from '../../../services/catalog'
 import type { CakeSize } from '../../../types/catalog'
 import { formatBRL } from '../../../utils/money'
 import styles from '../panel.module.css'
@@ -20,6 +20,12 @@ function plural(count: number, singular: string, pluralForm: string) {
 
 export function SizesSection() {
   const { data: sizes, loading, error, reload, setData } = useLoader(listSizes)
+  const { data: categories } = useLoader(listCakeCategories)
+  // Agrupa por tipo de bolo, na ordem dos tipos; tamanhos sem tipo ficam no fim.
+  const groups = sizes ? [
+    ...(categories ?? []).filter((c) => !c.consultOnly).map((c) => ({ title: c.name, items: sizes.filter((s) => s.categoryId === c.id) })),
+    { title: 'Sem tipo', items: sizes.filter((s) => s.categoryId == null || !(categories ?? []).some((c) => c.id === s.categoryId)) },
+  ].filter((g) => g.items.length > 0) : []
   const [editing, setEditing] = useState<CakeSize | 'new' | null>(null)
   const [notice, setNotice] = useState<{ tone: 'success' | 'error'; text: string }>()
   const [togglingId, setTogglingId] = useState<number>()
@@ -69,6 +75,7 @@ export function SizesSection() {
         <SizeForm
           key={editing === 'new' ? 'new' : editing.id}
           size={editing === 'new' ? undefined : editing}
+          categories={categories ?? []}
           onSaved={handleSaved}
           onCancel={() => setEditing(null)}
           onStale={() => void reload()}
@@ -80,9 +87,11 @@ export function SizesSection() {
       {sizes && sizes.length === 0 && (
         <p className={styles.empty}>Nenhum tamanho cadastrado ainda. Use “Adicionar tamanho” para começar.</p>
       )}
-      {sizes && sizes.length > 0 && (
+      {groups.map((group) => (
+        <div key={group.title} className={styles.section}>
+        <h3 className={styles.cardTitle}>{group.title}</h3>
         <ul className={styles.list}>
-          {sizes.map((size) => (
+          {group.items.map((size) => (
             <li key={size.id} className={`${styles.card} ${size.active ? '' : styles.inactive}`}>
               <div className={styles.cardHeader}>
                 <div>
@@ -91,10 +100,12 @@ export function SizesSection() {
                   </h3>
                   {size.description && <p className={styles.description}>{size.description}</p>}
                 </div>
-                <span className={styles.price}>a partir de {formatBRL(size.basePrice)}</span>
+                <span className={styles.price}>{formatBRL(size.basePrice)}</span>
               </div>
               <ul className={styles.meta}>
-                {size.servings != null && <li>Serve {plural(size.servings, 'pessoa', 'pessoas')}</li>}
+                {size.diameterCm != null && <li>{size.diameterCm} cm</li>}
+                {size.weightKg != null && <li>{size.weightKg.replace(/\.?0+$/, '').replace('.', ',')} kg</li>}
+                {size.servings != null && <li>{plural(size.servings, 'fatia', 'fatias')}</li>}
                 <li>Até {plural(size.maxFlavors, 'massa', 'massas')}</li>
                 <li>Até {plural(size.maxFillings, 'recheio', 'recheios')}</li>
                 <li>Ordem: {size.displayOrder}</li>
@@ -110,7 +121,8 @@ export function SizesSection() {
             </li>
           ))}
         </ul>
-      )}
+        </div>
+      ))}
     </section>
   )
 }

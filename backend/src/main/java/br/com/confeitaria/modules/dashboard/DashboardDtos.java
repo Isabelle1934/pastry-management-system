@@ -26,11 +26,18 @@ public final class DashboardDtos {
 
     /** Valores do mês corrente (mesmas regras do financeiro). */
     public record MonthFinance(LocalDate from, LocalDate to, BigDecimal forecastRevenue, BigDecimal received,
-            BigDecimal pending, BigDecimal expenses) {
+            BigDecimal pending, BigDecimal profit) {
+    }
+
+    /**
+     * Pedidos com data agendada no mês corrente: total (sem recusados/cancelados), pendentes (em análise,
+     * orçamento enviado ou aguardando sinal) e confirmados (confirmados ou concluídos).
+     */
+    public record MonthOrders(long total, long pending, long confirmed) {
     }
 
     public record Dashboard(LocalDate today, ActionCounts actions, ProductionCounts production,
             List<PickupItem> upcomingPickups, List<ExpiringQuote> expiringQuotes, MonthFinance month,
-            long unreadNotifications) {
+            MonthOrders monthOrders, long unreadNotifications) {
     }
 }

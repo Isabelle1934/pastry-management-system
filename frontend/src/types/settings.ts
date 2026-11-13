@@ -1,3 +1,5 @@
+import type { Money } from './catalog'
+
 export interface BakerySettings {
   name: string | null
   aboutText: string | null
@@ -16,6 +18,21 @@ export interface BakerySettings {
   deliveryInfo: string | null
   customCakeEnabled: boolean
   customCakeDelivery: boolean
+  /** Taxa de entrega dentro da cidade. */
+  deliveryFee: Money
+  /** Link de pagamento no cartão de crédito (sem integração automática). */
+  cardPaymentLink: string | null
+  /** O sinal precisa ser pago até estas horas antes da data agendada; 0 = sem limite. */
+  depositCutoffHours: number
+  /** Delivery de outros doces dentro da cidade. */
+  deliveryFeeSweets: Money
+  /** Entrega no local da festa. */
+  partyVenueFee: Money
+  /** Só com a confirmação a taxa do local da festa entra sozinha no orçamento. */
+  partyVenueFeeConfirmed: boolean
+  punctualityNotice: string
+  /** Lembrete de pagamento: horas antes do fim do prazo do sinal. */
+  depositReminderHours: number
   version: number
 }
 

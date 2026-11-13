@@ -1,42 +1,6 @@
 import type { Money } from './catalog'
 
-export interface ExpenseCategory {
-  id: number
-  name: string
-  active: boolean
-  version: number
-}
-
-export interface ExpenseOrderRef {
-  id: number
-  trackingCode: string
-  customerName: string
-}
-
-export interface Expense {
-  id: number
-  description: string
-  amount: Money
-  expenseDate: string
-  categoryId: number
-  categoryName: string
-  order: ExpenseOrderRef | null
-  notes: string | null
-  version: number
-  createdAt: string
-}
-
-export interface ExpenseInput {
-  description: string
-  amount: Money
-  expenseDate: string
-  categoryId: number
-  /** Código de acompanhamento do pedido, quando a despesa é de uma encomenda. */
-  orderCode?: string
-  notes?: string
-  version?: number
-}
-
+/** Indicadores do período. Só pagamentos confirmados pela proprietária entram como recebidos. */
 export interface FinanceSummary {
   from: string
   to: string
@@ -49,9 +13,6 @@ export interface FinanceSummary {
   receivedBalances: Money
   refunds: Money
   pending: Money
-  expenses: Money
-  orderExpenses: Money
-  expensesByCategory: { categoryId: number; name: string; total: Money }[]
-  estimatedProfit: Money
-  cashResult: Money
+  /** Recebido líquido no período (sem cadastro de custos). */
+  profit: Money
 }

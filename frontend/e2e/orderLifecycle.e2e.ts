@@ -104,6 +104,9 @@ test('encomenda percorre todo o ciclo até a entrega', async ({ browser }) => {
     await expect(itemsStep.or(cakeStep)).toBeVisible()
     if (await itemsStep.isVisible()) await clientPage.getByRole('button', { name: 'Continuar' }).click()
 
+    // Tamanho sem tipo de bolo: aparece em "Outros tamanhos" quando há tipos cadastrados.
+    const others = clientPage.locator('label:has(input[name="cakeCategoryId"])', { hasText: 'Outros tamanhos' })
+    if (await others.count()) await others.click()
     await choose(clientPage, `Médio ${RUN}`)
     await choose(clientPage, `Chocolate ${RUN}`)
     await choose(clientPage, `Brigadeiro ${RUN}`)
@@ -128,6 +131,8 @@ test('encomenda percorre todo o ciclo até a entrega', async ({ browser }) => {
     await ownerPage.goto(`/admin/pedidos?busca=${trackingCode}`)
     await ownerPage.getByRole('link', { name: new RegExp(CUSTOMER) }).click()
     await ownerPage.getByRole('button', { name: 'Montar orçamento' }).click()
+    // A sugestão traz o bolo (preço da tabela) e a decoração em linha separada; o teste usa só o bolo.
+    await ownerPage.getByRole('button', { name: 'Remover item 2' }).click()
     await ownerPage.getByLabel('Item', { exact: true }).fill('Bolo personalizado')
     await ownerPage.getByLabel('Valor (R$)').fill('165,00')
     await ownerPage.getByRole('button', { name: 'Enviar para a cliente' }).click()

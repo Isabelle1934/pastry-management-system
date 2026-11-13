@@ -1,5 +1,6 @@
 package br.com.confeitaria.modules.order.entity;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -14,6 +15,7 @@ import br.com.confeitaria.common.audit.ActorType;
 import br.com.confeitaria.common.exception.ConflictException;
 import br.com.confeitaria.common.persistence.BaseEntity;
 import br.com.confeitaria.modules.catalog.entity.CakeSize;
+import br.com.confeitaria.modules.catalog.entity.CakeCategory;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
@@ -60,6 +62,26 @@ public class CakeOrder extends BaseEntity {
 
     @Column(name = "size_name_snapshot", length = 80)
     private String sizeNameSnapshot;
+
+    /** Preço-base do tamanho no momento do pedido (referência do orçamento; não muda com o catálogo). */
+    @Column(name = "size_price_snapshot", precision = 10, scale = 2)
+    private BigDecimal sizePriceSnapshot;
+
+    /** Categoria do bolo (do tamanho, ou a categoria "consulte valores" escolhida sem tamanho). */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cake_category_id")
+    private CakeCategory cakeCategory;
+
+    @Column(name = "cake_category_snapshot", length = 80)
+    private String cakeCategorySnapshot;
+
+    /** E-mail opcional da cliente, usado para lembretes de pagamento. */
+    @Column(name = "customer_email", length = 254)
+    private String customerEmail;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "delivery_zone", length = 20)
+    private DeliveryZone deliveryZone;
 
     @ElementCollection
     @CollectionTable(name = "order_item", joinColumns = @JoinColumn(name = "order_id"))
@@ -148,8 +170,28 @@ public class CakeOrder extends BaseEntity {
 
     public void customize(CakeSize size, String decoration, String cakeText, String notes) {
         this.customCake = true;
+        boolean sameSize = this.size != null && this.size.getId() != null && this.size.getId().equals(size.getId());
         this.size = Objects.requireNonNull(size);
-        this.sizeNameSnapshot = size.getName();
+        // Mesmo tamanho na edição: mantém a cópia original (nome e preço da época do pedido).
+        if (!sameSize || this.sizeNameSnapshot == null) {
+            this.sizeNameSnapshot = size.getName();
+            this.sizePriceSnapshot = size.getBasePrice();
+            this.cakeCategory = size.getCategory();
+            this.cakeCategorySnapshot = size.getCategory() == null ? null : size.getCategory().getName();
+        }
+        this.decoration = decoration;
+        this.cakeText = cakeText;
+        this.notes = notes;
+    }
+
+    /** Bolo "consulte valores" (ex.: 3 andares ou mais): sem tamanho nem preço de tabela. */
+    public void customizeByConsultation(CakeCategory category, String decoration, String cakeText, String notes) {
+        this.customCake = true;
+        this.size = null;
+        this.sizeNameSnapshot = null;
+        this.sizePriceSnapshot = null;
+        this.cakeCategory = Objects.requireNonNull(category);
+        this.cakeCategorySnapshot = category.getName();
         this.decoration = decoration;
         this.cakeText = cakeText;
         this.notes = notes;
@@ -160,6 +202,9 @@ public class CakeOrder extends BaseEntity {
         this.customCake = false;
         this.size = null;
         this.sizeNameSnapshot = null;
+        this.sizePriceSnapshot = null;
+        this.cakeCategory = null;
+        this.cakeCategorySnapshot = null;
         this.decoration = null;
         this.cakeText = null;
         this.notes = notes;
@@ -174,9 +219,11 @@ public class CakeOrder extends BaseEntity {
         items.putAll(chosen);
     }
 
-    public void setFulfillment(FulfillmentType type, String address, String district, String reference) {
+    public void setFulfillment(FulfillmentType type, DeliveryZone zone, String address, String district,
+            String reference) {
         this.fulfillmentType = Objects.requireNonNull(type);
         boolean delivery = type == FulfillmentType.DELIVERY;
+        this.deliveryZone = delivery ? Objects.requireNonNull(zone) : null;
         this.deliveryAddress = delivery ? Objects.requireNonNull(address) : null;
         this.deliveryDistrict = delivery ? district : null;
         this.deliveryReference = delivery ? reference : null;
@@ -368,6 +415,8 @@ public class CakeOrder extends BaseEntity {
         List<String> parts = new java.util.ArrayList<>();
         if (customCake && sizeNameSnapshot != null) {
             parts.add("Bolo " + sizeNameSnapshot);
+        } else if (customCake && cakeCategorySnapshot != null) {
+            parts.add(cakeCategorySnapshot + " (consulte valores)");
         }
         getItemEntries().forEach(e -> parts.add(e.getValue().getNameSnapshot() + " ×" + e.getValue().getQuantity()));
         return String.join(" + ", parts);
@@ -387,6 +436,30 @@ public class CakeOrder extends BaseEntity {
 
     public String getDeliveryReference() {
         return deliveryReference;
+    }
+
+    public BigDecimal getSizePriceSnapshot() {
+        return sizePriceSnapshot;
+    }
+
+    public CakeCategory getCakeCategory() {
+        return cakeCategory;
+    }
+
+    public String getCakeCategorySnapshot() {
+        return cakeCategorySnapshot;
+    }
+
+    public String getCustomerEmail() {
+        return customerEmail;
+    }
+
+    public void setCustomerEmail(String customerEmail) {
+        this.customerEmail = customerEmail;
+    }
+
+    public DeliveryZone getDeliveryZone() {
+        return deliveryZone;
     }
 
     public String getSizeNameSnapshot() {

@@ -1,5 +1,6 @@
 package br.com.confeitaria.modules.settings.entity;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 
 import org.hibernate.annotations.UpdateTimestamp;
@@ -80,6 +81,37 @@ public class BakerySettings {
     @Column(name = "custom_cake_delivery", nullable = false)
     private boolean customCakeDelivery;
 
+    /** Taxa de entrega dentro da cidade, sugerida no orçamento de pedidos com delivery. */
+    @Column(name = "delivery_fee", nullable = false, precision = 8, scale = 2)
+    private BigDecimal deliveryFee = new BigDecimal("20.00");
+
+    /** Link de pagamento no cartão de crédito (gerado pela proprietária na maquininha/banco). */
+    @Column(name = "card_payment_link", length = 500)
+    private String cardPaymentLink;
+
+    /** O sinal precisa ser pago até estas horas antes da data agendada; 0 = sem limite. */
+    @Column(name = "deposit_cutoff_hours", nullable = false)
+    private int depositCutoffHours = 24;
+
+    /** Delivery de outros doces (sem bolo personalizado) dentro da cidade. */
+    @Column(name = "delivery_fee_sweets", nullable = false, precision = 8, scale = 2)
+    private BigDecimal deliveryFeeSweets = new BigDecimal("5.00");
+
+    /** Entrega no local da festa. Só entra sozinha no orçamento depois de confirmada pela proprietária. */
+    @Column(name = "party_venue_fee", nullable = false, precision = 8, scale = 2)
+    private BigDecimal partyVenueFee = new BigDecimal("30.00");
+
+    @Column(name = "party_venue_fee_confirmed", nullable = false)
+    private boolean partyVenueFeeConfirmed;
+
+    /** Aviso de pontualidade mostrado antes de enviar a encomenda e no acompanhamento. */
+    @Column(name = "punctuality_notice", nullable = false, length = 1000)
+    private String punctualityNotice = "Pedimos que a retirada ou a entrega aconteça no horário combinado.";
+
+    /** Lembrete de pagamento do sinal: horas antes do fim do prazo. */
+    @Column(name = "deposit_reminder_hours", nullable = false)
+    private int depositReminderHours = 12;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -104,9 +136,57 @@ public class BakerySettings {
         this.pickupInstructions = pickupInstructions;
     }
 
-    public void updatePayment(String pixKey, String pixHolderName) {
+    public void updatePayment(String pixKey, String pixHolderName, String cardPaymentLink) {
         this.pixKey = pixKey;
         this.pixHolderName = pixHolderName;
+        this.cardPaymentLink = cardPaymentLink;
+    }
+
+    public void updateDepositCutoff(int depositCutoffHours) {
+        this.depositCutoffHours = depositCutoffHours;
+    }
+
+    public void updateDeliveryFees(BigDecimal deliveryFeeSweets, BigDecimal partyVenueFee, boolean partyVenueFeeConfirmed) {
+        this.deliveryFeeSweets = deliveryFeeSweets;
+        this.partyVenueFee = partyVenueFee;
+        this.partyVenueFeeConfirmed = partyVenueFeeConfirmed;
+    }
+
+    public void updateCustomerMessages(String punctualityNotice, int depositReminderHours) {
+        this.punctualityNotice = punctualityNotice;
+        this.depositReminderHours = depositReminderHours;
+    }
+
+    public BigDecimal getDeliveryFeeSweets() {
+        return deliveryFeeSweets;
+    }
+
+    public BigDecimal getPartyVenueFee() {
+        return partyVenueFee;
+    }
+
+    public boolean isPartyVenueFeeConfirmed() {
+        return partyVenueFeeConfirmed;
+    }
+
+    public String getPunctualityNotice() {
+        return punctualityNotice;
+    }
+
+    public int getDepositReminderHours() {
+        return depositReminderHours;
+    }
+
+    public BigDecimal getDeliveryFee() {
+        return deliveryFee;
+    }
+
+    public String getCardPaymentLink() {
+        return cardPaymentLink;
+    }
+
+    public int getDepositCutoffHours() {
+        return depositCutoffHours;
     }
 
     public void updateQuotes(int quoteValidityHours, int quoteExpiryWarningHours, Integer depositDeadlineHours) {
@@ -120,7 +200,8 @@ public class BakerySettings {
     }
 
     public void updateFulfillment(boolean pickupEnabled, boolean deliveryEnabled, String deliveryInfo,
-            boolean customCakeEnabled, boolean customCakeDelivery) {
+            BigDecimal deliveryFee, boolean customCakeEnabled, boolean customCakeDelivery) {
+        this.deliveryFee = deliveryFee;
         this.pickupEnabled = pickupEnabled;
         this.deliveryEnabled = deliveryEnabled;
         this.deliveryInfo = deliveryInfo;

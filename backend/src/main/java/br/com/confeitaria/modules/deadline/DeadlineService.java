@@ -53,13 +53,16 @@ public class DeadlineService {
     private final OrderHistoryService history;
     private final NotificationService notifications;
     private final NotificationMailer mailer;
+    private final DepositReminderMailer reminderMailer;
     private final SettingsService settings;
     private final TransactionTemplate tx;
     private final Clock clock;
 
     public DeadlineService(QuoteRepository quotes, CakeOrderRepository orders, PaymentService payments,
             ReservationService reservations, OrderHistoryService history, NotificationService notifications,
-            NotificationMailer mailer, SettingsService settings, TransactionTemplate tx, Clock clock) {
+            NotificationMailer mailer, DepositReminderMailer reminderMailer, SettingsService settings,
+            TransactionTemplate tx, Clock clock) {
+        this.reminderMailer = reminderMailer;
         this.quotes = quotes;
         this.orders = orders;
         this.payments = payments;
@@ -137,32 +140,57 @@ public class DeadlineService {
 
     // --- Prazo do sinal (pendência P4) ---
 
+    /**
+     * Lembrete antes do fim do prazo do sinal, para evitar cancelamento por esquecimento. A antecedência é a
+     * configurada ({@code deposit_reminder_hours}), limitada à metade do prazo (para não lembrar logo no aceite).
+     * Uma vez por orçamento: aviso no painel (com e-mail à proprietária) e, se a cliente informou e-mail,
+     * lembrete para ela. O botão "Lembrar pelo WhatsApp" do pedido completa o lembrete para quem não tem e-mail.
+     */
     int warnDepositDeadlines(Instant now, BakerySettings config) {
-        Integer deadline = config.getDepositDeadlineHours();
-        if (deadline == null) {
-            return 0;
-        }
-        int warning = config.getQuoteExpiryWarningHours() < deadline ? config.getQuoteExpiryWarningHours() : Math.max(deadline / 2, 1);
-        Instant respondedBefore = now.minus(Duration.ofHours(deadline - warning));
-        Instant alreadyOverdue = now.minus(Duration.ofHours(deadline));
-        return count(quotes.findAcceptedAwaitingDepositSince(respondedBefore), quote -> {
-            if (!quote.getRespondedAt().isAfter(alreadyOverdue) || payments.hasProofUnderReview(quote.getOrderId())) {
+        Duration warningHours = Duration.ofHours(config.getDepositReminderHours());
+        return count(quotes.findAcceptedAwaitingDepositSince(now), quote -> {
+            Instant due = dueAt(quote);
+            if (due == null || !now.isBefore(due) || payments.hasProofUnderReview(quote.getOrderId())) {
                 return false;
             }
-            return notifications.notify(NotificationType.DEPOSIT_DEADLINE_NEAR, quote.getOrderId(),
+            Duration window = Duration.between(quote.getRespondedAt(), due);
+            Duration warning = warningHours.compareTo(window) < 0 ? warningHours : window.dividedBy(2);
+            if (now.isBefore(due.minus(warning))) {
+                return false;
+            }
+            boolean created = notifications.notify(NotificationType.DEPOSIT_DEADLINE_NEAR, quote.getOrderId(),
                     "O prazo para o sinal de " + Texts.brl(quote.getDepositAmount())
-                            + " termina em breve e ainda não há pagamento. Sem sinal, o pedido será cancelado automaticamente.",
+                            + " termina em breve e ainda não há pagamento. Lembre a cliente pelo WhatsApp no pedido. "
+                            + "Sem sinal, o pedido será cancelado automaticamente.",
                     "DEPOSIT_DEADLINE_NEAR:" + quote.getId()).isPresent();
+            if (created) {
+                remindClient(quote, due, config);
+            }
+            return created;
         });
     }
 
+    private void remindClient(Quote quote, Instant due, BakerySettings config) {
+        CakeOrder order = orders.findById(quote.getOrderId()).orElseThrow();
+        boolean emailed = reminderMailer.send(order, quote, due, config.getName());
+        tx.executeWithoutResult(status -> history.record(order.getId(), "DEPOSIT_REMINDER", ActorType.SYSTEM,
+                emailed ? "Lembrete de pagamento do sinal enviado por e-mail à cliente."
+                        : order.getCustomerEmail() == null
+                                ? "Prazo do sinal perto do fim: cliente sem e-mail, lembrar pelo WhatsApp."
+                                : "Prazo do sinal perto do fim: o e-mail de lembrete não pôde ser enviado.",
+                java.util.Map.of("dueAt", due.toString(), "emailed", emailed)));
+    }
+
     int handleDepositDeadlines(Instant now, BakerySettings config) {
-        Integer deadline = config.getDepositDeadlineHours();
-        if (deadline == null) {
-            return 0;
-        }
-        Instant respondedBefore = now.minus(Duration.ofHours(deadline));
-        return count(quotes.findAcceptedAwaitingDepositSince(respondedBefore), quote -> handleDepositDeadline(quote.getId()));
+        return count(quotes.findAcceptedAwaitingDepositSince(now), quote -> {
+            Instant due = dueAt(quote);
+            return due != null && !now.isBefore(due) && handleDepositDeadline(quote.getId());
+        });
+    }
+
+    /** Prazo do sinal do orçamento aceito: horas após o aceite e/ou horas antes da data agendada. */
+    private Instant dueAt(Quote quote) {
+        return orders.findById(quote.getOrderId()).map(order -> payments.depositDueAt(order, quote)).orElse(null);
     }
 
     /**

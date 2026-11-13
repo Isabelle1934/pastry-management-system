@@ -20,8 +20,9 @@ public class WeeklySlot extends BaseEntity {
     @Column(name = "start_time", nullable = false, updatable = false)
     private LocalTime startTime;
 
-    @Column(nullable = false)
-    private int capacity;
+    /** Limite de pedidos confirmados no horário; {@code null} = sem limite. */
+    @Column
+    private Integer capacity;
 
     @Column(nullable = false)
     private boolean active = true;
@@ -29,13 +30,13 @@ public class WeeklySlot extends BaseEntity {
     protected WeeklySlot() {
     }
 
-    public WeeklySlot(DayOfWeek dayOfWeek, LocalTime startTime, int capacity) {
+    public WeeklySlot(DayOfWeek dayOfWeek, LocalTime startTime, Integer capacity) {
         this.dayOfWeek = (short) dayOfWeek.getValue();
         this.startTime = startTime.withSecond(0).withNano(0);
         this.capacity = capacity;
     }
 
-    public void update(int capacity, boolean active) {
+    public void update(Integer capacity, boolean active) {
         this.capacity = capacity;
         this.active = active;
     }
@@ -48,7 +49,7 @@ public class WeeklySlot extends BaseEntity {
         return startTime;
     }
 
-    public int getCapacity() {
+    public Integer getCapacity() {
         return capacity;
     }
 

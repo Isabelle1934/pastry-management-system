@@ -13,6 +13,8 @@ export interface Dashboard {
   production: { notStarted: number; inProduction: number; ready: number; pickupsToday: number }
   upcomingPickups: PickupItem[]
   expiringQuotes: { orderId: number; customerName: string; validUntil: string }[]
-  month: { from: string; to: string; forecastRevenue: Money; received: Money; pending: Money; expenses: Money }
+  month: { from: string; to: string; forecastRevenue: Money; received: Money; pending: Money; profit: Money }
+  /** Pedidos com data no mês: total (sem recusados/cancelados), pendentes e confirmados. */
+  monthOrders: { total: number; pending: number; confirmed: number }
   unreadNotifications: number
 }

@@ -1,7 +1,7 @@
 /**
  * Regras do catálogo usadas pela cliente antes do envio (o servidor valida tudo de novo).
  */
-import type { FulfillmentType, PublicProduct } from '../types/product'
+import type { DeliveryZone, FulfillmentType, PublicProduct } from '../types/product'
 import type { BakeryInfo } from '../types/public'
 import { isoWeekday, WEEKDAY_NAMES } from './date'
 import { formatBRL } from './money'
@@ -48,6 +48,20 @@ export function availabilityLabel(product: Pick<PublicProduct, 'availableDays' |
   else if (product.availableFrom) parts.push(`a partir de ${short(product.availableFrom)}`)
   else if (product.availableUntil) parts.push(`até ${short(product.availableUntil)}`)
   return parts.join(' · ')
+}
+
+/** Modalidades de entrega, com a taxa de cada uma (vazia = valor combinado no orçamento). */
+export const DELIVERY_ZONE_LABELS: Record<DeliveryZone, string> = {
+  CITY: 'Entrega na cidade',
+  PARTY_VENUE: 'Entrega no local da festa',
+  OUTSIDE_CITY: 'Entrega fora da cidade',
+}
+
+export function deliveryZoneFee(bakery: Pick<BakeryInfo, 'deliveryFee' | 'deliveryFeeSweets' | 'partyVenueFee'>,
+  zone: DeliveryZone, customCake: boolean): string | null {
+  if (zone === 'CITY') return customCake ? bakery.deliveryFee : bakery.deliveryFeeSweets
+  if (zone === 'PARTY_VENUE') return bakery.partyVenueFee
+  return null
 }
 
 export const FULFILLMENT_LABELS: Record<FulfillmentType, string> = {

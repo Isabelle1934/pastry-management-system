@@ -193,6 +193,27 @@ export function AdminHomePage() {
               )}
             </Card>
 
+            <Card icon="orders" title="Pedidos do mês" className={styles.full}
+              action={{ to: '/admin/pedidos', label: 'Pedidos' }}>
+              <ul className={styles.counters}>
+                <li>
+                  <Link to="/admin/pedidos">
+                    <span>Total de pedidos</span><strong>{data.monthOrders.total}</strong>
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/admin/pedidos" className={data.monthOrders.pending > 0 ? styles.attention : ''}>
+                    <span>Pendentes (orçamento ou sinal)</span><strong>{data.monthOrders.pending}</strong>
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/admin/pedidos?situacao=CONFIRMED">
+                    <span>Confirmados</span><strong>{data.monthOrders.confirmed}</strong>
+                  </Link>
+                </li>
+              </ul>
+            </Card>
+
             <Card icon="finance" title="Resumo financeiro do mês" className={styles.full}
               action={{ to: '/admin/financeiro', label: 'Financeiro' }}>
               <div className={styles.finance}>
@@ -207,7 +228,7 @@ export function AdminHomePage() {
                   { label: 'Faturamento previsto', value: data.month.forecastRevenue, tone: 'forecast' },
                   { label: 'Recebido', value: data.month.received, tone: 'received' },
                   { label: 'A receber', value: data.month.pending, tone: 'pending' },
-                  { label: 'Despesas', value: data.month.expenses, tone: 'expenses' },
+                  { label: 'Lucro', value: data.month.profit, tone: 'profit' },
                 ]} />
               </div>
             </Card>

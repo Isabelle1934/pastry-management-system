@@ -2,10 +2,12 @@
  * Estado e validação do formulário de encomenda, separados da interface para poderem ser testados.
  * O backend valida tudo de novo — estas regras só orientam a cliente antes do envio.
  */
-import type { FulfillmentType, OrderItemInput, PublicProduct } from '../../../types/product'
-import type { OrderPayload, PublicSize } from '../../../types/public'
+import type { DeliveryZone, FulfillmentType, OrderItemInput, PublicProduct } from '../../../types/product'
+import type { OrderPayload, PublicCakeCategory, PublicSize } from '../../../types/public'
 
 export const MAX_REFERENCE_PHOTOS = 3
+/** Valor de {@code cakeCategoryId} para "Outros tamanhos" (tamanhos sem categoria); nunca vai para o servidor. */
+export const OTHER_SIZES = 0
 export const MAX_FILE_BYTES = 5 * 1024 * 1024
 export const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 const ACCEPTED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp']
@@ -37,6 +39,8 @@ export function visibleSteps(form: Pick<OrderFormState, 'customCake'>, hasProduc
 export interface OrderFormState {
   customerName: string
   customerWhatsapp: string
+  /** Opcional: usado para lembrar do pagamento do sinal. */
+  customerEmail: string
   customCake: boolean
   items: OrderItemInput[]
   pickupDate: string
@@ -45,6 +49,8 @@ export interface OrderFormState {
   deliveryAddress: string
   deliveryDistrict: string
   deliveryReference: string
+  deliveryZone: DeliveryZone
+  cakeCategoryId: number | null
   sizeId: number | null
   flavorIds: number[]
   fillingIds: number[]
@@ -62,6 +68,7 @@ export interface OrderFormState {
 export const initialOrderForm: OrderFormState = {
   customerName: '',
   customerWhatsapp: '',
+  customerEmail: '',
   customCake: true,
   items: [],
   pickupDate: '',
@@ -70,6 +77,8 @@ export const initialOrderForm: OrderFormState = {
   deliveryAddress: '',
   deliveryDistrict: '',
   deliveryReference: '',
+  deliveryZone: 'CITY',
+  cakeCategoryId: null,
   sizeId: null,
   flavorIds: [],
   fillingIds: [],
@@ -90,9 +99,11 @@ export type FieldErrors = Partial<Record<keyof OrderFormState, string>>
 export const FIELD_STEP: Record<string, StepKey> = {
   customerName: 'customer',
   customerWhatsapp: 'customer',
+  customerEmail: 'customer',
   customCake: 'items',
   items: 'items',
   sizeId: 'cake',
+  cakeCategoryId: 'cake',
   flavorIds: 'cake',
   fillingIds: 'cake',
   decoration: 'cake',
@@ -109,6 +120,7 @@ export const FIELD_STEP: Record<string, StepKey> = {
   deliveryAddress: 'schedule',
   deliveryDistrict: 'schedule',
   deliveryReference: 'schedule',
+  deliveryZone: 'schedule',
   notes: 'schedule',
 }
 
@@ -135,12 +147,26 @@ export function validatePhoto(file: File): string | undefined {
 
 export interface ValidationContext {
   size?: PublicSize
+  /** Categoria escolhida (com "consulte valores", o bolo não tem tamanho). */
+  category?: PublicCakeCategory
   products?: PublicProduct[]
+}
+
+/** Formato básico de e-mail (a validação final é do servidor). */
+export function looksLikeEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())
+}
+
+/** Limites de massa/recheio: do tamanho ou, sem tamanho ("consulte valores"), da categoria. */
+export function cakeLimits(size?: PublicSize, category?: PublicCakeCategory): { maxFlavors: number; maxFillings: number } | undefined {
+  if (size) return { maxFlavors: size.maxFlavors, maxFillings: size.maxFillings }
+  if (category?.consultOnly) return { maxFlavors: category.maxFlavors, maxFillings: category.maxFillings }
+  return undefined
 }
 
 export function validateStep(step: StepKey, form: OrderFormState, context: ValidationContext = {}): FieldErrors {
   const errors: FieldErrors = {}
-  const { size, products = [] } = context
+  const { size, category, products = [] } = context
   if (step === 'customer') {
     const name = form.customerName.trim()
     if (name.length < 2) errors.customerName = 'Informe seu nome completo.'
@@ -148,6 +174,8 @@ export function validateStep(step: StepKey, form: OrderFormState, context: Valid
     if (!form.customerWhatsapp.trim()) errors.customerWhatsapp = 'Informe seu WhatsApp.'
     else if (!looksLikeBrazilianPhone(form.customerWhatsapp))
       errors.customerWhatsapp = 'Informe um WhatsApp válido com DDD, ex.: (11) 99999-8888.'
+    if (form.customerEmail.trim() && !looksLikeEmail(form.customerEmail))
+      errors.customerEmail = 'Informe um e-mail válido ou deixe em branco.'
   }
   if (step === 'items') {
     if (!form.customCake && form.items.length === 0)
@@ -161,13 +189,17 @@ export function validateStep(step: StepKey, form: OrderFormState, context: Valid
     }
   }
   if (step === 'cake') {
-    if (!size) errors.sizeId = 'Escolha o tamanho.'
-    if (form.flavorIds.length === 0) errors.flavorIds = 'Escolha pelo menos uma massa.'
-    else if (size && form.flavorIds.length > size.maxFlavors)
-      errors.flavorIds = `Este tamanho permite até ${size.maxFlavors} ${size.maxFlavors === 1 ? 'massa' : 'massas'}.`
+    const consult = !size && category?.consultOnly
+    const limits = cakeLimits(size, category)
+    if (!size && !consult) errors.sizeId = 'Escolha o tamanho.'
+    if (consult && !form.decoration.trim())
+      errors.decoration = 'Descreva o bolo que você imagina (andares, decoração, tamanho aproximado).'
+    if (form.flavorIds.length === 0) errors.flavorIds = 'Escolha a massa.'
+    else if (limits && form.flavorIds.length > limits.maxFlavors)
+      errors.flavorIds = `Escolha até ${limits.maxFlavors} ${limits.maxFlavors === 1 ? 'massa' : 'massas'}.`
     if (form.fillingIds.length === 0) errors.fillingIds = 'Escolha pelo menos um recheio.'
-    else if (size && form.fillingIds.length > size.maxFillings)
-      errors.fillingIds = `Este tamanho permite até ${size.maxFillings} ${size.maxFillings === 1 ? 'recheio' : 'recheios'}.`
+    else if (limits && form.fillingIds.length > limits.maxFillings)
+      errors.fillingIds = `Escolha até ${limits.maxFillings} ${limits.maxFillings === 1 ? 'recheio' : 'recheios'}.`
     if (form.cakeText.length > 100) errors.cakeText = 'Máximo de 100 caracteres.'
     if (form.decoration.length > 1000) errors.decoration = 'Máximo de 1000 caracteres.'
     if (form.referencePhotos.length > MAX_REFERENCE_PHOTOS)
@@ -190,6 +222,7 @@ export function validateStep(step: StepKey, form: OrderFormState, context: Valid
     else if (!form.pickupTime) errors.pickupTime = 'Escolha o horário.'
     if (form.fulfillmentType === 'DELIVERY' && !form.deliveryAddress.trim())
       errors.deliveryAddress = 'Informe o endereço de entrega.'
+    if (form.fulfillmentType === 'DELIVERY' && !form.deliveryDistrict.trim()) errors.deliveryDistrict = 'Informe o bairro.'
     if (form.notes.length > 1000) errors.notes = 'Máximo de 1000 caracteres.'
   }
   return errors
@@ -200,8 +233,25 @@ export function applySize(form: OrderFormState, size: PublicSize): OrderFormStat
   return {
     ...form,
     sizeId: size.id,
+    cakeCategoryId: size.categoryId ?? form.cakeCategoryId,
     flavorIds: form.flavorIds.slice(0, size.maxFlavors),
     fillingIds: form.fillingIds.slice(0, size.maxFillings),
+  }
+}
+
+/**
+ * Ao trocar de categoria: "consulte valores" fica sem tamanho; nas demais, o tamanho escolhido só é mantido
+ * se for da nova categoria.
+ */
+export function applyCategory(form: OrderFormState, category: PublicCakeCategory, sizes: PublicSize[]): OrderFormState {
+  const keepSize = !category.consultOnly && sizes.some((s) => s.id === form.sizeId && s.categoryId === category.id)
+  const limits = category.consultOnly ? category : undefined
+  return {
+    ...form,
+    cakeCategoryId: category.id,
+    sizeId: keepSize ? form.sizeId : null,
+    flavorIds: limits ? form.flavorIds.slice(0, limits.maxFlavors) : form.flavorIds,
+    fillingIds: limits ? form.fillingIds.slice(0, limits.maxFillings) : form.fillingIds,
   }
 }
 
@@ -223,6 +273,7 @@ export function toPayload(form: OrderFormState): OrderPayload {
   return {
     customerName: form.customerName.trim(),
     customerWhatsapp: form.customerWhatsapp.trim(),
+    customerEmail: form.customerEmail.trim(),
     pickupDate: form.pickupDate,
     pickupTime: form.pickupTime,
     customCake: cake,
@@ -241,5 +292,7 @@ export function toPayload(form: OrderFormState): OrderPayload {
     deliveryAddress: delivery ? form.deliveryAddress.trim() : '',
     deliveryDistrict: delivery ? form.deliveryDistrict.trim() : '',
     deliveryReference: delivery ? form.deliveryReference.trim() : '',
+    deliveryZone: delivery ? form.deliveryZone : null,
+    cakeCategoryId: cake && form.cakeCategoryId !== OTHER_SIZES ? form.cakeCategoryId : null,
   }
 }

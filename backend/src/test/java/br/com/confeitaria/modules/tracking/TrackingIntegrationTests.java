@@ -24,6 +24,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import br.com.confeitaria.modules.quote.entity.QuoteItemKind;
 import br.com.confeitaria.modules.quote.dto.QuoteDtos.DraftRequest;
 import br.com.confeitaria.modules.quote.dto.QuoteDtos.ItemRequest;
 import br.com.confeitaria.modules.quote.service.QuoteService;
@@ -87,8 +88,8 @@ class TrackingIntegrationTests {
 
     private long sendQuote(long orderId) {
         quotes.saveDraft(orderId, new DraftRequest(List.of(
-                new ItemRequest("Bolo personalizado", null, new java.math.BigDecimal("1"), new java.math.BigDecimal("120.00")),
-                new ItemRequest("Topo", null, new java.math.BigDecimal("1"), new java.math.BigDecimal("20.00"))), null, 48));
+                new ItemRequest(QuoteItemKind.PRODUCT, "Bolo personalizado", null, new java.math.BigDecimal("1"), new java.math.BigDecimal("120.00")),
+                new ItemRequest(QuoteItemKind.TOPPER, "Topo", null, new java.math.BigDecimal("1"), new java.math.BigDecimal("20.00"))), null, 48));
         return quotes.send(orderId, 1L).id();
     }
 

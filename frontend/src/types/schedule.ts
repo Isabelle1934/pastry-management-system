@@ -3,7 +3,8 @@ export interface WeeklySlot {
   /** 1 = segunda ... 7 = domingo */
   dayOfWeek: number
   startTime: string
-  capacity: number
+  /** Limite de pedidos confirmados; null = sem limite. */
+  capacity: number | null
   active: boolean
   version: number
 }
@@ -26,7 +27,8 @@ export interface ScheduleRules {
 
 export interface CalendarSlot {
   time: string
-  capacity: number
+  /** Limite de pedidos confirmados; null = sem limite. */
+  capacity: number | null
   reserved: number
   blocked: boolean
   blockReason: string | null

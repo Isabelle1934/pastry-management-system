@@ -15,11 +15,11 @@ export function listSlots(): Promise<WeeklySlot[]> {
   return apiFetch<WeeklySlot[]>(`${BASE}/slots`)
 }
 
-export function createSlot(input: { dayOfWeek: number; startTime: string; capacity: number }): Promise<WeeklySlot> {
+export function createSlot(input: { dayOfWeek: number; startTime: string; capacity: number | null }): Promise<WeeklySlot> {
   return apiFetch<WeeklySlot>(`${BASE}/slots`, { json: input })
 }
 
-export function updateSlot(slot: WeeklySlot, changes: { capacity: number; active: boolean }): Promise<WeeklySlot> {
+export function updateSlot(slot: WeeklySlot, changes: { capacity: number | null; active: boolean }): Promise<WeeklySlot> {
   return apiFetch<WeeklySlot>(`${BASE}/slots/${slot.id}`, {
     method: 'PUT',
     json: { ...changes, version: slot.version },

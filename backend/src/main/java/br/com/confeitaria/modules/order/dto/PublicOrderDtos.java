@@ -7,7 +7,9 @@ import java.util.List;
 import br.com.confeitaria.modules.order.entity.FulfillmentType;
 import br.com.confeitaria.modules.order.service.OrderDetailsApplier.Details;
 import br.com.confeitaria.modules.order.service.OrderDetailsApplier.ItemChoice;
+import br.com.confeitaria.modules.order.entity.DeliveryZone;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -68,12 +70,16 @@ public final class PublicOrderDtos {
             FulfillmentType fulfillmentType,
             @Size(max = 300, message = "Máximo de 300 caracteres.") String deliveryAddress,
             @Size(max = 100, message = "Máximo de 100 caracteres.") String deliveryDistrict,
-            @Size(max = 200, message = "Máximo de 200 caracteres.") String deliveryReference) {
+            @Size(max = 200, message = "Máximo de 200 caracteres.") String deliveryReference,
+            // Categoria "consulte valores" (sem tamanho), modalidade de entrega e e-mail opcional
+            Long cakeCategoryId,
+            DeliveryZone deliveryZone,
+            @Email(message = "E-mail inválido.") @Size(max = 254, message = "E-mail muito longo.") String customerEmail) {
 
         public Details details() {
             return new Details(pickupDate, pickupTime, customCake == null || customCake, sizeId, flavorIds, fillingIds,
                     decoration, cakeText, notes, Boolean.TRUE.equals(topperRequested), topperTheme, topperName, topperAge, choices(items),
-                    fulfillmentType, deliveryAddress, deliveryDistrict, deliveryReference);
+                    fulfillmentType, deliveryAddress, deliveryDistrict, deliveryReference, cakeCategoryId, deliveryZone);
         }
     }
 
@@ -97,12 +103,14 @@ public final class PublicOrderDtos {
             FulfillmentType fulfillmentType,
             @Size(max = 300, message = "Máximo de 300 caracteres.") String deliveryAddress,
             @Size(max = 100, message = "Máximo de 100 caracteres.") String deliveryDistrict,
-            @Size(max = 200, message = "Máximo de 200 caracteres.") String deliveryReference) {
+            @Size(max = 200, message = "Máximo de 200 caracteres.") String deliveryReference,
+            Long cakeCategoryId,
+            DeliveryZone deliveryZone) {
 
         public Details details() {
             return new Details(pickupDate, pickupTime, customCake == null || customCake, sizeId, flavorIds, fillingIds,
                     decoration, cakeText, notes, Boolean.TRUE.equals(topperRequested), topperTheme, topperName, topperAge, choices(items),
-                    fulfillmentType, deliveryAddress, deliveryDistrict, deliveryReference);
+                    fulfillmentType, deliveryAddress, deliveryDistrict, deliveryReference, cakeCategoryId, deliveryZone);
         }
     }
 

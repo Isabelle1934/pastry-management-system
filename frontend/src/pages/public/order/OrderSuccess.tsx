@@ -5,7 +5,7 @@ import { Icon } from '../../../components/Icon'
 import motion from '../../../styles/motion.module.css'
 import styles from './order.module.css'
 
-export function OrderSuccess({ trackingCode }: { trackingCode: string }) {
+export function OrderSuccess({ trackingCode, punctualityNotice }: { trackingCode: string; punctualityNotice?: string }) {
   const [copied, setCopied] = useState(false)
 
   async function copy() {
@@ -34,8 +34,15 @@ export function OrderSuccess({ trackingCode }: { trackingCode: string }) {
       </p>
       <p className={styles.hint}>
         Próximos passos: vamos analisar sua solicitação e preparar um orçamento personalizado. A data escolhida fica
-        garantida depois da confirmação do sinal de 50%.
+        garantida depois da confirmação do sinal de 50%. Esta é uma solicitação de orçamento: o pedido só fica
+        confirmado depois do sinal.
       </p>
+      {punctualityNotice && (
+        <div className={styles.notice} role="note" aria-label="Aviso de pontualidade">
+          <strong>Pontualidade</strong>
+          <p style={{ margin: 0 }}>{punctualityNotice}</p>
+        </div>
+      )}
       <p>
         <Link to="/acompanhar">Acompanhar pedido</Link> · <Link to="/">Voltar ao início</Link>
       </p>

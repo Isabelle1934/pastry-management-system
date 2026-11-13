@@ -20,6 +20,7 @@ import br.com.confeitaria.modules.order.service.TrackingCodes;
 import br.com.confeitaria.modules.payment.dto.PaymentDtos.PaymentSummary;
 import br.com.confeitaria.modules.quote.dto.QuoteDtos.QuoteView;
 import br.com.confeitaria.modules.quote.entity.Quote;
+import br.com.confeitaria.modules.order.entity.DeliveryZone;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -47,14 +48,19 @@ public final class OrderAdminDtos {
     }
 
     /** Item do catálogo como foi pedido (dados copiados no momento da encomenda). */
+    /** {@code subtotal} = preço copiado × quantidade (vazio quando o produto é sob orçamento). */
     public record OrderItemView(Long productId, String name, String category, BigDecimal unitPrice, String unitLabel,
-            int quantity, String notes) {
+            int quantity, String notes, BigDecimal subtotal) {
 
         public static List<OrderItemView> of(CakeOrder order) {
             return order.getItemEntries().stream()
-                    .map(e -> new OrderItemView(e.getKey(), e.getValue().getNameSnapshot(),
-                            e.getValue().getCategorySnapshot(), e.getValue().getUnitPriceSnapshot(),
-                            e.getValue().getUnitLabelSnapshot(), e.getValue().getQuantity(), e.getValue().getNotes()))
+                    .map(e -> {
+                        BigDecimal price = e.getValue().getUnitPriceSnapshot();
+                        return new OrderItemView(e.getKey(), e.getValue().getNameSnapshot(),
+                                e.getValue().getCategorySnapshot(), price, e.getValue().getUnitLabelSnapshot(),
+                                e.getValue().getQuantity(), e.getValue().getNotes(),
+                                price == null ? null : price.multiply(BigDecimal.valueOf(e.getValue().getQuantity())));
+                    })
                     .toList();
         }
     }
@@ -93,7 +99,8 @@ public final class OrderAdminDtos {
             CommercialStatus commercialStatus, PaymentStatus paymentStatus, ProductionStatus productionStatus,
             Instant cancelledAt, String cancellationReason, ActorType cancelledBy, boolean slotReserved,
             List<FileInfo> files, List<QuoteView> quotes, PaymentSummary payments, List<HistoryEntry> history,
-            Instant createdAt, Instant updatedAt) {
+            Instant createdAt, Instant updatedAt, String customerEmail, DeliveryZone deliveryZone, Long cakeCategoryId,
+            String cakeCategoryName, BigDecimal sizePrice, BigDecimal suggestedDeliveryFee) {
     }
 
     public record ReasonRequest(

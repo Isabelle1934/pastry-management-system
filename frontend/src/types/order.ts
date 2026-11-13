@@ -1,5 +1,5 @@
 import type { Money } from './catalog'
-import type { FulfillmentType, OrderItemView } from './product'
+import type { FulfillmentType, OrderItemView, DeliveryZone } from './product'
 
 export type CommercialStatus =
   | 'PENDING_REVIEW'
@@ -21,7 +21,19 @@ export interface Choice {
   name: string
 }
 
+/** Grupo do item no orçamento: produtos, adicionais, topo de bolo ou entrega. */
+export type QuoteItemKind = 'PRODUCT' | 'EXTRA' | 'TOPPER' | 'DELIVERY'
+
+/** Subtotais por grupo (a soma é o total do orçamento). */
+export interface QuoteBreakdown {
+  products: Money
+  extras: Money
+  topper: Money
+  delivery: Money
+}
+
 export interface QuoteItem {
+  kind: QuoteItemKind
   name: string
   description: string | null
   quantity: Money
@@ -34,6 +46,7 @@ export interface Quote {
   versionNumber: number
   status: QuoteStatus
   items: QuoteItem[]
+  breakdown: QuoteBreakdown
   total: Money
   depositAmount: Money
   balanceAmount: Money
@@ -93,7 +106,7 @@ export interface HistoryEntry {
 }
 
 export type PaymentKind = 'DEPOSIT' | 'BALANCE' | 'REFUND'
-export type PaymentMethod = 'PIX' | 'CASH'
+export type PaymentMethod = 'PIX' | 'CASH' | 'CARD_LINK'
 export type PaymentRecordStatus = 'PENDING_REVIEW' | 'CONFIRMED' | 'REJECTED'
 
 export interface PaymentRecord {
@@ -117,6 +130,8 @@ export interface PaymentSummary {
   balanceDue: Money | null
   status: PaymentStatus
   proofUnderReview: boolean
+  /** Fim do prazo do sinal (só enquanto aguarda o sinal; null = sem prazo). */
+  depositDueAt: string | null
   payments: PaymentRecord[]
 }
 
@@ -159,9 +174,18 @@ export interface OrderDetail {
   history: HistoryEntry[]
   createdAt: string
   updatedAt: string
+  customerEmail: string | null
+  deliveryZone: DeliveryZone | null
+  cakeCategoryId: number | null
+  cakeCategoryName: string | null
+  /** Preço-base do tamanho no momento do pedido (preço inicial da tabela). */
+  sizePrice: Money | null
+  /** Taxa de entrega sugerida pela modalidade; vazia = informar manualmente no orçamento. */
+  suggestedDeliveryFee: Money | null
 }
 
 export interface QuoteItemInput {
+  kind: QuoteItemKind
   name: string
   description: string
   quantity: Money
@@ -173,6 +197,7 @@ export interface TrackingQuote {
   versionNumber: number
   status: QuoteStatus
   items: QuoteItem[]
+  breakdown: QuoteBreakdown
   total: Money
   depositAmount: Money
   balanceAmount: Money
@@ -182,6 +207,7 @@ export interface TrackingQuote {
 
 export interface ClientPaymentEntry {
   kind: PaymentKind
+  method: PaymentMethod
   amount: Money
   status: PaymentRecordStatus
   reviewNote: string | null
@@ -197,6 +223,10 @@ export interface ClientPayment {
   status: PaymentStatus
   pixKey: string | null
   pixHolderName: string | null
+  /** Link de pagamento no cartão (só enquanto o sinal está pendente). */
+  cardPaymentLink: string | null
+  /** Fim do prazo para pagar o sinal; null = sem prazo. */
+  depositDueAt: string | null
   canSubmitProof: boolean
   payments: ClientPaymentEntry[]
 }
@@ -232,6 +262,11 @@ export interface TrackingView {
   version: number
   quote: TrackingQuote | null
   payment: ClientPayment | null
+  deliveryZone: DeliveryZone | null
+  cakeCategoryId: number | null
+  cakeCategoryName: string | null
+  /** A cliente informou e-mail (recebe lembretes de pagamento). */
+  hasEmail: boolean
 }
 
 export interface PickupItem {

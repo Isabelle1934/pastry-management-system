@@ -23,7 +23,9 @@ export function PaymentCard({ view, onChange }: { view: TrackingView; onChange: 
   const [error, setError] = useState<string>()
   const [sending, setSending] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [method, setMethod] = useState<'PIX' | 'CARD_LINK'>('PIX')
   const awaitingDeposit = view.commercialStatus === 'AWAITING_DEPOSIT'
+  const canPayByCard = awaitingDeposit && !!payment.cardPaymentLink
 
   async function copyPix() {
     if (!payment.pixKey) return
@@ -51,7 +53,7 @@ export function PaymentCard({ view, onChange }: { view: TrackingView; onChange: 
     setError(undefined)
     setSending(true)
     try {
-      onChange(await submitDepositProof(file))
+      onChange(await submitDepositProof(file, canPayByCard ? method : 'PIX'))
     } catch (err) {
       setError(err instanceof ApiError ? (Object.values(err.fieldErrors)[0] ?? err.message) : 'Não foi possível enviar.')
     } finally {
@@ -69,6 +71,13 @@ export function PaymentCard({ view, onChange }: { view: TrackingView; onChange: 
         <dt><strong>Falta pagar</strong></dt><dd style={{ textAlign: 'right' }}><strong>{formatBRL(payment.balanceDue)}</strong></dd>
       </dl>
 
+      {awaitingDeposit && payment.depositDueAt && (
+        <Alert tone="info">
+          Pague o sinal até <strong>{formatDateTime(payment.depositDueAt)}</strong>. Sem o pagamento nesse prazo, o pedido
+          é cancelado automaticamente e o horário é liberado.
+        </Alert>
+      )}
+
       {payment.pixKey && (
         <div className={styles.fieldset}>
           <p style={{ margin: 0 }}>
@@ -81,13 +90,42 @@ export function PaymentCard({ view, onChange }: { view: TrackingView; onChange: 
           <Button variant="secondary" onClick={() => void copyPix()}>{copied ? 'Chave copiada!' : 'Copiar chave Pix'}</Button>
         </div>
       )}
-      {awaitingDeposit && !payment.pixKey && (
+      {canPayByCard && (
+        <div className={styles.fieldset}>
+          <p style={{ margin: 0 }}>
+            {payment.pixKey ? 'Ou pague o sinal no cartão de crédito pelo link de pagamento:' : 'Pague o sinal no cartão de crédito pelo link de pagamento:'}
+          </p>
+          <a className={styles.code} style={{ fontSize: '1rem' }} href={payment.cardPaymentLink!} target="_blank"
+            rel="noopener noreferrer">
+            Abrir link de pagamento
+          </a>
+          <p className={styles.hint}>O valor do sinal é {formatBRL(payment.depositAmount)}.</p>
+        </div>
+      )}
+      {awaitingDeposit && !payment.pixKey && !payment.cardPaymentLink && (
         <p className={styles.hint}>Fale com a confeitaria pelo WhatsApp para combinar o pagamento do sinal.</p>
       )}
 
       {payment.canSubmitProof && (
         <div className={styles.fieldset}>
           <p style={{ margin: 0 }}>Depois de pagar, envie o comprovante (JPG, PNG ou PDF, até 5 MB):</p>
+          {canPayByCard && (
+            <fieldset className={styles.fieldset} style={{ border: 0, padding: 0, margin: 0 }}>
+              <legend className={styles.legend}>Como você pagou?</legend>
+              <div className={styles.choiceGrid}>
+                {(['PIX', 'CARD_LINK'] as const).map((option) => (
+                  <label key={option} className={styles.choice}>
+                    <input type="radio" name="proofMethod" checked={method === option}
+                      onChange={() => setMethod(option)} />
+                    <span className={styles.choiceTitle}>{option === 'PIX' ? 'Pix' : 'Cartão (link de pagamento)'}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          )}
+          <p className={styles.hint}>
+            O envio do comprovante não confirma o pedido sozinho: a confeitaria confere o pagamento e confirma.
+          </p>
           <input ref={inputRef} type="file" accept={ACCEPTED} hidden onChange={(e) => void upload(e.target.files)} />
           <Button onClick={() => inputRef.current?.click()} loading={sending}>Enviar comprovante</Button>
         </div>
@@ -98,7 +136,8 @@ export function PaymentCard({ view, onChange }: { view: TrackingView; onChange: 
         <ul className={styles.fieldset} style={{ listStyle: 'none', padding: 0, margin: 0 }}>
           {payment.payments.map((entry, index) => (
             <li key={index}>
-              <strong>{KIND[entry.kind]} · {formatBRL(entry.amount)}</strong> — {STATUS[entry.status]}
+              <strong>{KIND[entry.kind]} · {formatBRL(entry.amount)}</strong>
+              {entry.method === 'CARD_LINK' ? ' (cartão)' : entry.method === 'PIX' ? ' (Pix)' : ''} — {STATUS[entry.status]}
               <div className={styles.hint}>
                 {formatDateTime(entry.createdAt)}
                 {entry.status === 'REJECTED' && entry.reviewNote && ` · Motivo: ${entry.reviewNote}`}

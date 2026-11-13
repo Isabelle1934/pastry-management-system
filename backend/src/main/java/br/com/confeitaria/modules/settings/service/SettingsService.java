@@ -1,5 +1,9 @@
 package br.com.confeitaria.modules.settings.service;
 
+import java.math.BigDecimal;
+import java.net.URI;
+import java.net.URISyntaxException;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -73,6 +77,27 @@ public class SettingsService {
         boolean customCakeDelivery = request.customCakeDelivery() == null ? settings.isCustomCakeDelivery()
                 : request.customCakeDelivery();
 
+        BigDecimal deliveryFee = request.deliveryFee() == null ? settings.getDeliveryFee()
+                : request.deliveryFee().setScale(2);
+        String cardLink = request.cardPaymentLink() == null ? settings.getCardPaymentLink()
+                : normalizeCardLink(request.cardPaymentLink());
+        int cutoff = request.depositCutoffHours() == null ? settings.getDepositCutoffHours()
+                : request.depositCutoffHours();
+
+        BigDecimal feeSweets = request.deliveryFeeSweets() == null ? settings.getDeliveryFeeSweets()
+                : request.deliveryFeeSweets().setScale(2);
+        BigDecimal partyFee = request.partyVenueFee() == null ? settings.getPartyVenueFee()
+                : request.partyVenueFee().setScale(2);
+        boolean partyConfirmed = request.partyVenueFeeConfirmed() == null ? settings.isPartyVenueFeeConfirmed()
+                : request.partyVenueFeeConfirmed();
+        String punctuality = request.punctualityNotice() == null ? settings.getPunctualityNotice()
+                : blankToNull(request.punctualityNotice());
+        if (punctuality == null) {
+            throw new FieldValidationException("punctualityNotice", "Escreva o aviso de pontualidade.");
+        }
+        int reminder = request.depositReminderHours() == null ? settings.getDepositReminderHours()
+                : request.depositReminderHours();
+
         Changes changes = new Changes()
                 .track("name", settings.getName(), blankToNull(request.name()))
                 .track("aboutText", settings.getAboutText(), blankToNull(request.aboutText()))
@@ -91,14 +116,25 @@ public class SettingsService {
                 .track("deliveryEnabled", settings.isDeliveryEnabled(), delivery)
                 .track("deliveryInfo", settings.getDeliveryInfo(), deliveryInfo)
                 .track("customCakeEnabled", settings.isCustomCakeEnabled(), customCake)
-                .track("customCakeDelivery", settings.isCustomCakeDelivery(), customCakeDelivery);
+                .track("customCakeDelivery", settings.isCustomCakeDelivery(), customCakeDelivery)
+                .track("deliveryFee", settings.getDeliveryFee(), deliveryFee)
+                .trackWithoutValues("cardPaymentLink", settings.getCardPaymentLink(), cardLink)
+                .track("depositCutoffHours", settings.getDepositCutoffHours(), cutoff)
+                .track("deliveryFeeSweets", settings.getDeliveryFeeSweets(), feeSweets)
+                .track("partyVenueFee", settings.getPartyVenueFee(), partyFee)
+                .track("partyVenueFeeConfirmed", settings.isPartyVenueFeeConfirmed(), partyConfirmed)
+                .track("punctualityNotice", settings.getPunctualityNotice(), punctuality)
+                .track("depositReminderHours", settings.getDepositReminderHours(), reminder);
 
         settings.updateProfile(blankToNull(request.name()), blankToNull(request.aboutText()), whatsapp, instagram,
                 blankToNull(request.address()), blankToNull(request.pickupInstructions()));
-        settings.updatePayment(blankToNull(request.pixKey()), blankToNull(request.pixHolderName()));
+        settings.updatePayment(blankToNull(request.pixKey()), blankToNull(request.pixHolderName()), cardLink);
+        settings.updateDepositCutoff(cutoff);
+        settings.updateDeliveryFees(feeSweets, partyFee, partyConfirmed);
+        settings.updateCustomerMessages(punctuality, reminder);
         settings.updateQuotes(request.quoteValidityHours(), request.quoteExpiryWarningHours(),
                 request.depositDeadlineHours());
-        settings.updateFulfillment(pickup, delivery, deliveryInfo, customCake, customCakeDelivery);
+        settings.updateFulfillment(pickup, delivery, deliveryInfo, deliveryFee, customCake, customCakeDelivery);
         settings.updateNotifications(blankToNull(request.ownerNotificationEmail()) == null
                 ? null : request.ownerNotificationEmail().trim().toLowerCase());
         repository.flush();
@@ -130,6 +166,23 @@ public class SettingsService {
             throw new FieldValidationException("instagram", "Informe o usuário do Instagram, ex.: @minhaconfeitaria.");
         }
         return handle;
+    }
+
+    /** Só links https completos: o link é mostrado para a cliente abrir no navegador. */
+    private static String normalizeCardLink(String value) {
+        String link = blankToNull(value);
+        if (link == null) {
+            return null;
+        }
+        try {
+            URI uri = new URI(link);
+            if ("https".equalsIgnoreCase(uri.getScheme()) && uri.getHost() != null) {
+                return link;
+            }
+        } catch (URISyntaxException e) {
+            // segue para a mensagem de erro
+        }
+        throw new FieldValidationException("cardPaymentLink", "Informe o link completo, começando com https://.");
     }
 
     private static String blankToNull(String value) {

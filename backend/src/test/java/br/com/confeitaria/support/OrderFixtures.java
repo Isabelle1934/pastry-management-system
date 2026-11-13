@@ -10,6 +10,7 @@ import java.util.UUID;
 import org.springframework.boot.test.context.TestComponent;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import br.com.confeitaria.modules.quote.entity.QuoteItemKind;
 import br.com.confeitaria.modules.order.dto.PublicOrderDtos.OrderRequest;
 import br.com.confeitaria.modules.order.service.OrderCreationService;
 import br.com.confeitaria.modules.order.service.OrderRateLimiter;
@@ -56,7 +57,8 @@ public class OrderFixtures {
     public Catalog prepare() {
         clock.set(NOW);
         rateLimiter.clear();
-        jdbc.update("update bakery_settings set deposit_deadline_hours = 48, quote_expiry_warning_hours = 12");
+        jdbc.update("update bakery_settings set deposit_deadline_hours = 48, deposit_cutoff_hours = 0, "
+                + "quote_expiry_warning_hours = 12");
         ScheduleTestSupport schedule = new ScheduleTestSupport(jdbc);
         schedule.reset(24, 90);
         schedule.slot(2, "14:00", 3, true);
@@ -76,7 +78,7 @@ public class OrderFixtures {
     public OrderRequest request(Catalog catalog, LocalDate date) {
         return new OrderRequest("Ana Souza", WHATSAPP, date, TWO_PM, catalog.sizeId(), List.of(catalog.flavorId()),
                 List.of(catalog.fillingId()), "Flores", "Parabéns!", null, false, null, null, null, null, null, null, null,
-                null, null, null);
+                null, null, null, null, null, null);
     }
 
     public CreatedOrder create(Catalog catalog) {
@@ -98,9 +100,9 @@ public class OrderFixtures {
     /** Envia um orçamento de R$ 120 + R$ 25 + R$ 20 = R$ 165,00 e devolve o id. */
     public long sendQuote(long orderId) {
         quotes.saveDraft(orderId, new DraftRequest(List.of(
-                new ItemRequest("Bolo personalizado", null, BigDecimal.ONE, new BigDecimal("120.00")),
-                new ItemRequest("Decoração especial", null, BigDecimal.ONE, new BigDecimal("25.00")),
-                new ItemRequest("Topo personalizado", null, BigDecimal.ONE, new BigDecimal("20.00"))), null, 48));
+                new ItemRequest(QuoteItemKind.PRODUCT, "Bolo personalizado", null, BigDecimal.ONE, new BigDecimal("120.00")),
+                new ItemRequest(QuoteItemKind.EXTRA, "Decoração especial", null, BigDecimal.ONE, new BigDecimal("25.00")),
+                new ItemRequest(QuoteItemKind.TOPPER, "Topo personalizado", null, BigDecimal.ONE, new BigDecimal("20.00"))), null, 48));
         return quotes.send(orderId, 1L).id();
     }
 

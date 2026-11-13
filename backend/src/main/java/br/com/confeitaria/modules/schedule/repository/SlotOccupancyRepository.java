@@ -30,7 +30,7 @@ public class SlotOccupancyRepository {
      *
      * @return {@code true} se a vaga foi ocupada; {@code false} se o horário estava lotado
      */
-    public boolean tryIncrement(LocalDate date, LocalTime time, int capacity) {
+    public boolean tryIncrement(LocalDate date, LocalTime time, Integer capacity) {
         jdbc.update("""
                 insert into slot_occupancy (slot_date, slot_time, reserved_count) values (?, ?, 0)
                 on conflict (slot_date, slot_time) do nothing
@@ -38,7 +38,7 @@ public class SlotOccupancyRepository {
         int updated = jdbc.update("""
                 update slot_occupancy set reserved_count = reserved_count + 1, updated_at = now()
                 where slot_date = ? and slot_time = ? and reserved_count < ?
-                """, date, time, capacity);
+                """, date, time, capacity == null ? Integer.MAX_VALUE : capacity);
         return updated == 1;
     }
 

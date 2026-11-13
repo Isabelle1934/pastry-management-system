@@ -129,7 +129,7 @@ class PaymentFlowIntegrationTests {
         assertThat(jdbc.queryForObject("select count(*) from notification where type = 'PROOF_SUBMITTED' and order_id = ?",
                 Integer.class, order.id())).isEqualTo(1);
         assertThat(jdbc.queryForObject("select message from notification where type = 'PROOF_SUBMITTED' "
-                + "and order_id = ?", String.class, order.id())).contains("(R$ 82,50)");
+                + "and order_id = ?", String.class, order.id())).contains("(R$ 82,50, Pix)");
         assertThat(jdbc.queryForObject("select message from notification where type = 'NEW_ORDER' "
                 + "and order_id = ?", String.class, order.id())).contains("para 03/11/2026 às 14:00");
 

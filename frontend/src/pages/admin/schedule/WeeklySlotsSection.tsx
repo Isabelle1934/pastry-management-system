@@ -16,8 +16,14 @@ const DAY_OPTIONS = [1, 2, 3, 4, 5, 6, 7].map((day) => ({ value: String(day), la
 
 type Notice = { tone: 'success' | 'error'; text: string }
 
-function parseCapacity(value: string): number | null {
-  return /^\d+$/.test(value) && Number(value) >= 1 && Number(value) <= 100 ? Number(value) : null
+/** Vazio = sem limite; senão um número de 1 a 100. {@code undefined} = inválido. */
+function parseCapacity(value: string): number | null | undefined {
+  if (value.trim() === '') return null
+  return /^\d+$/.test(value.trim()) && Number(value) >= 1 && Number(value) <= 100 ? Number(value) : undefined
+}
+
+function limitLabel(capacity: number | null): string {
+  return capacity == null ? 'sem limite de pedidos' : `até ${capacity} ${capacity === 1 ? 'pedido' : 'pedidos'}`
 }
 
 function sortSlots(slots: WeeklySlot[]) {
@@ -27,7 +33,7 @@ function sortSlots(slots: WeeklySlot[]) {
 function AddSlotForm({ onCreated }: { onCreated: (slot: WeeklySlot) => void }) {
   const [day, setDay] = useState('5')
   const [time, setTime] = useState('')
-  const [capacity, setCapacity] = useState('1')
+  const [capacity, setCapacity] = useState('')
   const [errors, setErrors] = useState<Record<string, string | undefined>>({})
   const [formError, setFormError] = useState<string>()
   const [saving, setSaving] = useState(false)
@@ -37,7 +43,7 @@ function AddSlotForm({ onCreated }: { onCreated: (slot: WeeklySlot) => void }) {
     const capacityValue = parseCapacity(capacity)
     const nextErrors = {
       startTime: /^\d{2}:\d{2}$/.test(time) ? undefined : 'Informe o horário.',
-      capacity: capacityValue == null ? 'Use um número de 1 a 100.' : undefined,
+      capacity: capacityValue === undefined ? 'Use um número de 1 a 100, ou deixe em branco para não limitar.' : undefined,
     }
     setErrors(nextErrors)
     setFormError(undefined)
@@ -45,7 +51,7 @@ function AddSlotForm({ onCreated }: { onCreated: (slot: WeeklySlot) => void }) {
 
     setSaving(true)
     try {
-      onCreated(await createSlot({ dayOfWeek: Number(day), startTime: time, capacity: capacityValue! }))
+      onCreated(await createSlot({ dayOfWeek: Number(day), startTime: time, capacity: capacityValue ?? null }))
       setTime('')
     } catch (error) {
       const failure = describeSaveError(error)
@@ -58,18 +64,19 @@ function AddSlotForm({ onCreated }: { onCreated: (slot: WeeklySlot) => void }) {
 
   return (
     <div className={panel.formCard}>
-      <h3>Adicionar horário de retirada</h3>
+      <h3>Adicionar horário de retirada ou entrega</h3>
       <form className={panel.form} onSubmit={handleSubmit} noValidate>
         {formError && <Alert tone="error">{formError}</Alert>}
         <div className={styles.inlineForm}>
           <SelectField label="Dia da semana" value={day} onChange={(e) => setDay(e.target.value)} options={DAY_OPTIONS} />
           <TextField label="Horário" type="time" value={time} onChange={(e) => setTime(e.target.value)} error={errors.startTime} />
           <TextField
-            label="Limite de pedidos"
+            label="Limite de pedidos (opcional)"
             inputMode="numeric"
             value={capacity}
             onChange={(e) => setCapacity(e.target.value)}
             error={errors.capacity}
+            hint="Em branco = sem limite."
           />
           <Button type="submit" loading={saving}>
             Adicionar
@@ -90,7 +97,7 @@ interface SlotRowProps {
 
 function SlotRow({ slot, onChanged, onDeleted, onNotice, onStale }: SlotRowProps) {
   const [editing, setEditing] = useState(false)
-  const [capacity, setCapacity] = useState(String(slot.capacity))
+  const [capacity, setCapacity] = useState(slot.capacity == null ? '' : String(slot.capacity))
   const [capacityError, setCapacityError] = useState<string>()
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -111,15 +118,15 @@ function SlotRow({ slot, onChanged, onDeleted, onNotice, onStale }: SlotRowProps
   function saveCapacity(event: FormEvent) {
     event.preventDefault()
     const value = parseCapacity(capacity)
-    if (value == null) {
-      setCapacityError('Use um número de 1 a 100.')
+    if (value === undefined) {
+      setCapacityError('Use um número de 1 a 100, ou deixe em branco para não limitar.')
       return
     }
     setCapacityError(undefined)
     void run(async () => {
       onChanged(await updateSlot(slot, { capacity: value, active: slot.active }))
       setEditing(false)
-      onNotice({ tone: 'success', text: `Limite das ${slot.startTime} atualizado para ${value}.` })
+      onNotice({ tone: 'success', text: `Horário das ${slot.startTime}: ${limitLabel(value)}.` })
     })
   }
 
@@ -128,14 +135,14 @@ function SlotRow({ slot, onChanged, onDeleted, onNotice, onStale }: SlotRowProps
       <span className={styles.slotInfo}>
         <span className={styles.slotTime}>{slot.startTime}</span>
         <span>
-          até {slot.capacity} {slot.capacity === 1 ? 'pedido' : 'pedidos'}
+          {limitLabel(slot.capacity)}
         </span>
         {!slot.active && <span className={styles.chip}>Inativo</span>}
       </span>
       {editing ? (
         <form className={styles.inlineForm} onSubmit={saveCapacity} noValidate>
           <TextField
-            label="Novo limite"
+            label="Novo limite (em branco = sem limite)"
             inputMode="numeric"
             value={capacity}
             onChange={(e) => setCapacity(e.target.value)}
@@ -210,7 +217,7 @@ export function WeeklySlotsSection() {
         <h2 id="weekly-title">Horários da semana</h2>
       </div>
       <p className={styles.muted}>
-        Os horários de retirada se repetem toda semana. O limite é o número máximo de pedidos confirmados por horário.
+        Os horários de retirada e entrega se repetem toda semana. Vários pedidos podem usar o mesmo horário; o limite é opcional (em branco = sem limite). Para fechar um dia (feriado, folga), use os bloqueios.
         Remover ou desativar um horário não cancela pedidos já confirmados.
       </p>
       <AddSlotForm

@@ -12,6 +12,10 @@ export interface CakeSize {
   active: boolean
   displayOrder: number
   version: number
+  categoryId: number | null
+  categoryName: string | null
+  weightKg: Money | null
+  diameterCm: number | null
 }
 
 export interface CakeSizeInput {
@@ -19,6 +23,35 @@ export interface CakeSizeInput {
   description: string
   servings: number | null
   basePrice: Money
+  maxFlavors: number
+  maxFillings: number
+  displayOrder: number
+  version?: number
+  categoryId: number | null
+  weightKg: Money | null
+  diameterCm: number | null
+}
+
+/** Categoria de bolo (baixos, altos, 2 andares...). "consultOnly" = sem tabela, consulte valores. */
+export interface CakeCategory {
+  id: number
+  name: string
+  description: string | null
+  notice: string | null
+  consultOnly: boolean
+  maxFlavors: number
+  maxFillings: number
+  active: boolean
+  displayOrder: number
+  sizeCount: number
+  version: number
+}
+
+export interface CakeCategoryInput {
+  name: string
+  description: string
+  notice: string
+  consultOnly: boolean
   maxFlavors: number
   maxFillings: number
   displayOrder: number

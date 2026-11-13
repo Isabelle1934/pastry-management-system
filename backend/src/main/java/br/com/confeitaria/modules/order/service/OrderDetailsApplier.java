@@ -28,6 +28,9 @@ import br.com.confeitaria.modules.schedule.repository.WeeklySlotRepository;
 import br.com.confeitaria.modules.schedule.service.AvailabilityService;
 import br.com.confeitaria.modules.settings.entity.BakerySettings;
 import br.com.confeitaria.modules.settings.service.SettingsService;
+import br.com.confeitaria.modules.catalog.entity.CakeCategory;
+import br.com.confeitaria.modules.catalog.repository.CakeCategoryRepository;
+import br.com.confeitaria.modules.order.entity.DeliveryZone;
 
 /**
  * Valida e aplica agendamento, bolo personalizado, topo, itens do catálogo e modalidade de atendimento a um
@@ -48,13 +51,16 @@ public class OrderDetailsApplier {
             List<Long> flavorIds, List<Long> fillingIds, String decoration, String cakeText, String notes,
             boolean topperRequested, String topperTheme, String topperName, Integer topperAge, List<ItemChoice> items,
             FulfillmentType fulfillmentType, String deliveryAddress, String deliveryDistrict,
-            String deliveryReference) {
+            String deliveryReference, Long cakeCategoryId, DeliveryZone deliveryZone) {
 
         public Details {
             flavorIds = flavorIds == null ? List.of() : flavorIds;
             fillingIds = fillingIds == null ? List.of() : fillingIds;
             items = items == null ? List.of() : items;
             fulfillmentType = fulfillmentType == null ? FulfillmentType.PICKUP : fulfillmentType;
+            // Pedidos sem modalidade informada (clientes antigos da API): entrega dentro da cidade.
+            deliveryZone = fulfillmentType == FulfillmentType.DELIVERY && deliveryZone == null ? DeliveryZone.CITY
+                    : fulfillmentType == FulfillmentType.DELIVERY ? deliveryZone : null;
         }
     }
 
@@ -65,6 +71,7 @@ public class OrderDetailsApplier {
     }
 
     private final CakeSizeRepository sizes;
+    private final CakeCategoryRepository cakeCategories;
     private final CakeFlavorRepository flavors;
     private final CakeFillingRepository fillings;
     private final ProductRepository products;
@@ -72,10 +79,11 @@ public class OrderDetailsApplier {
     private final WeeklySlotRepository weeklySlots;
     private final SettingsService settings;
 
-    public OrderDetailsApplier(CakeSizeRepository sizes, CakeFlavorRepository flavors, CakeFillingRepository fillings,
-            ProductRepository products, AvailabilityService availability, WeeklySlotRepository weeklySlots,
-            SettingsService settings) {
+    public OrderDetailsApplier(CakeSizeRepository sizes, CakeCategoryRepository cakeCategories,
+            CakeFlavorRepository flavors, CakeFillingRepository fillings, ProductRepository products,
+            AvailabilityService availability, WeeklySlotRepository weeklySlots, SettingsService settings) {
         this.sizes = sizes;
+        this.cakeCategories = cakeCategories;
         this.flavors = flavors;
         this.fillings = fillings;
         this.products = products;
@@ -98,6 +106,7 @@ public class OrderDetailsApplier {
 
         // --- Bolo personalizado (opcional) ---
         CakeSize size = null;
+        CakeCategory consultCategory = null;
         Map<Long, String> chosenFlavors = Map.of();
         Map<Long, String> chosenFillings = Map.of();
         boolean hadCake = !isNew && order.isCustomCake();
@@ -106,22 +115,44 @@ public class OrderDetailsApplier {
                 throw new FieldValidationException("customCake",
                         "No momento não estamos aceitando encomendas de bolo personalizado.");
             }
+            int maxFlavors;
+            int maxFillings;
             if (details.sizeId() == null) {
-                throw new FieldValidationException("sizeId", "Escolha o tamanho.");
+                // Sem tamanho: só em categoria "consulte valores" (ex.: bolos de 3 andares ou mais).
+                consultCategory = details.cakeCategoryId() == null ? null
+                        : cakeCategories.findById(details.cakeCategoryId()).orElse(null);
+                if (consultCategory == null || !consultCategory.isConsultOnly()) {
+                    throw new FieldValidationException("sizeId", "Escolha o tamanho.");
+                }
+                CakeCategory current = hadCake ? order.getCakeCategory() : null;
+                boolean keeps = current != null && current.getId().equals(consultCategory.getId());
+                if (!consultCategory.isActive() && !(keeps || !client)) {
+                    throw new FieldValidationException("cakeCategoryId", "Esta opção de bolo não está mais disponível.");
+                }
+                if (client && blankToNull(details.decoration()) == null) {
+                    throw new FieldValidationException("decoration",
+                            "Descreva o bolo que você imagina (andares, decoração, tamanho aproximado).");
+                }
+                maxFlavors = consultCategory.getMaxFlavors();
+                maxFillings = consultCategory.getMaxFillings();
+            } else {
+                CakeSize currentSize = hadCake ? order.getSize() : null;
+                boolean keepsSize = currentSize != null && details.sizeId().equals(currentSize.getId());
+                size = sizes.findById(details.sizeId())
+                        .filter(s -> keepsSize || (client ? s.isPubliclyVisible() : s.isActive()))
+                        .orElseThrow(() -> new FieldValidationException("sizeId", "Este tamanho não está mais disponível."));
+                maxFlavors = size.getMaxFlavors();
+                maxFillings = size.getMaxFillings();
             }
-            CakeSize currentSize = hadCake ? order.getSize() : null;
-            size = sizes.findById(details.sizeId())
-                    .filter(s -> s.isActive() || (currentSize != null && s.getId().equals(currentSize.getId())))
-                    .orElseThrow(() -> new FieldValidationException("sizeId", "Este tamanho não está mais disponível."));
             if (details.flavorIds().isEmpty()) {
-                throw new FieldValidationException("flavorIds", "Escolha pelo menos uma massa.");
+                throw new FieldValidationException("flavorIds", "Escolha a massa.");
             }
-            chosenFlavors = resolveOptions(details.flavorIds(), size.getMaxFlavors(), "flavorIds", "massa", "massas",
+            chosenFlavors = resolveOptions(details.flavorIds(), maxFlavors, "flavorIds", "massa", "massas",
                     order.getFlavorChoices().keySet(), ids -> flavors.findAllById(ids));
             if (details.fillingIds().isEmpty()) {
                 throw new FieldValidationException("fillingIds", "Escolha pelo menos um recheio.");
             }
-            chosenFillings = resolveOptions(details.fillingIds(), size.getMaxFillings(), "fillingIds", "recheio",
+            chosenFillings = resolveOptions(details.fillingIds(), maxFillings, "fillingIds", "recheio",
                     "recheios", order.getFillingChoices().keySet(), ids -> fillings.findAllById(ids));
         }
 
@@ -169,6 +200,10 @@ public class OrderDetailsApplier {
         if (fulfillment == FulfillmentType.DELIVERY && deliveryAddress == null) {
             throw new FieldValidationException("deliveryAddress", "Informe o endereço de entrega.");
         }
+        // Endereço completo para a entrega: a cliente informa também o bairro (a proprietária pode completar depois).
+        if (client && fulfillment == FulfillmentType.DELIVERY && blankToNull(details.deliveryDistrict()) == null) {
+            throw new FieldValidationException("deliveryDistrict", "Informe o bairro.");
+        }
 
         // --- Topo de bolo (só com bolo personalizado) ---
         String topperTheme = blankToNull(details.topperTheme());
@@ -188,6 +223,10 @@ public class OrderDetailsApplier {
                     .track("pickupTime", String.valueOf(order.getPickupTime()), String.valueOf(details.pickupTime()))
                     .track("customCake", order.isCustomCake(), details.customCake())
                     .track("size", order.getSizeNameSnapshot(), size == null ? null : size.getName())
+                    .track("cakeCategory", order.getCakeCategorySnapshot(), size != null && size.getCategory() != null
+                            ? size.getCategory().getName() : consultCategory == null ? null : consultCategory.getName())
+                    .track("deliveryZone", order.getDeliveryZone() == null ? null : order.getDeliveryZone().name(),
+                            details.deliveryZone() == null ? null : details.deliveryZone().name())
                     .track("flavors", String.join(", ", order.getFlavorNames()), String.join(", ", chosenFlavors.values()))
                     .track("fillings", String.join(", ", order.getFillingNames()), String.join(", ", chosenFillings.values()))
                     .track("decoration", order.getDecoration(), details.customCake() ? blankToNull(details.decoration()) : null)
@@ -210,8 +249,13 @@ public class OrderDetailsApplier {
 
         order.schedule(details.pickupDate(), details.pickupTime());
         if (details.customCake()) {
-            order.customize(size, blankToNull(details.decoration()), blankToNull(details.cakeText()),
-                    blankToNull(details.notes()));
+            if (size != null) {
+                order.customize(size, blankToNull(details.decoration()), blankToNull(details.cakeText()),
+                        blankToNull(details.notes()));
+            } else {
+                order.customizeByConsultation(consultCategory, blankToNull(details.decoration()),
+                        blankToNull(details.cakeText()), blankToNull(details.notes()));
+            }
             order.chooseFlavors(chosenFlavors);
             order.chooseFillings(chosenFillings);
             if (details.topperRequested()) {
@@ -224,7 +268,7 @@ public class OrderDetailsApplier {
             order.withoutCustomCake(blankToNull(details.notes()));
         }
         order.chooseItems(newItems);
-        order.setFulfillment(fulfillment, deliveryAddress, blankToNull(details.deliveryDistrict()),
+        order.setFulfillment(fulfillment, details.deliveryZone(), deliveryAddress, blankToNull(details.deliveryDistrict()),
                 blankToNull(details.deliveryReference()));
         return changes.asMap();
     }
@@ -315,7 +359,7 @@ public class OrderDetailsApplier {
             return;
         }
         // A proprietária pode usar qualquer horário cadastrado na agenda (inclusive com antecedência menor);
-        // o limite de vagas é verificado na confirmação do sinal.
+        // o limite de vagas (quando houver) é verificado na confirmação do sinal.
         boolean slotExists = weeklySlots.findByDayOfWeekAndStartTime((short) date.getDayOfWeek().getValue(), time)
                 .filter(slot -> slot.isActive())
                 .isPresent();

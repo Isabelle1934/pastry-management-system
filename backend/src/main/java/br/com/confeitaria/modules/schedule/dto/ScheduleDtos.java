@@ -23,18 +23,16 @@ public final class ScheduleDtos {
             @NotNull(message = "Informe o dia da semana.")
             @Min(value = 1, message = "Dia inválido.") @Max(value = 7, message = "Dia inválido.") Integer dayOfWeek,
             @NotNull(message = "Informe o horário.") LocalTime startTime,
-            @NotNull(message = "Informe o limite de pedidos.")
             @Min(value = 1, message = "Mínimo de 1 pedido.") @Max(value = 100, message = "Máximo de 100 pedidos.") Integer capacity) {
     }
 
     public record SlotUpdateRequest(
-            @NotNull(message = "Informe o limite de pedidos.")
             @Min(value = 1, message = "Mínimo de 1 pedido.") @Max(value = 100, message = "Máximo de 100 pedidos.") Integer capacity,
             @NotNull(message = "Informe se o horário está ativo.") Boolean active,
             @NotNull(message = "Versão obrigatória.") Long version) {
     }
 
-    public record SlotResponse(Long id, int dayOfWeek, String startTime, int capacity, boolean active, long version) {
+    public record SlotResponse(Long id, int dayOfWeek, String startTime, Integer capacity, boolean active, long version) {
 
         public static SlotResponse from(WeeklySlot slot) {
             return new SlotResponse(slot.getId(), slot.getDayOfWeek().getValue(), slot.getStartTime().toString(),
@@ -81,7 +79,7 @@ public final class ScheduleDtos {
      * @param bookable horário pode receber novas solicitações agora (dentro da antecedência e do prazo,
      *                 sem bloqueio e com vaga)
      */
-    public record CalendarSlot(String time, int capacity, int reserved, boolean blocked, String blockReason,
+    public record CalendarSlot(String time, Integer capacity, int reserved, boolean blocked, String blockReason,
             boolean tooSoon, boolean beyondLimit, boolean bookable) {
     }
 

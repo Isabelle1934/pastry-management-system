@@ -33,6 +33,18 @@ public interface CakeOrderRepository extends JpaRepository<CakeOrder, Long>, Jpa
 
     boolean existsByTrackingCode(String trackingCode);
 
+    /** Solicitações recentes da mesma cliente para a mesma data/horário (detecção de envio repetido). */
+    @Query("""
+            select o from CakeOrder o
+            where o.customerWhatsapp = :whatsapp and o.pickupDate = :date and o.pickupTime = :time
+              and o.createdAt >= :since
+              and o.commercialStatus not in (br.com.confeitaria.modules.order.entity.CommercialStatus.CANCELLED,
+                  br.com.confeitaria.modules.order.entity.CommercialStatus.REJECTED,
+                  br.com.confeitaria.modules.order.entity.CommercialStatus.DECLINED_BY_CLIENT)
+            """)
+    List<CakeOrder> findRecentSameSchedule(String whatsapp, java.time.LocalDate date, java.time.LocalTime time,
+            java.time.Instant since);
+
     /** Lista de retiradas: pedidos na situação informada com data até {@code until} (inclui atrasados). */
     List<CakeOrder> findByCommercialStatusAndPickupDateLessThanEqualOrderByPickupDateAscPickupTimeAscIdAsc(
             CommercialStatus status, LocalDate until);

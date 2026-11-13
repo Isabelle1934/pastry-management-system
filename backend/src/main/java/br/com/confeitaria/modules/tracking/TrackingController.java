@@ -21,6 +21,7 @@ import org.springframework.web.multipart.MultipartFile;
 import br.com.confeitaria.modules.file.FileResponses;
 import br.com.confeitaria.modules.file.service.FileStorageService;
 import br.com.confeitaria.modules.order.dto.PublicOrderDtos.ClientEditRequest;
+import br.com.confeitaria.modules.payment.entity.Payment;
 import br.com.confeitaria.modules.payment.service.PaymentService;
 import br.com.confeitaria.modules.quote.dto.QuoteDtos.DeclineRequest;
 import br.com.confeitaria.modules.tracking.TrackingDtos.TrackingView;
@@ -73,12 +74,16 @@ public class TrackingController {
         return tracking.decline(access.currentOrderId(request), quoteId, body == null ? null : body.reason());
     }
 
-    /** Comprovante do sinal (JPG, PNG ou PDF). {@code amount} vazio = valor do sinal do orçamento aceito. */
+    /**
+     * Comprovante do sinal (JPG, PNG ou PDF). {@code amount} vazio = valor do sinal do orçamento aceito;
+     * {@code method}: PIX (padrão) ou CARD_LINK.
+     */
     @PostMapping(path = "/order/payments/deposit-proof", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public TrackingView submitProof(@RequestPart("proof") MultipartFile proof,
-            @RequestParam(required = false) BigDecimal amount, HttpServletRequest request) {
+            @RequestParam(required = false) BigDecimal amount, @RequestParam(required = false) Payment.Method method,
+            HttpServletRequest request) {
         Long orderId = access.currentOrderId(request);
-        payments.submitProof(orderId, proof, amount);
+        payments.submitProof(orderId, proof, amount, method);
         return tracking.view(orderId);
     }
 

@@ -72,7 +72,8 @@ public class ScheduleService {
         }
         WeeklySlot slot = slots.save(new WeeklySlot(day, time, request.capacity()));
         audit.record(ActorType.OWNER, actorId, "SLOT_CREATED", "weekly_slot", slot.getId(),
-                Map.of("dayOfWeek", day.getValue(), "startTime", time.toString(), "capacity", request.capacity()));
+                Map.of("dayOfWeek", day.getValue(), "startTime", time.toString(), "capacity",
+                        request.capacity() == null ? "sem limite" : request.capacity()));
         return SlotResponse.from(slot);
     }
 

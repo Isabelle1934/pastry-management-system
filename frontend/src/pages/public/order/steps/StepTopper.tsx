@@ -10,7 +10,7 @@ export function StepTopper({ form, errors, update, allowPhotos = true }: StepPro
     <section className={styles.card} aria-labelledby={titleId}>
       <h2 id={titleId}>Topo de bolo</h2>
       <p className={styles.notice} role="note">
-        O topo de bolo é opcional e <strong>cobrado à parte</strong>: o valor aparece separado no orçamento.
+        <strong>Topo de bolo cobrado à parte. O valor será incluído no orçamento final.</strong>
       </p>
 
       <fieldset className={styles.fieldset}>

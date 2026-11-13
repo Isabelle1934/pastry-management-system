@@ -36,8 +36,9 @@ public final class PaymentDtos {
      * @param received   soma dos pagamentos confirmados, menos reembolsos
      * @param balanceDue total − recebido (nunca negativo)
      */
+    /** {@code depositDueAt}: fim do prazo do sinal, só enquanto o pedido aguarda o sinal (null = sem prazo). */
     public record PaymentSummary(BigDecimal total, BigDecimal depositAmount, BigDecimal received, BigDecimal balanceDue,
-            PaymentStatus status, boolean proofUnderReview, List<PaymentView> payments) {
+            PaymentStatus status, boolean proofUnderReview, Instant depositDueAt, List<PaymentView> payments) {
     }
 
     public record RegisterRequest(

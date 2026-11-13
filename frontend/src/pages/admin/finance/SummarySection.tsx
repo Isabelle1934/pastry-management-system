@@ -34,16 +34,13 @@ export function SummarySection({ from, to }: { from: string; to: string }) {
   return (
     <div className={panel.section}>
       <dl className={styles.stats}>
-        <Stat label="Faturamento previsto" value={data.forecastRevenue}
-          detail={`${plural(data.forecastOrders, 'pedido confirmado', 'pedidos confirmados')} com retirada no período`} />
+        <Stat label="A receber" value={data.pending} detail="Saldo dos pedidos confirmados do período" />
         <Stat label="Recebido no período" value={data.received}
           detail={`Sinais ${formatBRL(data.receivedDeposits)} · saldos ${formatBRL(data.receivedBalances)}`
             + (data.refunds !== '0.00' ? ` · reembolsos −${formatBRL(data.refunds)}` : '')} />
-        <Stat label="A receber" value={data.pending} detail="Saldo dos pedidos confirmados do período" />
-        <Stat label="Despesas" value={data.expenses}
-          detail={`Das quais ${formatBRL(data.orderExpenses)} ligadas a pedidos`} />
-        <Stat label="Lucro estimado" value={data.estimatedProfit} detail="Previsto − despesas (estimativa)" />
-        <Stat label="Resultado de caixa" value={data.cashResult} detail="Recebido − despesas" />
+        <Stat label="Lucro" value={data.profit} detail="Recebido no período, já descontados os reembolsos" />
+        <Stat label="Faturamento previsto" value={data.forecastRevenue}
+          detail={`${plural(data.forecastOrders, 'pedido confirmado', 'pedidos confirmados')} com data no período`} />
       </dl>
 
       {data.awaitingDepositOrders > 0 && (
@@ -53,25 +50,9 @@ export function SummarySection({ from, to }: { from: string; to: string }) {
         </Alert>
       )}
 
-      <section className={panel.card} aria-labelledby="by-category-title">
-        <h2 id="by-category-title" className={panel.cardTitle}>Despesas por categoria</h2>
-        {data.expensesByCategory.length === 0 ? (
-          <p className={panel.description}>Nenhuma despesa registrada no período.</p>
-        ) : (
-          <ul className={styles.categories}>
-            {data.expensesByCategory.map((category) => (
-              <li key={category.categoryId}>
-                <span>{category.name}</span>
-                <strong>{formatBRL(category.total)}</strong>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
       <p className={panel.description}>
-        Previsto e a receber consideram a data de retirada; recebido, a data em que o pagamento foi confirmado; despesas,
-        a data da despesa. Valores sem contabilidade fiscal.
+        Previsto e a receber consideram a data agendada (retirada ou entrega); recebido, a data em que a confeitaria
+        confirmou o pagamento — comprovantes ainda em análise não entram. Valores sem contabilidade fiscal.
       </p>
     </div>
   )

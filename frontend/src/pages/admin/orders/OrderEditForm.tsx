@@ -5,15 +5,15 @@ import { SelectField } from '../../../components/SelectField'
 import { TextAreaField } from '../../../components/TextAreaField'
 import { TextField } from '../../../components/TextField'
 import { useLoader } from '../../../hooks/useLoader'
-import { listOptions, listSizes } from '../../../services/catalog'
+import { listCakeCategories, listOptions, listSizes } from '../../../services/catalog'
 import { listProducts } from '../../../services/products'
 import { updateOrder } from '../../../services/orders'
 import { listSlots } from '../../../services/schedule'
 import type { CatalogOption } from '../../../types/catalog'
 import type { OrderDetail } from '../../../types/order'
-import type { FulfillmentType, OrderItemInput } from '../../../types/product'
+import type { DeliveryZone, FulfillmentType, OrderItemInput } from '../../../types/product'
 import { setQuantity } from '../../../utils/cart'
-import { FULFILLMENT_LABELS } from '../../../utils/productRules'
+import { DELIVERY_ZONE_LABELS, FULFILLMENT_LABELS } from '../../../utils/productRules'
 import { isoWeekday } from '../../../utils/date'
 import panel from '../panel.module.css'
 import { describeSaveError } from '../saveErrors'
@@ -21,14 +21,15 @@ import styles from './orders.module.css'
 import { Loading } from '../../../components/Loading'
 
 async function loadEditData() {
-  const [sizes, flavors, fillings, slots, products] = await Promise.all([
+  const [sizes, flavors, fillings, slots, products, cakeCategories] = await Promise.all([
     listSizes(),
     listOptions('flavors'),
     listOptions('fillings'),
     listSlots(),
     listProducts(),
+    listCakeCategories(),
   ])
-  return { sizes, flavors, fillings, slots, products }
+  return { sizes, flavors, fillings, slots, products, cakeCategories }
 }
 
 interface OptionChecksProps {
@@ -86,6 +87,7 @@ export function OrderEditForm({ order, onSaved, onCancel, onStale }: Props) {
   const [form, setForm] = useState({
     customerName: order.customerName,
     customerWhatsapp: order.customerWhatsapp,
+    customerEmail: order.customerEmail ?? '',
     pickupDate: order.pickupDate,
     pickupTime: order.pickupTime,
     customCake: order.customCake,
@@ -94,6 +96,8 @@ export function OrderEditForm({ order, onSaved, onCancel, onStale }: Props) {
     deliveryAddress: order.deliveryAddress ?? '',
     deliveryDistrict: order.deliveryDistrict ?? '',
     deliveryReference: order.deliveryReference ?? '',
+    deliveryZone: (order.deliveryZone ?? 'CITY') as DeliveryZone,
+    cakeCategoryId: order.cakeCategoryId,
     sizeId: order.sizeId,
     flavorIds: order.flavors.map((f) => f.id),
     fillingIds: order.fillings.map((f) => f.id),
@@ -117,6 +121,9 @@ export function OrderEditForm({ order, onSaved, onCancel, onStale }: Props) {
   if (error || !data) return <Alert tone="error">{error ?? 'Não foi possível carregar.'}</Alert>
 
   const size = data.sizes.find((s) => s.id === form.sizeId)
+  const consultCategory = form.sizeId == null
+    ? data.cakeCategories.find((c) => c.id === form.cakeCategoryId && c.consultOnly) : undefined
+  const limits = size ?? consultCategory
   const times = data.slots
     .filter((slot) => slot.active && form.pickupDate && slot.dayOfWeek === isoWeekday(form.pickupDate))
     .map((slot) => slot.startTime)
@@ -133,6 +140,7 @@ export function OrderEditForm({ order, onSaved, onCancel, onStale }: Props) {
       const saved = await updateOrder(order.id, {
         customerName: form.customerName,
         customerWhatsapp: form.customerWhatsapp,
+        customerEmail: form.customerEmail,
         pickupDate: form.pickupDate,
         pickupTime: form.pickupTime,
         customCake: cake,
@@ -151,6 +159,8 @@ export function OrderEditForm({ order, onSaved, onCancel, onStale }: Props) {
         deliveryAddress: delivery ? form.deliveryAddress : '',
         deliveryDistrict: delivery ? form.deliveryDistrict : '',
         deliveryReference: delivery ? form.deliveryReference : '',
+        deliveryZone: delivery ? form.deliveryZone : null,
+        cakeCategoryId: cake ? form.cakeCategoryId : null,
         version: order.version,
       })
       onSaved(saved)
@@ -177,11 +187,18 @@ export function OrderEditForm({ order, onSaved, onCancel, onStale }: Props) {
             error={errors.customerName} maxLength={120} />
           <TextField label="WhatsApp" type="tel" value={form.customerWhatsapp}
             onChange={(e) => set('customerWhatsapp', e.target.value)} error={errors.customerWhatsapp} />
+          <TextField label="E-mail (opcional)" type="email" value={form.customerEmail}
+            onChange={(e) => set('customerEmail', e.target.value)} error={errors.customerEmail} maxLength={254} />
         </div>
         <div className={panel.row}>
           <SelectField label="Atendimento" value={form.fulfillmentType} error={errors.fulfillmentType}
             onChange={(e) => set('fulfillmentType', e.target.value as FulfillmentType)}
             options={(['PICKUP', 'DELIVERY'] as const).map((v) => ({ value: v, label: FULFILLMENT_LABELS[v] }))} />
+          {form.fulfillmentType === 'DELIVERY' && (
+            <SelectField label="Modalidade da entrega" value={form.deliveryZone} error={errors.deliveryZone}
+              onChange={(e) => set('deliveryZone', e.target.value as DeliveryZone)}
+              options={(['CITY', 'PARTY_VENUE', 'OUTSIDE_CITY'] as const).map((v) => ({ value: v, label: DELIVERY_ZONE_LABELS[v] }))} />
+          )}
         </div>
         {form.fulfillmentType === 'DELIVERY' && (
           <div className={panel.row}>
@@ -237,22 +254,33 @@ export function OrderEditForm({ order, onSaved, onCancel, onStale }: Props) {
           Bolo personalizado
         </label>
         {form.customCake && (<>
-        <SelectField label="Tamanho" value={String(form.sizeId ?? '')} error={errors.sizeId}
+        <SelectField label="Tamanho" error={errors.sizeId}
+          value={form.sizeId != null ? `s${form.sizeId}` : consultCategory ? `c${consultCategory.id}` : ''}
           onChange={(e) => {
-            const next = data.sizes.find((s) => s.id === Number(e.target.value))
+            const value = e.target.value
+            const nextSize = value.startsWith('s') ? data.sizes.find((s) => s.id === Number(value.slice(1))) : undefined
+            const nextCategory = value.startsWith('c')
+              ? data.cakeCategories.find((c) => c.id === Number(value.slice(1))) : undefined
+            const next = nextSize ?? nextCategory
             setForm((current) => ({
               ...current,
-              sizeId: Number(e.target.value),
+              sizeId: nextSize ? nextSize.id : null,
+              cakeCategoryId: nextSize ? nextSize.categoryId : nextCategory ? nextCategory.id : null,
               flavorIds: next ? current.flavorIds.slice(0, next.maxFlavors) : current.flavorIds,
               fillingIds: next ? current.fillingIds.slice(0, next.maxFillings) : current.fillingIds,
             }))
           }}
-          options={[...(form.sizeId == null ? [{ value: '', label: 'Escolha o tamanho' }] : []),
+          options={[...(form.sizeId == null && !consultCategory ? [{ value: '', label: 'Escolha o tamanho' }] : []),
             ...data.sizes.filter((s) => s.active || s.id === order.sizeId)
-            .map((s) => ({ value: String(s.id), label: s.active ? s.name : `${s.name} (inativo)` }))]} />
-        <OptionChecks legend="Massas" options={data.flavors} selected={form.flavorIds} max={size?.maxFlavors ?? 1}
+              .map((s) => ({
+                value: `s${s.id}`,
+                label: `${s.categoryName ? `${s.categoryName} – ` : ''}${s.name}${s.active ? '' : ' (inativo)'}`,
+              })),
+            ...data.cakeCategories.filter((c) => c.consultOnly && (c.active || c.id === order.cakeCategoryId))
+              .map((c) => ({ value: `c${c.id}`, label: `${c.name} (consulte valores)` }))]} />
+        <OptionChecks legend="Massas" options={data.flavors} selected={form.flavorIds} max={limits?.maxFlavors ?? 1}
           error={errors.flavorIds} onChange={(ids) => set('flavorIds', ids)} />
-        <OptionChecks legend="Recheios" options={data.fillings} selected={form.fillingIds} max={size?.maxFillings ?? 1}
+        <OptionChecks legend="Recheios" options={data.fillings} selected={form.fillingIds} max={limits?.maxFillings ?? 1}
           error={errors.fillingIds} onChange={(ids) => set('fillingIds', ids)} />
         <TextAreaField label="Decoração" value={form.decoration} onChange={(e) => set('decoration', e.target.value)}
           error={errors.decoration} maxLength={1000} />

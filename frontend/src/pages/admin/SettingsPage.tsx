@@ -7,6 +7,7 @@ import { TextField } from '../../components/TextField'
 import { useLoader } from '../../hooks/useLoader'
 import { getSettings, saveSettings } from '../../services/settings'
 import type { BakerySettings } from '../../types/settings'
+import { parseMoneyInput, toMoneyInput } from '../../utils/money'
 import { validateEmail } from '../../utils/validation'
 import styles from './panel.module.css'
 import { describeSaveError } from './saveErrors'
@@ -26,10 +27,17 @@ type Field =
   | 'depositDeadlineHours'
   | 'ownerNotificationEmail'
   | 'deliveryInfo'
+  | 'deliveryFee'
+  | 'cardPaymentLink'
+  | 'depositCutoffHours'
+  | 'deliveryFeeSweets'
+  | 'partyVenueFee'
+  | 'punctualityNotice'
+  | 'depositReminderHours'
 
 type FormValues = Record<Field, string>
 
-type ToggleKey = 'pickupEnabled' | 'deliveryEnabled' | 'customCakeEnabled' | 'customCakeDelivery'
+type ToggleKey = 'pickupEnabled' | 'deliveryEnabled' | 'customCakeEnabled' | 'customCakeDelivery' | 'partyVenueFeeConfirmed'
 type ToggleValues = Record<ToggleKey, boolean>
 
 function toToggles(settings: BakerySettings): ToggleValues {
@@ -38,6 +46,7 @@ function toToggles(settings: BakerySettings): ToggleValues {
     deliveryEnabled: settings.deliveryEnabled,
     customCakeEnabled: settings.customCakeEnabled,
     customCakeDelivery: settings.customCakeDelivery,
+    partyVenueFeeConfirmed: settings.partyVenueFeeConfirmed,
   }
 }
 
@@ -68,6 +77,13 @@ function toForm(settings: BakerySettings): FormValues {
     depositDeadlineHours: settings.depositDeadlineHours == null ? '' : String(settings.depositDeadlineHours),
     ownerNotificationEmail: settings.ownerNotificationEmail ?? '',
     deliveryInfo: settings.deliveryInfo ?? '',
+    deliveryFee: toMoneyInput(settings.deliveryFee),
+    cardPaymentLink: settings.cardPaymentLink ?? '',
+    depositCutoffHours: String(settings.depositCutoffHours),
+    deliveryFeeSweets: toMoneyInput(settings.deliveryFeeSweets),
+    partyVenueFee: toMoneyInput(settings.partyVenueFee),
+    punctualityNotice: settings.punctualityNotice,
+    depositReminderHours: String(settings.depositReminderHours),
   }
 }
 
@@ -121,6 +137,21 @@ function SettingsForm({ initial, onSaved }: { initial: BakerySettings; onSaved: 
           Number(values.depositDeadlineHours) <= 720)
           ? undefined
           : 'Use um número de 1 a 720 horas, ou deixe em branco para não ter prazo.',
+      deliveryFee: parseMoneyInput(values.deliveryFee) == null ? 'Informe a taxa, ex.: 20,00.' : undefined,
+      deliveryFeeSweets: parseMoneyInput(values.deliveryFeeSweets) == null ? 'Informe a taxa, ex.: 5,00.' : undefined,
+      partyVenueFee: parseMoneyInput(values.partyVenueFee) == null ? 'Informe a taxa, ex.: 30,00.' : undefined,
+      punctualityNotice: values.punctualityNotice.trim() ? undefined : 'Escreva o aviso de pontualidade.',
+      depositReminderHours:
+        /^\d+$/.test(values.depositReminderHours.trim()) && Number(values.depositReminderHours) >= 1
+          && Number(values.depositReminderHours) <= 720 ? undefined : 'Use um número de 1 a 720 horas.',
+      cardPaymentLink:
+        values.cardPaymentLink.trim() === '' || /^https:\/\/\S+$/i.test(values.cardPaymentLink.trim())
+          ? undefined
+          : 'Cole o link completo, começando com https://.',
+      depositCutoffHours:
+        /^\d+$/.test(values.depositCutoffHours.trim()) && Number(values.depositCutoffHours) <= 720
+          ? undefined
+          : 'Use um número de 0 a 720 horas (0 = sem limite).',
       ownerNotificationEmail: values.ownerNotificationEmail.trim()
         ? validateEmail(values.ownerNotificationEmail)
         : undefined,
@@ -149,6 +180,13 @@ function SettingsForm({ initial, onSaved }: { initial: BakerySettings; onSaved: 
         ownerNotificationEmail: values.ownerNotificationEmail,
         ...toggles,
         deliveryInfo: values.deliveryInfo,
+        deliveryFee: parseMoneyInput(values.deliveryFee)!,
+        cardPaymentLink: values.cardPaymentLink.trim(),
+        depositCutoffHours: Number(values.depositCutoffHours),
+        deliveryFeeSweets: parseMoneyInput(values.deliveryFeeSweets)!,
+        partyVenueFee: parseMoneyInput(values.partyVenueFee)!,
+        punctualityNotice: values.punctualityNotice.trim(),
+        depositReminderHours: Number(values.depositReminderHours),
         version,
       })
       setValues(toForm(saved))
@@ -219,6 +257,43 @@ function SettingsForm({ initial, onSaved }: { initial: BakerySettings; onSaved: 
         <Toggle label="Entrega por delivery" hint="A cliente informa o endereço; a taxa de entrega entra no orçamento."
           checked={toggles.deliveryEnabled} onChange={toggle('deliveryEnabled')} />
         {toggles.deliveryEnabled && (
+          <>
+            <div className={styles.row}>
+              <TextField
+                label="Entrega de bolos na cidade (R$)"
+                inputMode="decimal"
+                value={values.deliveryFee}
+                onChange={set('deliveryFee')}
+                error={errors.deliveryFee}
+                hint="Pedidos com bolo personalizado."
+              />
+              <TextField
+                label="Delivery de outros doces na cidade (R$)"
+                inputMode="decimal"
+                value={values.deliveryFeeSweets}
+                onChange={set('deliveryFeeSweets')}
+                error={errors.deliveryFeeSweets}
+                hint="Pedidos só com doces do cardápio."
+              />
+            </div>
+            <TextField
+              label="Entrega no local da festa (R$)"
+              inputMode="decimal"
+              value={values.partyVenueFee}
+              onChange={set('partyVenueFee')}
+              error={errors.partyVenueFee}
+              hint="Valor da sua tabela. Só aparece para a cliente e entra no orçamento depois que você confirmar abaixo."
+            />
+            <Toggle label="Confirmo a taxa de entrega no local da festa"
+              hint="Desmarcado: a cliente vê 'taxa informada no orçamento' e você digita o valor no orçamento."
+              checked={toggles.partyVenueFeeConfirmed} onChange={toggle('partyVenueFeeConfirmed')} />
+            <p className={styles.description}>
+              Entrega fora da cidade: sem taxa automática — você informa o valor no orçamento, conforme a localização.
+              Cada modalidade tem sua taxa; nenhuma é aplicada às outras.
+            </p>
+          </>
+        )}
+        {toggles.deliveryEnabled && (
           <TextAreaField
             label="Informações do delivery"
             hint="Ex.: bairros atendidos, como a taxa é calculada. Aparece para a cliente ao escolher a entrega."
@@ -236,7 +311,7 @@ function SettingsForm({ initial, onSaved }: { initial: BakerySettings; onSaved: 
         {errors.deliveryInfo && <Alert tone="error">{errors.deliveryInfo}</Alert>}
       </Fieldset>
 
-      <Fieldset title="Pagamento por Pix" description="Mostrado à cliente somente quando ela precisar pagar o sinal.">
+      <Fieldset title="Pagamento do sinal" description="Mostrado à cliente somente quando ela precisar pagar o sinal.">
         <div className={styles.row}>
           <TextField label="Chave Pix" value={values.pixKey} onChange={set('pixKey')} error={errors.pixKey} maxLength={77} />
           <TextField
@@ -247,6 +322,30 @@ function SettingsForm({ initial, onSaved }: { initial: BakerySettings; onSaved: 
             maxLength={120}
           />
         </div>
+        <TextField
+          label="Link de pagamento no cartão de crédito (opcional)"
+          type="url"
+          inputMode="url"
+          placeholder="https://"
+          value={values.cardPaymentLink}
+          onChange={set('cardPaymentLink')}
+          error={errors.cardPaymentLink}
+          maxLength={500}
+          hint="Gerado na sua maquininha ou banco. A cliente paga pelo link e envia o comprovante; você confere e confirma."
+        />
+      </Fieldset>
+
+      <Fieldset title="Aviso de pontualidade"
+        description="Mostrado à cliente antes de enviar a encomenda, na confirmação e no acompanhamento do pedido.">
+        <TextAreaField
+          label="Texto do aviso"
+          value={values.punctualityNotice}
+          onChange={set('punctualityNotice')}
+          error={errors.punctualityNotice}
+          maxLength={1000}
+          rows={3}
+          hint="Não inclua multas ou cobranças por atraso sem decidir isso antes."
+        />
       </Fieldset>
 
       <Fieldset title="Orçamentos" description="Valem para os próximos orçamentos enviados.">
@@ -279,6 +378,26 @@ function SettingsForm({ initial, onSaved }: { initial: BakerySettings; onSaved: 
             ' Sem sinal nesse prazo, o pedido é cancelado automaticamente (exceto se houver comprovante em análise). ' +
             'Em branco = sem prazo.'
           }
+        />
+        <TextField
+          label="O sinal precisa ser pago até quantas horas antes da encomenda"
+          inputMode="numeric"
+          value={values.depositCutoffHours}
+          onChange={set('depositCutoffHours')}
+          error={errors.depositCutoffHours}
+          hint={(hoursHint(values.depositCutoffHours) ?? '') +
+            ' Vale o prazo que terminar primeiro. Se o orçamento for aceito muito perto da data, a cliente ainda tem 2 horas. ' +
+            '0 = sem esse limite.'}
+        />
+        <TextField
+          label="Lembrar a cliente quantas horas antes do fim do prazo do sinal"
+          inputMode="numeric"
+          value={values.depositReminderHours}
+          onChange={set('depositReminderHours')}
+          error={errors.depositReminderHours}
+          hint={(hoursHint(values.depositReminderHours) ?? '') +
+            ' Você recebe um aviso para lembrar a cliente pelo WhatsApp; quem informou e-mail recebe o lembrete'
+            + ' automaticamente. Se o prazo for curto, o lembrete sai na metade do prazo.'}
         />
       </Fieldset>
 

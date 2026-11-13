@@ -18,7 +18,8 @@ import br.com.confeitaria.TestcontainersConfiguration;
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-@SpringBootTest(properties = {"app.storage.upload-dir=${java.io.tmpdir}/confeitaria-test-uploads", "app.jobs.enabled=false"})
+@SpringBootTest(properties = {"app.storage.upload-dir=${java.io.tmpdir}/confeitaria-test-uploads", "app.jobs.enabled=false",
+        "app.orders.duplicate-window=PT0S"})
 @AutoConfigureMockMvc
 @Import({TestcontainersConfiguration.class, TestSupportConfiguration.class})
 public @interface IntegrationTest {

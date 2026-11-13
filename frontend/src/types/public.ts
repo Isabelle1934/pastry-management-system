@@ -1,5 +1,5 @@
 import type { Money } from './catalog'
-import type { FulfillmentType, OrderItemInput, PublicCategory, PublicProduct } from './product'
+import type { DeliveryZone, FulfillmentType, OrderItemInput, PublicCategory, PublicProduct } from './product'
 
 export interface BakeryInfo {
   name: string | null
@@ -13,9 +13,28 @@ export interface BakeryInfo {
   deliveryEnabled: boolean
   /** Área atendida, taxa e prazos do delivery (só quando o delivery está ativo). */
   deliveryInfo: string | null
+  /** Taxa de entrega de bolos dentro da cidade (só quando o delivery está ativo). */
+  deliveryFee: Money | null
   customCakeEnabled: boolean
   /** Bolos personalizados também podem ser entregues. */
   customCakeDelivery: boolean
+  /** Delivery de outros doces dentro da cidade. */
+  deliveryFeeSweets: Money | null
+  /** Entrega no local da festa — só vem depois de confirmada pela proprietária. */
+  partyVenueFee: Money | null
+  /** Aviso de pontualidade (editável pela proprietária). */
+  punctualityNotice: string
+}
+
+/** Categoria de bolo (ex.: baixos, altos, 2 andares). "consultOnly" = sem tabela: consulte valores. */
+export interface PublicCakeCategory {
+  id: number
+  name: string
+  description: string | null
+  notice: string | null
+  consultOnly: boolean
+  maxFlavors: number
+  maxFillings: number
 }
 
 export interface PublicSize {
@@ -26,6 +45,9 @@ export interface PublicSize {
   basePrice: Money
   maxFlavors: number
   maxFillings: number
+  categoryId: number | null
+  weightKg: Money | null
+  diameterCm: number | null
 }
 
 export interface PublicOption {
@@ -42,6 +64,7 @@ export interface PublicCatalog {
   products: PublicProduct[]
   /** Aceita novas encomendas de bolo personalizado. */
   customCakeEnabled: boolean
+  cakeCategories: PublicCakeCategory[]
 }
 
 export interface AvailableDay {
@@ -77,4 +100,7 @@ export interface OrderPayload {
   deliveryAddress: string
   deliveryDistrict: string
   deliveryReference: string
+  cakeCategoryId: number | null
+  deliveryZone: DeliveryZone | null
+  customerEmail: string
 }

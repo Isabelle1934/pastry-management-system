@@ -41,6 +41,7 @@ import br.com.confeitaria.modules.quote.dto.QuoteDtos.QuoteView;
 import br.com.confeitaria.modules.quote.repository.QuoteRepository;
 import br.com.confeitaria.modules.quote.service.QuoteService;
 import br.com.confeitaria.modules.schedule.service.ReservationService;
+import br.com.confeitaria.modules.settings.service.SettingsService;
 import jakarta.persistence.criteria.Predicate;
 
 /** Gestão de pedidos pela proprietária: consulta, edição, recusa e cancelamento. */
@@ -58,11 +59,13 @@ public class OrderAdminService {
     private final OrderDetailsApplier detailsApplier;
     private final ReservationService reservations;
     private final PaymentService payments;
+    private final SettingsService settings;
     private final Clock clock;
 
     public OrderAdminService(CakeOrderRepository orders, QuoteRepository quotes, QuoteService quoteService,
             StoredFileRepository files, OrderHistoryService history, OrderDetailsApplier detailsApplier,
-            ReservationService reservations, PaymentService payments, Clock clock) {
+            ReservationService reservations, PaymentService payments, SettingsService settings, Clock clock) {
+        this.settings = settings;
         this.orders = orders;
         this.quotes = quotes;
         this.quoteService = quoteService;
@@ -117,7 +120,11 @@ public class OrderAdminService {
                 files.findByOrderIdAndDeletedAtIsNullOrderByIdAsc(order.getId()).stream().map(FileInfo::from).toList(),
                 quoteService.list(order.getId()), payments.summary(order.getId()),
                 history.historyOf(order.getId()).stream().map(HistoryEntry::from).toList(),
-                order.getCreatedAt(), order.getUpdatedAt());
+                order.getCreatedAt(), order.getUpdatedAt(), order.getCustomerEmail(), order.getDeliveryZone(),
+                order.getCakeCategory() == null ? null : order.getCakeCategory().getId(),
+                order.getCakeCategorySnapshot(), order.getSizePriceSnapshot(),
+                DeliveryFees.suggested(settings.current(), order.getFulfillmentType(), order.getDeliveryZone(),
+                        order.isCustomCake()));
     }
 
     /**
@@ -140,9 +147,12 @@ public class OrderAdminService {
         var changes = new Changes()
                 .track("customerName", order.getCustomerName(), name)
                 .trackWithoutValues("customerWhatsapp", order.getCustomerWhatsapp(), whatsapp)
+                .trackWithoutValues("customerEmail", order.getCustomerEmail(),
+                        OrderCreationService.normalizeEmail(request.customerEmail()))
                 .asMap();
         Map<String, Object> allChanges = new LinkedHashMap<>(changes);
         order.updateCustomer(name, whatsapp);
+        order.setCustomerEmail(OrderCreationService.normalizeEmail(request.customerEmail()));
         allChanges.putAll(detailsApplier.apply(order, request.details(), OrderDetailsApplier.Actor.OWNER));
 
         if (reservations.activeReservation(id).isPresent()) {

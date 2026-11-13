@@ -23,6 +23,8 @@ import styles from './orders.module.css'
 import { QuotePanel } from './QuotePanel'
 import { StatusChip } from './StatusChip'
 import { Loading } from '../../../components/Loading'
+import { DELIVERY_ZONE_LABELS } from '../../../utils/productRules'
+import { formatBRL } from '../../../utils/money'
 
 const ACTOR = { OWNER: 'Você', CLIENT: 'Cliente', SYSTEM: 'Sistema' } as const
 const CLOSED = ['COMPLETED', 'REJECTED', 'CANCELLED']
@@ -127,12 +129,6 @@ export function OrderDetailPage() {
           {canReject && !pending && (
             <Button variant="secondary" onClick={() => setPending({ kind: 'reject', reason: '' })}>Recusar</Button>
           )}
-          {order.commercialStatus !== 'REJECTED' && (
-            <Link className={styles.filter} style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}
-              to={`/admin/financeiro?aba=despesas&pedido=${encodeURIComponent(order.trackingCode)}`}>
-              Registrar despesa deste pedido
-            </Link>
-          )}
           {canCancel && !pending && (
             <Button variant="secondary" onClick={() => setPending({ kind: 'cancel', reason: '' })}>Cancelar pedido</Button>
           )}
@@ -181,12 +177,18 @@ export function OrderDetailPage() {
             <Item label="Horário" value={order.pickupTime} />
             {order.fulfillmentType === 'DELIVERY' && (
               <>
+                <Item label="Modalidade" value={order.deliveryZone ? DELIVERY_ZONE_LABELS[order.deliveryZone] : undefined} />
+                <Item label="Taxa sugerida" value={order.suggestedDeliveryFee ? formatBRL(order.suggestedDeliveryFee)
+                  : order.deliveryZone === 'OUTSIDE_CITY' ? 'Combinar conforme a localização'
+                    : order.deliveryZone === 'PARTY_VENUE' ? 'Taxa do local da festa ainda não confirmada nas Configurações'
+                      : undefined} />
                 <Item label="Endereço" value={order.deliveryAddress} />
                 <Item label="Bairro" value={order.deliveryDistrict} />
                 <Item label="Referência" value={order.deliveryReference} />
               </>
             )}
             <Item label="Observações" value={order.notes} />
+            <Item label="E-mail da cliente" value={order.customerEmail ?? 'Não informado (lembrete só pelo WhatsApp)'} />
             <Item label="Pedido em" value={formatDateTime(order.createdAt)} />
           </dl>
         </section>
@@ -198,7 +200,8 @@ export function OrderDetailPage() {
                 <Item
                   key={item.productId}
                   label={`${item.quantity} × ${item.name}`}
-                  value={`${priceLabel(item.unitPrice, item.unitLabel)} · ${item.category}${item.notes ? ` · ${item.notes}` : ''}`}
+                  value={`${priceLabel(item.unitPrice, item.unitLabel)}${item.subtotal ? ` = ${formatBRL(item.subtotal)}` : ''}`
+                    + ` · ${item.category}${item.notes ? ` · ${item.notes}` : ''}`}
                 />
               ))}
             </dl>
@@ -209,7 +212,9 @@ export function OrderDetailPage() {
           <section className={styles.section}>
             <h2>Bolo personalizado</h2>
             <dl className={styles.dl}>
-              <Item label="Tamanho" value={order.sizeName} />
+              <Item label="Tipo" value={order.cakeCategoryName} />
+              <Item label="Tamanho" value={order.sizeName ?? (order.cakeCategoryName ? 'Consulte valores (sem tabela)' : undefined)} />
+              <Item label="Preço da tabela" value={order.sizePrice ? `${formatBRL(order.sizePrice)} (na data do pedido)` : undefined} />
               <Item label="Massa" value={order.flavors.map((f) => f.name).join(', ')} />
               <Item label="Recheio" value={order.fillings.map((f) => f.name).join(', ')} />
               <Item label="Decoração" value={order.decoration} />

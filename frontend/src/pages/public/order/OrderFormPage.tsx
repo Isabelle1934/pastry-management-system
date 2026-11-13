@@ -38,7 +38,8 @@ interface WizardData {
   bakery: BakeryInfo
 }
 
-const canOrderCake = (catalog: PublicCatalog) => catalog.customCakeEnabled && catalog.sizes.length > 0
+const canOrderCake = (catalog: PublicCatalog) =>
+  catalog.customCakeEnabled && (catalog.sizes.length > 0 || catalog.cakeCategories.some((c) => c.consultOnly))
 
 /** Estado inicial: produtos escolhidos no cardápio (se ainda disponíveis) e bolo personalizado conforme o caso. */
 function initialForm(catalog: PublicCatalog, wantsCake: boolean): OrderFormState {
@@ -87,7 +88,8 @@ function OrderWizard({ data, reload }: { data: WizardData; reload: () => Promise
 
   function next() {
     const size = catalog.sizes.find((s) => s.id === form.sizeId)
-    const stepErrors = validateStep(step, form, { size, products: catalog.products })
+    const category = catalog.cakeCategories.find((c) => c.id === form.cakeCategoryId)
+    const stepErrors = validateStep(step, form, { size, category, products: catalog.products })
     setErrors(stepErrors)
     if (Object.keys(stepErrors).length === 0 && !isLast) goTo(steps[index + 1])
   }
@@ -121,7 +123,7 @@ function OrderWizard({ data, reload }: { data: WizardData; reload: () => Promise
     }
   }
 
-  if (trackingCode) return <OrderSuccess trackingCode={trackingCode} />
+  if (trackingCode) return <OrderSuccess trackingCode={trackingCode} punctualityNotice={bakery.punctualityNotice} />
 
   const props = { form, errors, update, catalog, availability, bakery }
   return (

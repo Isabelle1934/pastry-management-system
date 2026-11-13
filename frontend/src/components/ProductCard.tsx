@@ -3,6 +3,7 @@ import type { PublicProduct } from '../types/product'
 import { availabilityLabel, priceLabel } from '../utils/productRules'
 import { Icon } from './Icon'
 import styles from './ProductCard.module.css'
+import { formatBRL, fromCents, toCents } from '../utils/money'
 
 interface ProductCardProps {
   product: PublicProduct
@@ -39,6 +40,11 @@ export function ProductCard({ product, quantity = 0, onQuantityChange }: Product
         <h3 className={styles.name}>{product.name}</h3>
         {product.description && <p className={styles.description}>{product.description}</p>}
         <p className={styles.price}>{priceLabel(product.price, product.unitLabel)}</p>
+        {quantity > 0 && product.price != null && (
+          <p className={styles.meta} aria-live="polite">
+            Subtotal: <strong>{formatBRL(fromCents(toCents(product.price) * quantity))}</strong>
+          </p>
+        )}
         <ul className={styles.meta}>
           {min > 1 && <li>Pedido mínimo: {min}</li>}
           {availability && <li>{availability}</li>}

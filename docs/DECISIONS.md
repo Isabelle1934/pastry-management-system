@@ -148,6 +148,23 @@ Um servidor com Docker Compose: PostgreSQL e API sem portas publicadas; Caddy se
 
 ---
 
+## ADR-037 — Requisitos da proprietária: delivery, cartão, prazo do sinal e financeiro enxuto
+
+- **Despesas retiradas do painel** (pedido da proprietária): entidades, endpoints e telas removidos; as tabelas `expense`/`expense_category` ficam no banco, sem uso, para não perder dados. Hibernate valida só as entidades mapeadas, então não é preciso migração para isso.
+- **Prazo do sinal** = o menor entre "X h após o aceite" e "Y h antes da data agendada" (`DepositDeadlines`), com piso de 2 h quando o aceite acontece já depois do limite pela data — um prazo vencido no aceite cancelaria o pedido sem chance de pagar. Calculado na hora (sem coluna nova), então mudar a configuração vale também para pedidos já aceitos.
+- **Cartão por link**: só armazena o link informado pela proprietária e o método `CARD_LINK` no pagamento; sem integração com operadora.
+- **Tipo do item do orçamento** (`quote_item.kind`) em vez de tabelas separadas: os subtotais são somas por tipo e o total continua sendo a soma dos itens (CHECK do banco inalterado).
+- **Massas confirmadas** inseridas pela migração apenas se não existirem (nome sem diferenciar maiúsculas) — exceção à regra de não inserir dados por migração, por serem dados reais confirmados pela proprietária.
+
+## ADR-038 — Tabela de bolos, modalidades de entrega e lembretes (V10)
+
+- **Tipos de bolo como tabela própria** (`cake_category`) em vez de prefixo no nome do tamanho: a cliente escolhe o tipo e depois o tamanho; características e avisos ("Topo não incluso") ficam no tipo. "3 andares ou mais" é um tipo `consult_only`, sem tamanhos — o pedido guarda a categoria e não tem preço de tabela.
+- **Cópia do preço da tabela no pedido** (`size_price_snapshot`) para preservar valores históricos e sugerir o preço inicial do orçamento. Pedidos antigos ficam sem a cópia (o valor deles está no orçamento).
+- **Taxa por modalidade calculada na hora** (`DeliveryFees`), sem gravar no pedido: a taxa entra no orçamento, que é a fonte do valor. A do local da festa só é sugerida depois de confirmada.
+- **Limite por horário opcional:** `capacity` vazio = sem limite. O contador de confirmados continua existindo (agenda do painel).
+- **Lembrete à cliente:** sem integração com a API do WhatsApp (exige conta Business e credenciais), o lembrete automático vai por e-mail (campo opcional) e a proprietária recebe um botão de WhatsApp com a mensagem pronta. Decisão confirmada pela usuária.
+- **Envio repetido:** recusa por conteúdo igual em 30 min, sem revelar o código do outro pedido. Janela configurável (`app.orders.duplicate-window`; zero desliga — usado nos testes).
+
 ## Pendências — decisões que dependem da proprietária
 
 | # | Assunto | Proposta padrão | Necessário até |
@@ -160,12 +177,15 @@ Um servidor com Docker Compose: PostgreSQL e API sem portas publicadas; Caddy se
 | P6 | **Limite de massas/recheios** | ✅ Implementado por tamanho (proposta padrão) — pode ser revisto | — |
 | P7 | **Cancelamento com sinal já pago** | ✅ Vaga liberada; reembolso registrado manualmente | — |
 | P8 | **Entregar com saldo em aberto** | ✅ Permitido, com aviso visível e confirmação explícita (proposta padrão) | — |
-| P9 | **Lucro estimado** | ✅ Previsto − despesas, mostrando também recebido − despesas (proposta padrão) | — |
+| P9 | **Lucro estimado** | Substituída por P18: módulo de despesas retirado | — |
 | P10 | **Decoração** | ✅ Texto livre + foto (proposta padrão) | — |
 | P11 | **Somente retirada** (sem entrega) | Substituída por P15: delivery configurável (desligado por padrão) | — |
 | P12 | **Exibir preço-base** dos tamanhos na área pública | Exibir como "a partir de" | Fase 6 |
 | P13 | **Quantidade de fotos** de referência | ✅ Até 3 do bolo + 1 do topo, 5 MB cada (proposta padrão) | — |
 | P14 | **Retenção de dados pessoais** (LGPD) | Manter enquanto necessário; definir política de exclusão/anonimização. Agora inclui endereços de entrega e a lista de clientes | Fase 12 |
-| P15 | **Delivery:** bairros/área atendida, cálculo da taxa, se bolos personalizados podem ser entregues | Delivery desligado por padrão; taxa lançada no orçamento como item; texto livre "Informações do delivery" nas Configurações | Antes de ativar o delivery |
+| P15 | **Delivery:** bairros/área atendida, valor fora da cidade, se bolos personalizados podem ser entregues, confirmação da taxa no local da festa | ✅ Bolos na cidade R$ 20,00; doces na cidade R$ 5,00; local da festa R$ 30,00 aguardando confirmação ("Confirmo a taxa" nas Configurações); fora da cidade combinado no orçamento. A opção "Bolos personalizados também podem ser entregues" continua sendo da proprietária (desligada por padrão) | Confirmar a taxa do local da festa e ligar a entrega de bolos |
 | P16 | **Catálogo inicial:** categorias, produtos, preços, quantidades mínimas, dias e fotos reais | — (não será inventado). A proprietária cadastra pelo painel; sem produtos, o site funciona como antes (só bolo personalizado) | Antes de divulgar o cardápio |
 | P17 | **Pagamento de produtos com preço fixo** | Mantido o fluxo atual: todo pedido passa por orçamento e sinal de 50%, mesmo só com itens de preço fixo | Se quiser venda direta sem orçamento |
+| P18 | **Cálculo do lucro** sem despesas cadastradas | Lucro = recebido líquido no período (igual ao recebido). Se quiser descontar custos, definir como (percentual fixo, custo por produto etc.) | Quando quiser um lucro diferente do recebido |
+| P19 | **Sabores de recheio** do bolo personalizado | ✅ Tamanhos e preços cadastrados conforme as imagens enviadas; massas Baunilha, Chocolate e Red Velvet. Os nomes dos recheios não foram informados — a proprietária cadastra no painel (não serão inventados) | Antes de divulgar o formulário |
+| P20 | **Limite de produtos por dia ou por quantidade** | Estrutura pronta (dias da semana, período, quantidade mínima); limite diário de unidades não implementado até a regra ser confirmada | Se quiser limitar produção diária |

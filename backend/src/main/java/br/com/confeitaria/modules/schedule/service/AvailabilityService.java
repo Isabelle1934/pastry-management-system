@@ -120,7 +120,7 @@ public class AvailabilityService {
         Instant slotInstant = date.atTime(time).atZone(ctx.zone).toInstant();
         boolean tooSoon = slotInstant.isBefore(ctx.earliest);
         boolean beyondLimit = date.isAfter(ctx.lastDate);
-        boolean full = reserved >= slot.getCapacity();
+        boolean full = slot.getCapacity() != null && reserved >= slot.getCapacity();
         boolean bookable = !blocked && !tooSoon && !beyondLimit && !full;
         return new CalendarSlot(time.toString(), slot.getCapacity(), reserved, blocked, blockReason, tooSoon,
                 beyondLimit, bookable);

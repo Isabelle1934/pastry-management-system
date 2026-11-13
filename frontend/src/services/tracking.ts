@@ -27,9 +27,11 @@ export function declineQuote(quoteId: number, reason: string): Promise<TrackingV
   return apiFetch<TrackingView>(`/tracking/order/quotes/${quoteId}/decline`, { json: { reason } })
 }
 
-export function submitDepositProof(file: File): Promise<TrackingView> {
+/** {@code method}: Pix ou link de pagamento no cartão. */
+export function submitDepositProof(file: File, method: 'PIX' | 'CARD_LINK' = 'PIX'): Promise<TrackingView> {
   const form = new FormData()
   form.append('proof', file)
+  form.append('method', method)
   return apiFetch<TrackingView>('/tracking/order/payments/deposit-proof', { method: 'POST', body: form })
 }
 
